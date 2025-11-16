@@ -1,0 +1,13 @@
+InlayHints:
+    Enabled: No
+
+Diagnostics:
+    UnusedIncludes: Strict
+
+Index:
+  Background: Build
+
+CompileFlags:
+    Add: 
+      - -std=c++23
+      - -Wno-pragma-once-outside-header

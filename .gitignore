@@ -1,0 +1,10 @@
+# Output directories
+out/
+build/
+
+# IDE directory & files
+.vs/
+vc140.pdb
+
+# Doxygen directory
+docs/
