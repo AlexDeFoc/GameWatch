@@ -1,3 +1,7 @@
+# NOTE: Change this to your values
+set(CMAKE_TOOLCHAIN_FILE "D:/Programs/vcpkg/scripts/buildsystems/vcpkg.cmake" CACHE STRING "")
+set(VCPKG_TARGET_TRIPLET "x64-windows" CACHE STRING "")
+
 cmake_minimum_required(VERSION 4.2.0)
 project(GameWatch LANGUAGES CXX)
     
@@ -20,6 +24,7 @@ target_sources(GameWatch_ConsoleApp
     "${CMAKE_CURRENT_SOURCE_DIR}/source_code/sources/entry_manager.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/source_code/sources/entry.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/source_code/sources/config.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/source_code/sources/internet_management.cpp"
 )
 
 target_include_directories(GameWatch_ConsoleApp PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/source_code/headers")
@@ -54,3 +59,37 @@ elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         "-Wpedantic"
         "-Werror")
 endif()
+
+# Dependencies
+# Boost settings
+#set(Boost_USE_DEBUG_LIBS        OFF)  # ignore debug libs and
+#set(Boost_USE_RELEASE_LIBS       ON)  # only find release libs
+
+find_package(boost_asio CONFIG REQUIRED)
+target_link_libraries(GameWatch_ConsoleApp PRIVATE Boost::asio)
+
+find_package(boost_asio_core CONFIG REQUIRED)
+target_link_libraries(GameWatch_ConsoleApp PRIVATE Boost::asio_core)
+
+find_package(boost_asio_deadline_timer CONFIG REQUIRED)
+target_link_libraries(GameWatch_ConsoleApp PRIVATE Boost::asio_deadline_timer)
+
+find_package(boost_asio_spawn CONFIG REQUIRED)
+target_link_libraries(GameWatch_ConsoleApp PRIVATE Boost::asio_spawn)
+
+find_package(Boost REQUIRED COMPONENTS beast)
+target_link_libraries(GameWatch_ConsoleApp PRIVATE Boost::beast)
+
+find_package( REQUIRED CONFIG)
+target_link_libraries(GameWatch_ConsoleApp PRIVATE Boost::beast)
+
+find_package(Boost REQUIRED COMPONENTS json)
+target_link_libraries(GameWatch_ConsoleApp PRIVATE Boost::json)
+
+find_package( REQUIRED CONFIG)
+target_link_libraries(GameWatch_ConsoleApp PRIVATE Boost::json)
+
+find_package(OpenSSL REQUIRED)
+target_link_libraries(GameWatch_ConsoleApp PRIVATE OpenSSL::SSL)
+target_link_libraries(GameWatch_ConsoleApp PRIVATE OpenSSL::Crypto)
+

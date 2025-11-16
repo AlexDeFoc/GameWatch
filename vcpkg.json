@@ -1,0 +1,21 @@
+{
+  "builtin-baseline": "0804e3b55b7e435c593707071052363fa876f170",
+  "dependencies": [
+    {
+      "name": "boost-asio",
+      "version>=": "1.89.0"
+    },
+    {
+      "name": "boost-beast",
+      "version>=": "1.89.0"
+    },
+    {
+      "name": "boost-json",
+      "version>=": "1.89.0"
+    },
+    {
+      "name": "openssl",
+      "version>=": "3.6.0#3"
+    }
+  ]
+}

@@ -16,6 +16,7 @@ class Main final : public gw::Menu {
     gw::opts::EditEntries m_edit_entries_opt;
     gw::opts::AddNewEntry m_add_new_entry_opt;
     gw::opts::Settings m_settings_opt;
+    gw::opts::CheckForUpdates m_check_for_updates_opt;
     gw::opts::ExitApp m_exit_app_opt;
 
   public:

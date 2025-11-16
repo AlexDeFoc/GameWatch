@@ -8,6 +8,7 @@ enum class OptionId {
     editEntries,
     addNewEntry,
     settings,
+    checkForUpdates,
     exitApp = 0,
 
     // Edit entries menu

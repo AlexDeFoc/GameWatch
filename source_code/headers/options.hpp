@@ -41,6 +41,12 @@ class Settings final : public gw::Option {
     auto action(gw::Package&) noexcept -> void override final;
 };
 
+class CheckForUpdates final : public gw::Option {
+  public:
+    CheckForUpdates() noexcept;
+    auto action(gw::Package&) noexcept -> void override final;
+};
+
 class ExitApp final : public gw::Option {
   public:
     ExitApp() noexcept;

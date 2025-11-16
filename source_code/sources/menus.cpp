@@ -18,6 +18,8 @@ auto gw::menus::Main::getOptionAddr(int opt_id) noexcept -> gw::Option* {
         return &m_add_new_entry_opt;
     case to_int(gw::OptionId::settings):
         return &m_settings_opt;
+    case to_int(gw::OptionId::checkForUpdates):
+        return &m_check_for_updates_opt;
     case to_int(gw::OptionId::exitApp):
         return &m_exit_app_opt;
     default:
@@ -31,6 +33,7 @@ gw::menus::Main::Main() noexcept
     , m_edit_entries_opt{}
     , m_add_new_entry_opt{}
     , m_settings_opt{}
+    , m_check_for_updates_opt{}
     , m_exit_app_opt{} {}
 
 auto gw::menus::Main::displayOptions(const Package& pkg) noexcept -> void {
@@ -53,6 +56,10 @@ auto gw::menus::Main::displayOptions(const Package& pkg) noexcept -> void {
     std::println("{}. {}",
                  m_settings_opt.getDisplayId(),
                  m_settings_opt.getDisplayText(pkg));
+
+    std::println("{}. {}",
+                 m_check_for_updates_opt.getDisplayId(),
+                 m_check_for_updates_opt.getDisplayText(pkg));
 
     std::println("{}. {}",
                  m_exit_app_opt.getDisplayId(),

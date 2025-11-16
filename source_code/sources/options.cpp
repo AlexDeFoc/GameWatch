@@ -1,6 +1,7 @@
 #include "options.hpp"
 
 #include "file_management.hpp"
+#include "internet_management.hpp"
 
 #include <iostream>
 #include <print>
@@ -152,6 +153,45 @@ gw::opts::Settings::Settings() noexcept
 auto gw::opts::Settings::action(gw::Package& pkg) noexcept -> void {
     pkg.console->clear();
     pkg.active_menu_id = gw::MenuId::settings;
+}
+
+gw::opts::CheckForUpdates::CheckForUpdates() noexcept
+    : Option(gw::OptionId::checkForUpdates, "Check for updates") {}
+
+auto gw::opts::CheckForUpdates::action(gw::Package& pkg) noexcept -> void {
+    pkg.console->clear();
+
+    constexpr auto current_app_ver_major{1};
+    constexpr auto current_app_ver_minor{0};
+    constexpr auto current_app_ver_patch{0};
+
+    std::println("Current version: {}.{}.{}",
+                 current_app_ver_major,
+                 current_app_ver_minor,
+                 current_app_ver_patch);
+
+    bool user_can_connect_to_github = gw::attemptGithubConnection();
+
+    if (user_can_connect_to_github) {
+        const auto result = gw::getLatestReleaseTagFromGithub();
+
+        if (!result.has_value()) {
+            std::println("Latest version found: Unknown");
+            std::println("Failed to get version from github.");
+        } else {
+            const auto& [major, minor, patch] = result.value();
+
+            std::println("Latest version found: {}.{}.{}", major, minor, patch);
+        }
+    } else {
+        std::println("Latest version found: Unknown");
+        std::println("Failed to attempt github connection. Cannot proceed");
+    }
+
+    std::println("Press any key to go back");
+    pkg.console->getAnyKeyPress();
+
+    pkg.console->clear();
 }
 
 gw::opts::ExitApp::ExitApp() noexcept
@@ -471,8 +511,15 @@ auto gw::opts::AdjustAutosaveInterval::action(gw::Package& pkg) noexcept
     std::string input{};
     std::uint64_t interval_in_sec{0};
     bool action_canceled{false};
+    const std::uint64_t current_val =
+        pkg.cfg->autosave_seconds_interval.load(std::memory_order_relaxed)
+            .count();
 
     while (true) {
+        std::println("Current value is: {} h : {} min : {} s",
+                     current_val / 3600,
+                     (current_val % 3600) / 60,
+                     (current_val % 3600) % 60);
         std::println("To cancel this action enter '0'");
         std::print("Enter autosave interval in seconds: ");
 
