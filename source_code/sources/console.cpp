@@ -4,6 +4,11 @@
 #include <iostream>
 #include <print>
 
+#if defined(__linux__) || defined(__APPLE__)
+#include <unistd.h>
+#include <termios.h>
+#endif
+
 using namespace gw;
 
 Console::Console() noexcept
@@ -103,6 +108,14 @@ Console::Console() noexcept
 
     if (continue_configuring)
         m_unicode_ready = true;
+#else
+    bool continue_configuring{true};
+
+    if (isatty(fileno(stdout)))
+        continue_configuring = true;
+
+    if (continue_configuring)
+        m_configured_for_custom_actions = true;
 #endif
 }
 
@@ -127,7 +140,14 @@ auto Console::clear() const noexcept -> void {
         // Position cursor at 1;1
         std::print("\x1b[H");
 #else
-        std::print("\n\n\nClearing screen...\n\n\n");
+        // Clear screen
+        std::print("\x1b[2J");
+
+        // Clear scrolloff
+        std::print("\x1b[3J");
+
+        // Position cursor at 1;1
+        std::print("\x1b[H");
 #endif
     } else {
         std::print("\n\n\nClearing screen...\n\n\n");
@@ -147,8 +167,19 @@ auto Console::getAnyKeyPress() const noexcept -> void {
                 break;
         }
 #else
-        std::string sink{};
-        std::getline(std::cin, sink);
+    termios old_settings{}, new_settings{};
+
+    tcgetattr(STDIN_FILENO, &old_settings); // save terminal settings
+
+    new_settings = old_settings;
+
+    new_settings.c_lflag &= ~(ICANON | ECHO); // disable canonical mode and echo
+
+    tcsetattr(STDIN_FILENO, TCSANOW, &new_settings); // apply new settings
+
+    std::getchar(); // wait for single key press
+
+    tcsetattr(STDIN_FILENO, TCSANOW, &old_settings); // restore terminal settings
 #endif
     } else {
         std::string sink{};

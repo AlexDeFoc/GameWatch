@@ -41,6 +41,9 @@ constexpr const char* config_filename{"config.ini"};
     }
 
     return std::filesystem::path{buffer}.parent_path();
+#elif defined(__linux__)
+    return std::filesystem::path{std::filesystem::canonical("/proc/self/exe")}
+        .parent_path();
 #elif defined(__APPLE__) // @todo untested
     std::string buffer(PATH_MAX, '\0');
     uint32_t size = static_cast<uint32_t>(buffer.size());
@@ -54,9 +57,6 @@ constexpr const char* config_filename{"config.ini"};
     }
 
     return std::filesystem::path{std::filesystem::canonical(buffer.c_str())}
-        .parent_path();
-#elif defined(__linux__) // @todo untested
-    return std::filesystem::path{std::filesystem::canonical("/proc/self/exe")}
         .parent_path();
 #endif
 }

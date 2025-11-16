@@ -35,7 +35,7 @@ auto gw::opts::ToggleEntryClock::getDisplayText(const gw::Package& pkg) noexcept
     if (pkg.entry_manager->any_active_entry.load(std::memory_order_relaxed) ==
         true) {
         if (m_display_text == "Start entry clock")
-            m_display_text = std::format("Stop entry: {}", "tmp");
+            m_display_text = std::format("Stop entry: {}", pkg.entry_manager->getActiveEntryTitle());
     } else if (m_display_text != "Start entry clock") {
         m_display_text = "Start entry clock";
     }
