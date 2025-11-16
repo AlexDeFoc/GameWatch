@@ -9,6 +9,13 @@
 namespace gw {
 class Console {
   private:
+    //! @brief
+    //! Used to determine if the console can for e.g. clear the console screen
+    //! with os dependent tools
+    bool m_configured_for_custom_actions;
+
+    bool m_unicode_ready;
+
 #if defined(_WIN32) || defined(_WIN64)
     HANDLE m_stdin_handle;
     HANDLE m_stdout_handle;
@@ -19,12 +26,6 @@ class Console {
     UINT m_stdin_bak_code_page;
     UINT m_stdout_bak_code_page;
 #endif
-    //! @brief
-    //! Used to determine if the console can for e.g. clear the console screen
-    //! with os dependent tools
-    bool m_configured_for_custom_actions;
-
-    bool m_unicode_ready;
 
   private:
     auto configureForNumberInput() noexcept -> bool;
