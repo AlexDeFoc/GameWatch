@@ -249,6 +249,8 @@ auto gw::opts::ExitApp::action(gw::Package& pkg) noexcept -> void {
         pkg.entry_manager->saveEntriesToDisk();
         pkg.entry_manager->toggleActiveEntryStatus();
     }
+
+    pkg.console->println(gw::PrintTag::Info, gw::print_msg::exiting_app);
 }
 
 gw::opts::GoBackToMainMenu::GoBackToMainMenu() noexcept

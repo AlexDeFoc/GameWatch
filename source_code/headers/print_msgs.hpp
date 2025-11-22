@@ -53,4 +53,6 @@ inline static constexpr const char* const cannot_connect_to_github{
 inline static constexpr const char* const
     cannot_delete_entry_with_running_clock{
         "Cannot delete entry with a running clock, stop it first!"};
+
+inline static constexpr const char* const exiting_app{"Exitting app!"};
 } // namespace gw::print_msg
