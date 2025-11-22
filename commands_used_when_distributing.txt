@@ -1,2 +1,6 @@
 Configuring cmake:
 cmake -S .. -B . -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=clang++
+
+Archiving folder:
+(On linux)
+tar -czvf 1.0.0.tar.gz ./1.0.0
