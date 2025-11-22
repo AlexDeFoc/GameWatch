@@ -75,7 +75,7 @@ auto gw::opts::ToggleEntryClock::action(gw::Package& pkg) noexcept -> void {
 
         std::string input{};
         std::uint64_t selected_entry_id{};
-        int cancel_id{0};
+        std::uint64_t cancel_id{0};
 
         while (true) {
             pkg.entry_manager->printEntries();
@@ -271,7 +271,7 @@ auto gw::opts::ChangeEntryTitle::action(gw::Package& pkg) noexcept -> void {
 
     std::string input{};
     std::uint64_t selected_entry_id{};
-    int cancel_id{0};
+    std::uint64_t cancel_id{0};
 
     while (true) {
         pkg.entry_manager->printEntries();
@@ -359,7 +359,7 @@ auto gw::opts::ResetEntryClock::action(gw::Package& pkg) noexcept -> void {
 
     std::string input{};
     std::uint64_t selected_entry_id{};
-    int cancel_id{0};
+    std::uint64_t cancel_id{0};
 
     while (true) {
         pkg.entry_manager->printEntries();
@@ -468,7 +468,7 @@ auto gw::opts::DeleteEntry::action(gw::Package& pkg) noexcept -> void {
 
     std::string input{};
     std::uint64_t selected_entry_id{};
-    int cancel_id{0};
+    std::uint64_t cancel_id{0};
 
     while (true) {
         pkg.entry_manager->printEntries();
@@ -615,7 +615,7 @@ auto gw::opts::AdjustAutosaveInterval::action(gw::Package& pkg) noexcept
         pkg.cfg->autosave_seconds_interval.load(std::memory_order_relaxed)
             .count();
 
-    int cancel_id{0};
+    std::uint64_t cancel_id{0};
 
     while (true) {
         pkg.console->println(
