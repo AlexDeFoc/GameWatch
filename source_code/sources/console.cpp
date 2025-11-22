@@ -53,7 +53,7 @@ Console::Console() noexcept
     }
 
     if (continue_configuring) {
-        m_stdin_current_mode = m_stdin_bak_mode | ENABLE_VIRTUAL_TERMINAL_INPUT;
+        m_stdin_current_mode = m_stdin_bak_mode | ENABLE_PROCESSED_INPUT;
 
         BOOL success = ::SetConsoleMode(m_stdin_handle, m_stdin_current_mode);
         if (!success) {
