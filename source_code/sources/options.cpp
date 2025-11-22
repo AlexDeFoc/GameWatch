@@ -188,7 +188,7 @@ auto gw::opts::CheckForUpdates::action(gw::Package& pkg) noexcept -> void {
 
     constexpr auto current_app_ver_major{1};
     constexpr auto current_app_ver_minor{0};
-    constexpr auto current_app_ver_patch{0};
+    constexpr auto current_app_ver_patch{1};
 
     pkg.console->println(
         gw::PrintTag::Info,
