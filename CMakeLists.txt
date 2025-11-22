@@ -1,6 +1,12 @@
 # NOTE: Change this to your values
+
+# I use these on Windows
 set(CMAKE_TOOLCHAIN_FILE "D:/Programs/vcpkg/scripts/buildsystems/vcpkg.cmake" CACHE STRING "")
 set(VCPKG_TARGET_TRIPLET "x64-windows" CACHE STRING "")
+
+# I use these on Linux
+#set(CMAKE_TOOLCHAIN_FILE "/opt/vcpkg/scripts/buildsystems/vcpkg.cmake" CACHE STRING "")
+#set(VCPKG_TARGET_TRIPLET "x64-linux" CACHE STRING "")
 
 cmake_minimum_required(VERSION 4.2.0)
 project(GameWatch LANGUAGES CXX)

@@ -1,0 +1,2 @@
+Configuring cmake:
+cmake -S .. -B . -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=clang++
