@@ -1,5 +1,9 @@
 #pragma once
 
+#include "print_msgs.hpp"
+#include "print_tag.hpp"
+
+#include <print>
 #include <string>
 
 #if defined(_WIN32) || defined(_WIN64)
@@ -37,5 +41,89 @@ class Console {
 
     auto clear() const noexcept -> void;
     auto getAnyKeyPress() const noexcept -> void;
+
+    template <typename... Args>
+    auto print(PrintTag,
+               std::format_string<Args...> fmt,
+               Args&&... args) const noexcept -> void;
+
+    template <typename... Args>
+    auto println(PrintTag,
+                 std::format_string<Args...> fmt,
+                 Args&&... args) const noexcept -> void;
 };
 } // namespace gw
+
+// Templates definitions
+template <typename... Args>
+auto gw::Console::print(gw::PrintTag tag,
+                        std::format_string<Args...> fmt,
+                        Args&&... args) const noexcept -> void {
+    if (m_configured_for_custom_actions) {
+        switch (tag) {
+        case gw::PrintTag::Error: {
+            std::print("{}{}{}: ",
+                       gw::error_tag_color,
+                       gw::error_tag,
+                       gw::reset_color);
+            break;
+        }
+
+        case gw::PrintTag::Request: {
+            std::print("{}{}{}: ",
+                       gw::request_tag_color,
+                       gw::request_tag,
+                       gw::reset_color);
+            break;
+        }
+
+        case gw::PrintTag::Tip: {
+            std::print("{}{}{}: ",
+                       gw::tip_tag_color,
+                       gw::tip_tag,
+                       gw::reset_color);
+            break;
+        }
+
+        case gw::PrintTag::Info: {
+            std::print("{}{}{}: ",
+                       gw::info_tag_color,
+                       gw::info_tag,
+                       gw::reset_color);
+            break;
+        }
+        }
+    } else {
+        switch (tag) {
+        case gw::PrintTag::Error: {
+            std::print("{}: ", gw::error_tag);
+            break;
+        }
+
+        case gw::PrintTag::Request: {
+            std::print("{}: ", gw::request_tag);
+            break;
+        }
+
+        case gw::PrintTag::Tip: {
+            std::print("{}: ", gw::tip_tag);
+            break;
+        }
+
+        case gw::PrintTag::Info: {
+            std::print("{}: ", gw::info_tag);
+            break;
+        }
+        }
+    }
+
+    std::print(fmt, std::forward<Args>(args)...);
+}
+
+template <typename... Args>
+auto gw::Console::println(gw::PrintTag tag,
+                          std::format_string<Args...> fmt,
+                          Args&&... args) const noexcept -> void {
+    gw::Console::print(tag, fmt, std::forward<Args>(args)...);
+    std::println();
+}

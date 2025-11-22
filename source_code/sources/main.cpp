@@ -38,7 +38,7 @@ int main() {
         current_menu = loadActiveMenu(pkg, menu_list);
 
         current_menu->displayOptions(pkg);
-        current_menu->requestInput();
+        current_menu->requestInput(pkg);
         current_menu->executeSelectedOptAction(pkg);
     }
 

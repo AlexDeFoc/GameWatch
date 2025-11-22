@@ -15,7 +15,7 @@ class Menu {
   public:
     Menu() noexcept;
     virtual auto displayOptions(const Package&) noexcept -> void = 0;
-    auto requestInput() noexcept -> void;
+    auto requestInput(const Package&) noexcept -> void;
     auto executeSelectedOptAction(gw::Package&) noexcept -> void;
     virtual ~Menu() = default;
 };

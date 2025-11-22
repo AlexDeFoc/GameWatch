@@ -2,9 +2,9 @@
 
 #include "file_management.hpp"
 #include "internet_management.hpp"
+#include "print_msgs.hpp"
 
 #include <iostream>
-#include <print>
 #include <string>
 
 gw::opts::ListEntries::ListEntries() noexcept
@@ -13,7 +13,8 @@ gw::opts::ListEntries::ListEntries() noexcept
 auto gw::opts::ListEntries::action(gw::Package& pkg) noexcept -> void {
     if (pkg.entry_manager->getEntryCount() == 0) {
         pkg.console->clear();
-        std::println("No entries found!");
+        pkg.console->println(gw::PrintTag::Error,
+                             gw::print_msg::no_entries_found);
         return;
     }
 
@@ -21,7 +22,8 @@ auto gw::opts::ListEntries::action(gw::Package& pkg) noexcept -> void {
 
     pkg.entry_manager->printEntries();
 
-    std::println("Press any key to go back");
+    pkg.console->println(gw::PrintTag::Info,
+                         gw::print_msg::press_any_key_to_go_back);
     pkg.console->getAnyKeyPress();
 
     pkg.console->clear();
@@ -35,7 +37,9 @@ auto gw::opts::ToggleEntryClock::getDisplayText(const gw::Package& pkg) noexcept
     if (pkg.entry_manager->any_active_entry.load(std::memory_order_relaxed) ==
         true) {
         if (m_display_text == "Start entry clock")
-            m_display_text = std::format("Stop entry: {}", pkg.entry_manager->getActiveEntryTitle());
+            m_display_text =
+                std::format("Stop entry: {}",
+                            pkg.entry_manager->getActiveEntryTitle());
     } else if (m_display_text != "Start entry clock") {
         m_display_text = "Start entry clock";
     }
@@ -46,14 +50,18 @@ auto gw::opts::ToggleEntryClock::getDisplayText(const gw::Package& pkg) noexcept
 auto gw::opts::ToggleEntryClock::action(gw::Package& pkg) noexcept -> void {
     if (pkg.entry_manager->getEntryCount() == 0) {
         pkg.console->clear();
-        std::println("No entries found!");
+        pkg.console->println(gw::PrintTag::Error,
+                             gw::print_msg::no_entries_found);
         return;
     }
 
     if (pkg.entry_manager->any_active_entry.load(std::memory_order_relaxed)) {
         pkg.console->clear();
-        std::println("Entry '{}' clock stopped.",
-                     pkg.entry_manager->getActiveEntryTitle());
+        pkg.console->println(
+            gw::PrintTag::Info,
+            "{}",
+            std::format("Entry '{}' clock stopped.",
+                        pkg.entry_manager->getActiveEntryTitle()));
 
         pkg.entry_manager->saveTimeSinceLastTimeSnapshot();
 
@@ -67,12 +75,19 @@ auto gw::opts::ToggleEntryClock::action(gw::Package& pkg) noexcept -> void {
 
         std::string input{};
         std::uint64_t selected_entry_id{};
+        int cancel_id{0};
 
         while (true) {
             pkg.entry_manager->printEntries();
 
-            std::println("Enter '0' to cancel this action.");
-            std::print("Enter entry id: ");
+            pkg.console->println(
+                gw::PrintTag::Tip,
+                "{}",
+                std::format(gw::print_msg::enter_n_to_cancel_this_action,
+                            cancel_id));
+
+            pkg.console->print(gw::PrintTag::Request,
+                               gw::print_msg::enter_entry_id);
 
             std::getline(std::cin, input);
 
@@ -80,15 +95,17 @@ auto gw::opts::ToggleEntryClock::action(gw::Package& pkg) noexcept -> void {
                 selected_entry_id = std::stoull(input);
             } catch (const std::invalid_argument&) {
                 pkg.console->clear();
-                std::println("Input is not a number!");
+                pkg.console->print(gw::PrintTag::Error,
+                                   gw::print_msg::input_is_not_a_number);
                 continue;
             } catch (const std::out_of_range&) {
                 pkg.console->clear();
-                std::println("Id is out of range!");
+                pkg.console->print(gw::PrintTag::Error,
+                                   gw::print_msg::id_is_out_of_range);
                 continue;
             }
 
-            if (selected_entry_id == 0) {
+            if (selected_entry_id == cancel_id) {
                 action_canceled = true;
             }
 
@@ -97,7 +114,8 @@ auto gw::opts::ToggleEntryClock::action(gw::Package& pkg) noexcept -> void {
 
         if (action_canceled) {
             pkg.console->clear();
-            std::println("Action canceled.");
+            pkg.console->println(gw::PrintTag::Info,
+                                 gw::print_msg::action_canceled);
         } else {
             pkg.console->clear();
 
@@ -105,8 +123,11 @@ auto gw::opts::ToggleEntryClock::action(gw::Package& pkg) noexcept -> void {
             pkg.entry_manager->takeTimeSnapshot();
             pkg.entry_manager->setActiveEntryIndex(selected_entry_id - 1);
 
-            std::println("Entry '{}' clock started.",
-                         pkg.entry_manager->getActiveEntryTitle());
+            pkg.console->println(
+                gw::PrintTag::Info,
+                "{}",
+                std::format("Entry '{}' clock started.",
+                            pkg.entry_manager->getActiveEntryTitle()));
         }
     }
 }
@@ -128,8 +149,11 @@ auto gw::opts::AddNewEntry::action(gw::Package& pkg) noexcept -> void {
     bool action_canceled{false};
     std::string input{};
 
-    std::println("Enter without any input to cancel.");
-    std::print("Enter new entry title: ");
+    pkg.console->println(gw::PrintTag::Tip,
+                         gw::print_msg::enter_without_any_input_to_cancel);
+
+    pkg.console->print(gw::PrintTag::Request,
+                       gw::print_msg::enter_new_entry_title);
 
     std::getline(std::cin, input);
 
@@ -138,10 +162,11 @@ auto gw::opts::AddNewEntry::action(gw::Package& pkg) noexcept -> void {
 
     if (action_canceled) {
         pkg.console->clear();
-        std::println("Action canceled.");
+        pkg.console->println(gw::PrintTag::Info,
+                             gw::print_msg::action_canceled);
     } else {
         pkg.console->clear();
-        std::println("Entry created.");
+        pkg.console->println(gw::PrintTag::Info, gw::print_msg::entry_created);
         pkg.entry_manager->addNewEntry(std::move(input));
         pkg.entry_manager->saveEntriesToDisk();
     }
@@ -165,10 +190,13 @@ auto gw::opts::CheckForUpdates::action(gw::Package& pkg) noexcept -> void {
     constexpr auto current_app_ver_minor{0};
     constexpr auto current_app_ver_patch{0};
 
-    std::println("Current version: {}.{}.{}",
-                 current_app_ver_major,
-                 current_app_ver_minor,
-                 current_app_ver_patch);
+    pkg.console->println(
+        gw::PrintTag::Info,
+        "{}",
+        std::format(gw::print_msg::current_version_found_on_github,
+                    current_app_ver_major,
+                    current_app_ver_minor,
+                    current_app_ver_patch));
 
     bool user_can_connect_to_github = gw::attemptGithubConnection();
 
@@ -176,19 +204,35 @@ auto gw::opts::CheckForUpdates::action(gw::Package& pkg) noexcept -> void {
         const auto result = gw::getLatestReleaseTagFromGithub();
 
         if (!result.has_value()) {
-            std::println("Latest version found: Unknown");
-            std::println("Failed to get version from github.");
+            pkg.console->println(
+                gw::PrintTag::Info,
+                gw::print_msg::latest_version_found_on_github_unknown);
+
+            pkg.console->println(
+                gw::PrintTag::Error,
+                gw::print_msg::failed_to_get_version_from_github);
         } else {
             const auto& [major, minor, patch] = result.value();
 
-            std::println("Latest version found: {}.{}.{}", major, minor, patch);
+            pkg.console->println(
+                gw::PrintTag::Info,
+                "{}",
+                std::format(gw::print_msg::current_version_found_on_github,
+                            major,
+                            minor,
+                            patch));
         }
     } else {
-        std::println("Latest version found: Unknown");
-        std::println("Failed to attempt github connection. Cannot proceed");
+        pkg.console->println(
+            gw::PrintTag::Info,
+            gw::print_msg::latest_version_found_on_github_unknown);
+
+        pkg.console->println(gw::PrintTag::Error,
+                             gw::print_msg::cannot_connect_to_github);
     }
 
-    std::println("Press any key to go back");
+    pkg.console->println(gw::PrintTag::Info,
+                         gw::print_msg::press_any_key_to_go_back);
     pkg.console->getAnyKeyPress();
 
     pkg.console->clear();
@@ -225,12 +269,19 @@ auto gw::opts::ChangeEntryTitle::action(gw::Package& pkg) noexcept -> void {
 
     std::string input{};
     std::uint64_t selected_entry_id{};
+    int cancel_id{0};
 
     while (true) {
         pkg.entry_manager->printEntries();
 
-        std::println("Enter '0' to cancel this action.");
-        std::print("Enter entry id: ");
+        pkg.console->println(
+            gw::PrintTag::Tip,
+            "{}",
+            std::format(gw::print_msg::enter_n_to_cancel_this_action,
+                        cancel_id));
+
+        pkg.console->print(gw::PrintTag::Request,
+                           gw::print_msg::enter_entry_id);
 
         std::getline(std::cin, input);
 
@@ -238,15 +289,17 @@ auto gw::opts::ChangeEntryTitle::action(gw::Package& pkg) noexcept -> void {
             selected_entry_id = std::stoull(input);
         } catch (const std::invalid_argument&) {
             pkg.console->clear();
-            std::println("Input is not a number!");
+            pkg.console->print(gw::PrintTag::Error,
+                               gw::print_msg::input_is_not_a_number);
             continue;
         } catch (const std::out_of_range&) {
             pkg.console->clear();
-            std::println("Id is out of range!");
+            pkg.console->print(gw::PrintTag::Error,
+                               gw::print_msg::id_is_out_of_range);
             continue;
         }
 
-        if (selected_entry_id == 0) {
+        if (selected_entry_id == cancel_id) {
             action_canceled = true;
         }
 
@@ -255,13 +308,18 @@ auto gw::opts::ChangeEntryTitle::action(gw::Package& pkg) noexcept -> void {
 
     if (action_canceled) {
         pkg.console->clear();
-        std::println("Action canceled.");
+        pkg.console->println(gw::PrintTag::Info,
+                             gw::print_msg::action_canceled);
         return;
     }
 
     pkg.console->clear();
-    std::println("Enter without any input to cancel.");
-    std::print("Enter new entry title: ");
+
+    pkg.console->println(gw::PrintTag::Tip,
+                         gw::print_msg::enter_without_any_input_to_cancel);
+
+    pkg.console->print(gw::PrintTag::Request,
+                       gw::print_msg::enter_new_entry_title);
 
     std::getline(std::cin, input);
 
@@ -270,13 +328,17 @@ auto gw::opts::ChangeEntryTitle::action(gw::Package& pkg) noexcept -> void {
 
     if (action_canceled) {
         pkg.console->clear();
-        std::println("Action canceled.");
+        pkg.console->println(gw::PrintTag::Info,
+                             gw::print_msg::action_canceled);
     } else {
         pkg.console->clear();
 
-        std::println("Entry with title '{}' to '{}'.",
-                     pkg.entry_manager->getEntryTitle(selected_entry_id - 1),
-                     input);
+        pkg.console->println(
+            gw::PrintTag::Info,
+            "{}",
+            std::format("Entry with title '{}' to '{}'.",
+                        pkg.entry_manager->getEntryTitle(selected_entry_id - 1),
+                        input));
 
         pkg.entry_manager->setEntryTitle(selected_entry_id - 1,
                                          std::move(input));
@@ -295,12 +357,19 @@ auto gw::opts::ResetEntryClock::action(gw::Package& pkg) noexcept -> void {
 
     std::string input{};
     std::uint64_t selected_entry_id{};
+    int cancel_id{0};
 
     while (true) {
         pkg.entry_manager->printEntries();
 
-        std::println("Enter '0' to cancel this action.");
-        std::print("Enter entry id: ");
+        pkg.console->println(
+            gw::PrintTag::Tip,
+            "{}",
+            std::format(gw::print_msg::enter_n_to_cancel_this_action,
+                        cancel_id));
+
+        pkg.console->print(gw::PrintTag::Request,
+                           gw::print_msg::enter_entry_id);
 
         std::getline(std::cin, input);
 
@@ -308,15 +377,17 @@ auto gw::opts::ResetEntryClock::action(gw::Package& pkg) noexcept -> void {
             selected_entry_id = std::stoull(input);
         } catch (const std::invalid_argument&) {
             pkg.console->clear();
-            std::println("Input is not a number!");
+            pkg.console->print(gw::PrintTag::Error,
+                               gw::print_msg::input_is_not_a_number);
             continue;
         } catch (const std::out_of_range&) {
             pkg.console->clear();
-            std::println("Id is out of range!");
+            pkg.console->print(gw::PrintTag::Error,
+                               gw::print_msg::id_is_out_of_range);
             continue;
         }
 
-        if (selected_entry_id == 0) {
+        if (selected_entry_id == cancel_id) {
             action_canceled = true;
         }
 
@@ -325,7 +396,8 @@ auto gw::opts::ResetEntryClock::action(gw::Package& pkg) noexcept -> void {
 
     if (action_canceled) {
         pkg.console->clear();
-        std::println("Action canceled.");
+        pkg.console->println(gw::PrintTag::Info,
+                             gw::print_msg::action_canceled);
         return;
     }
 
@@ -343,11 +415,13 @@ auto gw::opts::ResetEntryClock::action(gw::Package& pkg) noexcept -> void {
             selected_option_id = std::stoull(input);
         } catch (const std::invalid_argument&) {
             pkg.console->clear();
-            std::println("Input is not a number!");
+            pkg.console->print(gw::PrintTag::Error,
+                               gw::print_msg::input_is_not_a_number);
             continue;
         } catch (const std::out_of_range&) {
             pkg.console->clear();
-            std::println("Id is out of range!");
+            pkg.console->print(gw::PrintTag::Error,
+                               gw::print_msg::id_is_out_of_range);
             continue;
         }
 
@@ -355,7 +429,8 @@ auto gw::opts::ResetEntryClock::action(gw::Package& pkg) noexcept -> void {
             action_canceled = true;
         else if (selected_option_id != 1) {
             pkg.console->clear();
-            std::println("Id is out of range!");
+            pkg.console->print(gw::PrintTag::Error,
+                               gw::print_msg::id_is_out_of_range);
             continue;
         }
 
@@ -364,12 +439,16 @@ auto gw::opts::ResetEntryClock::action(gw::Package& pkg) noexcept -> void {
 
     if (action_canceled) {
         pkg.console->clear();
-        std::println("Action canceled.");
+        pkg.console->println(gw::PrintTag::Info,
+                             gw::print_msg::action_canceled);
     } else {
         pkg.console->clear();
 
-        std::println("Entry '{}' clock reset.",
-                     pkg.entry_manager->getEntryTitle(selected_entry_id - 1));
+        pkg.console->println(gw::PrintTag::Info,
+                             "{}",
+                             std::format("Entry '{}' clock reset.",
+                                         pkg.entry_manager->getEntryTitle(
+                                             selected_entry_id - 1)));
 
         pkg.entry_manager->resetEntryClock(selected_entry_id - 1);
 
@@ -387,12 +466,19 @@ auto gw::opts::DeleteEntry::action(gw::Package& pkg) noexcept -> void {
 
     std::string input{};
     std::uint64_t selected_entry_id{};
+    int cancel_id{0};
 
     while (true) {
         pkg.entry_manager->printEntries();
 
-        std::println("Enter '0' to cancel this action.");
-        std::print("Enter entry id: ");
+        pkg.console->println(
+            gw::PrintTag::Tip,
+            "{}",
+            std::format(gw::print_msg::enter_n_to_cancel_this_action,
+                        cancel_id));
+
+        pkg.console->print(gw::PrintTag::Request,
+                           gw::print_msg::enter_entry_id);
 
         std::getline(std::cin, input);
 
@@ -400,22 +486,26 @@ auto gw::opts::DeleteEntry::action(gw::Package& pkg) noexcept -> void {
             selected_entry_id = std::stoull(input);
         } catch (const std::invalid_argument&) {
             pkg.console->clear();
-            std::println("Input is not a number!");
+            pkg.console->print(gw::PrintTag::Error,
+                               gw::print_msg::input_is_not_a_number);
             continue;
         } catch (const std::out_of_range&) {
             pkg.console->clear();
-            std::println("Id is out of range!");
+            pkg.console->print(gw::PrintTag::Error,
+                               gw::print_msg::id_is_out_of_range);
             continue;
         }
 
-        if (selected_entry_id == 0) {
+        if (selected_entry_id == cancel_id) {
             action_canceled = true;
         } else if (pkg.entry_manager->any_active_entry.load(
                        std::memory_order_relaxed) &&
-                   selected_entry_id == pkg.entry_manager->getActiveEntryId()) {
+                   selected_entry_id ==
+                       pkg.entry_manager->getActiveEntryId() + 1) {
             pkg.console->clear();
-            std::println(
-                "Cannot delete entry with a running clock, stop it first!");
+            pkg.console->println(
+                gw::PrintTag::Error,
+                gw::print_msg::cannot_delete_entry_with_running_clock);
             continue;
         }
 
@@ -424,7 +514,8 @@ auto gw::opts::DeleteEntry::action(gw::Package& pkg) noexcept -> void {
 
     if (action_canceled) {
         pkg.console->clear();
-        std::println("Action canceled.");
+        pkg.console->println(gw::PrintTag::Info,
+                             gw::print_msg::action_canceled);
         return;
     }
 
@@ -442,11 +533,13 @@ auto gw::opts::DeleteEntry::action(gw::Package& pkg) noexcept -> void {
             selected_option_id = std::stoull(input);
         } catch (const std::invalid_argument&) {
             pkg.console->clear();
-            std::println("Input is not a number!");
+            pkg.console->print(gw::PrintTag::Error,
+                               gw::print_msg::input_is_not_a_number);
             continue;
         } catch (const std::out_of_range&) {
             pkg.console->clear();
-            std::println("Id is out of range!");
+            pkg.console->print(gw::PrintTag::Error,
+                               gw::print_msg::id_is_out_of_range);
             continue;
         }
 
@@ -454,7 +547,8 @@ auto gw::opts::DeleteEntry::action(gw::Package& pkg) noexcept -> void {
             action_canceled = true;
         else if (selected_option_id != 1) {
             pkg.console->clear();
-            std::println("Id is out of range!");
+            pkg.console->print(gw::PrintTag::Error,
+                               gw::print_msg::id_is_out_of_range);
             continue;
         }
 
@@ -463,11 +557,15 @@ auto gw::opts::DeleteEntry::action(gw::Package& pkg) noexcept -> void {
 
     if (action_canceled) {
         pkg.console->clear();
-        std::println("Action canceled.");
+        pkg.console->println(gw::PrintTag::Info,
+                             gw::print_msg::action_canceled);
     } else {
         pkg.console->clear();
-        std::println("Entry '{}' deleted.",
-                     pkg.entry_manager->getEntryTitle(selected_entry_id - 1));
+        pkg.console->println(gw::PrintTag::Info,
+                             "{}",
+                             std::format("Entry '{}' deleted.",
+                                         pkg.entry_manager->getEntryTitle(
+                                             selected_entry_id - 1)));
 
         pkg.entry_manager->removeEntry(selected_entry_id - 1);
         pkg.entry_manager->saveEntriesToDisk();
@@ -515,13 +613,25 @@ auto gw::opts::AdjustAutosaveInterval::action(gw::Package& pkg) noexcept
         pkg.cfg->autosave_seconds_interval.load(std::memory_order_relaxed)
             .count();
 
+    int cancel_id{0};
+
     while (true) {
-        std::println("Current value is: {} h : {} min : {} s",
-                     current_val / 3600,
-                     (current_val % 3600) / 60,
-                     (current_val % 3600) % 60);
-        std::println("To cancel this action enter '0'");
-        std::print("Enter autosave interval in seconds: ");
+        pkg.console->println(
+            gw::PrintTag::Info,
+            "{}",
+            std::format("Current value is: {} h : {} min : {} s",
+                        current_val / 3600,
+                        (current_val % 3600) / 60,
+                        (current_val % 3600) % 60));
+
+        pkg.console->println(
+            gw::PrintTag::Tip,
+            "{}",
+            std::format(gw::print_msg::enter_n_to_cancel_this_action,
+                        cancel_id));
+
+        pkg.console->print(gw::PrintTag::Request,
+                           gw::print_msg::enter_autosave_interval);
 
         std::getline(std::cin, input);
 
@@ -529,11 +639,13 @@ auto gw::opts::AdjustAutosaveInterval::action(gw::Package& pkg) noexcept
             interval_in_sec = std::stoull(input);
         } catch (const std::invalid_argument&) {
             pkg.console->clear();
-            std::println("Input is not a number!");
+            pkg.console->print(gw::PrintTag::Error,
+                               gw::print_msg::input_is_not_a_number);
             continue;
         } catch (const std::out_of_range&) {
             pkg.console->clear();
-            std::println("Input is too large!");
+            pkg.console->print(gw::PrintTag::Error,
+                               gw::print_msg::id_is_out_of_range);
             continue;
         }
 
@@ -541,8 +653,9 @@ auto gw::opts::AdjustAutosaveInterval::action(gw::Package& pkg) noexcept
             action_canceled = true;
         else if (interval_in_sec < 30) {
             pkg.console->clear();
-            std::println("Input is too small! The interval has to be at least "
-                         "30 seconds.");
+            pkg.console->print(
+                gw::PrintTag::Error,
+                gw::print_msg::autosave_interval_input_is_too_small);
             continue;
         }
 
@@ -551,7 +664,8 @@ auto gw::opts::AdjustAutosaveInterval::action(gw::Package& pkg) noexcept
 
     if (action_canceled) {
         pkg.console->clear();
-        std::println("Action canceled.");
+        pkg.console->println(gw::PrintTag::Info,
+                             gw::print_msg::action_canceled);
     } else {
         pkg.cfg->autosave_seconds_interval.store(
             gw::SecondsU64{interval_in_sec},

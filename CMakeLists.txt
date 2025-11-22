@@ -62,34 +62,15 @@ endif()
 
 # Dependencies
 # Boost settings
-#set(Boost_USE_DEBUG_LIBS        OFF)  # ignore debug libs and
-#set(Boost_USE_RELEASE_LIBS       ON)  # only find release libs
+set(Boost_USE_DEBUG_LIBS        OFF)  # ignore debug libs and
+set(Boost_USE_RELEASE_LIBS       ON)  # only find release libs
 
-find_package(boost_asio CONFIG REQUIRED)
-target_link_libraries(GameWatch_ConsoleApp PRIVATE Boost::asio)
-
-find_package(boost_asio_core CONFIG REQUIRED)
-target_link_libraries(GameWatch_ConsoleApp PRIVATE Boost::asio_core)
-
-find_package(boost_asio_deadline_timer CONFIG REQUIRED)
-target_link_libraries(GameWatch_ConsoleApp PRIVATE Boost::asio_deadline_timer)
-
-find_package(boost_asio_spawn CONFIG REQUIRED)
-target_link_libraries(GameWatch_ConsoleApp PRIVATE Boost::asio_spawn)
-
-find_package(Boost REQUIRED COMPONENTS beast)
-target_link_libraries(GameWatch_ConsoleApp PRIVATE Boost::beast)
-
-find_package( REQUIRED CONFIG)
-target_link_libraries(GameWatch_ConsoleApp PRIVATE Boost::beast)
-
-find_package(Boost REQUIRED COMPONENTS json)
-target_link_libraries(GameWatch_ConsoleApp PRIVATE Boost::json)
-
-find_package( REQUIRED CONFIG)
-target_link_libraries(GameWatch_ConsoleApp PRIVATE Boost::json)
-
+find_package(Boost REQUIRED COMPONENTS asio beast json)
 find_package(OpenSSL REQUIRED)
-target_link_libraries(GameWatch_ConsoleApp PRIVATE OpenSSL::SSL)
-target_link_libraries(GameWatch_ConsoleApp PRIVATE OpenSSL::Crypto)
 
+target_link_libraries(GameWatch_ConsoleApp PRIVATE
+    Boost::asio
+    Boost::beast
+    Boost::json
+    OpenSSL::SSL
+)
