@@ -217,7 +217,7 @@ auto gw::opts::CheckForUpdates::action(gw::Package& pkg) noexcept -> void {
             pkg.console->println(
                 gw::PrintTag::Info,
                 "{}",
-                std::format(gw::print_msg::current_version_found_on_github,
+                std::format(gw::print_msg::latest_version_found_on_github,
                             major,
                             minor,
                             patch));
