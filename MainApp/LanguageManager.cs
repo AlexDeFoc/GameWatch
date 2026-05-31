@@ -2,17 +2,25 @@
 
 public sealed class LanguageManager
 {
-    public ILanguagePack ActiveLanguagePack { get; private set; } = SetLanguage(Language.English);
+    public ILanguagePack ActiveLanguagePack { get; private set; }
 
-    // Constructor
-    // TODO: load active language from disk file, instead of setting it forcefully into ActiveLanguagePack's construction
-
-    private static ILanguagePack SetLanguage(Language lang) => lang switch
+    public LanguageManager(AppSettings appSettings)
     {
-        Language.English => new EnglishLanguagePack(),
-        Language.Romanian => new RomanianLanguagePack(),
+        ActiveLanguagePack = SetLanguage(appSettings.LanguageCode);
+        appSettings.LanguageChanged += OnAppSettingsLanguageChanged;
+    }
+
+    private static ILanguagePack SetLanguage(LanguageCode lang) => lang switch
+    {
+        LanguageCode.en_US => new EnglishLanguagePack(),
+        LanguageCode.ro_RO => new RomanianLanguagePack(),
         _ => throw new Logger.CriticalUnhandledCaseException()
     };
+
+    private void OnAppSettingsLanguageChanged(object? sender, LanguageCode newLang)
+    {
+        ActiveLanguagePack = SetLanguage(newLang);
+    }
 
     public interface ILanguagePack
     {
@@ -104,9 +112,12 @@ public sealed class LanguageManager
         // ReSharper enable StringLiteralTypo
     }
 
-    private enum Language
+    // LanguageCode codes docs: https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-lcid/a9eac961-e77d-41a6-90a5-ce1a8b0cdb9c
+    public enum LanguageCode
     {
-        English,
-        Romanian
+        // ReSharper disable InconsistentNaming
+        en_US,
+        ro_RO
+        // ReSharper restore InconsistentNaming
     }
 }
