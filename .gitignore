@@ -1,4 +1,3 @@
-vcpkg_packages/*
-.vcpkg_cache/*
-.vs/*
 Output/*
+.idea/*
+.vs/*
