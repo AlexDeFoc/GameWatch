@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using MainApp.SceneItems;
 
 namespace MainApp.SceneTypes;
 
@@ -17,7 +18,7 @@ public sealed class Menu
             for (int i = 0; i < _menuOptions.Count - 1; ++i)
                 _logger.WriteLine($"{i + 1}. {_menuOptions[i].DisplayText}");
 
-            _logger.WriteLine($"{_specialOptId}. {_menuOptions[^1].DisplayText}");
+            _logger.WriteLine($"0. {_menuOptions[^1].DisplayText}");
 
             if (_isInputCancellable)
                 _logger.WriteLine(Logger.Label.Tip, _lang.ActiveLanguagePack.Menu_ReadInputAndProcessOption_CancelTipMsg);
@@ -40,12 +41,17 @@ public sealed class Menu
             if (int.TryParse(input.Trim(), out int selectedOptId))
             {
                 bool isInRange = selectedOptId >= 1 && (selectedOptId <= _menuOptions.Count && _menuOptions.Count != 1);
-                bool specialCondition = _doMenuOptsContainSpecialId && selectedOptId == _specialOptId;
+                bool specialCondition = _isLastMenuOptZeroId && selectedOptId == 0;
 
                 if (isInRange || specialCondition)
                 {
                     inputStatus = Logger.InputStatus.Success;
-                    chosenOptId = selectedOptId;
+
+                    if (specialCondition)
+                        chosenOptId = _menuOptions.Count;
+                    else
+                        chosenOptId = selectedOptId;
+
                     break;
                 }
 
@@ -70,19 +76,18 @@ public sealed class Menu
                 throw new Logger.UnhandledCaseException(_logger, _lang.ActiveLanguagePack.Menu_ReadInputAndProcessOption_UnhandledInputStatusMsg);
         }
 
-        _menuOptions[chosenOptId].Execute();
+        _menuOptions[chosenOptId - 1].Execute();
     }
 
     public void AddOption(MenuOption opt) => _menuOptions.Add(opt);
 
-    public Menu(LanguageManager lang, Logger logger, bool isInputCancellable = false, int optIdToRunWhenInputCancelled = 0, bool doMenuOptsContainSpecialId = true, int specialOptId = 0)
+    public Menu(LanguageManager lang, Logger logger, bool isInputCancellable = false, int optIdToRunWhenInputCancelled = 0, bool isLastMenuOptZeroId = true)
     {
         _lang = lang;
         _logger = logger;
         _isInputCancellable = isInputCancellable;
         _optIdToRunWhenInputCancelled = optIdToRunWhenInputCancelled;
-        _doMenuOptsContainSpecialId = doMenuOptsContainSpecialId;
-        _specialOptId = specialOptId;
+        _isLastMenuOptZeroId = isLastMenuOptZeroId;
     }
 
     private readonly LanguageManager _lang;
@@ -90,6 +95,5 @@ public sealed class Menu
     private readonly List<MenuOption> _menuOptions = [];
     private readonly bool _isInputCancellable;
     private readonly int _optIdToRunWhenInputCancelled;
-    private readonly bool _doMenuOptsContainSpecialId;
-    private readonly int _specialOptId;
+    private readonly bool _isLastMenuOptZeroId;
 }

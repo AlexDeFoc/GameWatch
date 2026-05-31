@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace MainApp;
+namespace MainApp.SceneItems;
 
 public sealed class MenuOption
 {

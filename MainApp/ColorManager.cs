@@ -4,13 +4,7 @@ namespace MainApp;
 
 public sealed class ColorManager
 {
-    public ColorsStorage Colors { get; init; }
-
-    public ColorManager()
-    {
-        // load from disk colors
-        Colors = new ColorsStorage(); // TODO: Remove cuz we'd load from disk
-    }
+    public ColorsStorage Colors { get; } = new(); // TODO: Remove the 'new()' cuz we'd load from disk
 
     public readonly record struct ColorCode
     {
@@ -34,6 +28,7 @@ public sealed class ColorManager
 
     public sealed class ColorsStorage
     {
+        // ReSharper disable InconsistentNaming
         public string Reset { get; } = "\e[0m";
         public ColorCode Console_GeneralText { get; init; } = new("#FFFFFFFF");
         public ColorCode Console_TipLabel { get; init; } = new("#FFFFFFFF");
@@ -42,5 +37,6 @@ public sealed class ColorManager
         public ColorCode Console_SuccessLabel { get; init; } = new("#FF008000");
         public ColorCode Console_FatalErrorLabel { get; init; } = new("#FF8B0000");
         public ColorCode Console_InfoLabel { get; init; } = new("#FF00FFFF");
+        // ReSharper enable InconsistentNaming
     }
 }

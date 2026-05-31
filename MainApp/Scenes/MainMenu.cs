@@ -1,4 +1,5 @@
-﻿using MainApp.SceneTypes;
+﻿using MainApp.SceneItems;
+using MainApp.SceneTypes;
 
 namespace MainApp.Scenes;
 
@@ -9,6 +10,7 @@ public sealed class MainMenu : IScene
         IScene nextScene = this;
         var menu = new Menu(_lang, _logger);
 
+        menu.AddOption(new MenuOption(displayText: _lang.ActiveLanguagePack.MainMenu_AddNewGameOption_DisplayText, action: () => { nextScene = new AddNewGame(lang: _lang, logger: _logger, appState: _appState, gameLibrary: _gameLibrary); }));
         menu.AddOption(new MenuOption(displayText: _lang.ActiveLanguagePack.MainMenu_ExitAppOption_DisplayText, action: () => { _appState.ToggleAppRunningStatus(); }));
 
         menu.ReadInputAndProcessOption();
@@ -16,14 +18,16 @@ public sealed class MainMenu : IScene
         return _appState.ShouldAppContinueToRun() ? nextScene : null;
     }
 
-    public MainMenu(LanguageManager lang, Logger logger, AppState appState)
+    public MainMenu(LanguageManager lang, Logger logger, GameLibrary gameLibrary, AppState appState)
     {
         _lang = lang;
         _logger = logger;
+        _gameLibrary = gameLibrary;
         _appState = appState;
     }
 
     private readonly LanguageManager _lang;
     private readonly Logger _logger;
+    private readonly GameLibrary _gameLibrary;
     private readonly AppState _appState;
 }

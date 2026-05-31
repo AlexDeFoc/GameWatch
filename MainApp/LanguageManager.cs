@@ -2,14 +2,10 @@
 
 public sealed class LanguageManager
 {
-    public ILanguagePack ActiveLanguagePack { get; private set; }
+    public ILanguagePack ActiveLanguagePack { get; private set; } = SetLanguage(Language.English);
 
     // Constructor
-    public LanguageManager()
-    {
-        // load active language from disk file
-        ActiveLanguagePack = SetLanguage(Language.English);
-    }
+    // TODO: load active language from disk file, instead of setting it forcefully into ActiveLanguagePack's construction
 
     private static ILanguagePack SetLanguage(Language lang) => lang switch
     {
@@ -39,7 +35,14 @@ public sealed class LanguageManager
         string Menu_ReadInputAndProcessOption_InputOutOfRangeMsg { get; }
         string Menu_ReadInputAndProcessOption_InputCancelledMsg { get; }
         string Menu_ReadInputAndProcessOption_UnhandledInputStatusMsg { get; }
+        string Form_ReadInput_InputCancelledMsg { get; }
+        string Form_ReadInput_UnhandledInputStatusMsg { get; }
+        string MainMenu_AddNewGameOption_DisplayText { get; }
         string MainMenu_ExitAppOption_DisplayText { get; }
+        string AddNewGame_CancellationTipMsg { get; }
+        string AddNewGame_RequestMsg { get; }
+        protected string AddNewGame_SuccessfullyAddedNewGameMsg_Pattern { get; }
+        public string AddNewGame_SuccessfullyAddedNewGameMsg(string title) => string.Format(AddNewGame_SuccessfullyAddedNewGameMsg_Pattern, title);
         // ReSharper restore InconsistentNaming
     }
 
@@ -62,7 +65,13 @@ public sealed class LanguageManager
         public string Menu_ReadInputAndProcessOption_InputOutOfRangeMsg { get; } = "Input out of range. Try again!";
         public string Menu_ReadInputAndProcessOption_InputCancelledMsg { get; } = "Input cancelled";
         public string Menu_ReadInputAndProcessOption_UnhandledInputStatusMsg { get; } = "Developer mistake. Unhandled input status.";
+        public string Form_ReadInput_InputCancelledMsg { get; } = "Input cancelled";
+        public string Form_ReadInput_UnhandledInputStatusMsg { get; } = "Developer mistake. Unhandled input status.";
+        public string MainMenu_AddNewGameOption_DisplayText { get; } = "Add new game";
         public string MainMenu_ExitAppOption_DisplayText { get; } = "Exit app";
+        public string AddNewGame_CancellationTipMsg { get; } = "Enter CTRL+Z to cancel";
+        public string AddNewGame_RequestMsg { get; } = "Enter game title";
+        public string AddNewGame_SuccessfullyAddedNewGameMsg_Pattern { get; } = "Game: '{0}' added";
     }
 
     private sealed class RomanianLanguagePack : ILanguagePack
@@ -85,7 +94,13 @@ public sealed class LanguageManager
         public string Menu_ReadInputAndProcessOption_InputOutOfRangeMsg { get; } = "Introducerea este în afara limitelor. Încearcă din nou!";
         public string Menu_ReadInputAndProcessOption_InputCancelledMsg { get; } = "Acțiune anulată";
         public string Menu_ReadInputAndProcessOption_UnhandledInputStatusMsg { get; } = "Greșeală a creatorului aplicației. Un status de introducere nu a fost prelucrat cu grijă.";
+        public string Form_ReadInput_InputCancelledMsg { get; } = "Acțiune anulată";
+        public string Form_ReadInput_UnhandledInputStatusMsg { get; } = "Greșeală a creatorului aplicației. Un status de introducere nu a fost prelucrat cu grijă.";
+        public string MainMenu_AddNewGameOption_DisplayText { get; } = "Adaugă un joc nou";
         public string MainMenu_ExitAppOption_DisplayText { get; } = "Ieșire aplicație";
+        public string AddNewGame_CancellationTipMsg { get; } = "Apasă CTRL+Z pentru a anula acțiunea curentă";
+        public string AddNewGame_RequestMsg { get; } = "Introdu titlul jocului";
+        public string AddNewGame_SuccessfullyAddedNewGameMsg_Pattern { get; } = "Jocul: '{0}' a fost adăugat";
         // ReSharper enable StringLiteralTypo
     }
 
