@@ -1,11 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.Threading;
 
 namespace MainApp;
-
-using LatestFileTable = AppSettings.FileSettingsTableV2;
 
 public sealed class AppSettings
 {
@@ -14,7 +15,7 @@ public sealed class AppSettings
     public LanguageManager.LanguageCode LanguageCode
     {
         get;
-        private init
+        private set
         {
             if (field == value) return;
             field = value;
@@ -22,181 +23,154 @@ public sealed class AppSettings
         }
     }
 
+    public int AutoSaveIntervalInMinutes
+    {
+        get => Interlocked.CompareExchange(ref _autoSaveIntervalInMinutes, 1, 1);
+        set
+        {
+            int initial, desired;
+
+            do
+            {
+                initial = _autoSaveIntervalInMinutes;
+                desired = value;
+            } while (Interlocked.CompareExchange(ref _autoSaveIntervalInMinutes, desired, initial) != initial);
+
+            SaveToDisk();
+        }
+    }
+
+    public bool IsAutoSaveEnabled() => Interlocked.CompareExchange(ref _autoSaveEnabledStatus, 1, 1) == 1;
+
+    public void ToggleAutoSaveStatus()
+    {
+        int initial, desired;
+
+        do
+        {
+            initial = _autoSaveEnabledStatus;
+            desired = initial ^ 1;
+        } while (Interlocked.CompareExchange(ref _autoSaveEnabledStatus, desired, initial) != initial);
+
+        SaveToDisk();
+    }
+
+    public AppSettings()
+    {
+        // NOTE: Keep these in the order from 1 -> latest, cuz when we load the file, we check in that order which file exists first
+        // NOTE 2: The version isn't used, its being kept just to make it easier to keep in order filenames & filepaths
+        _filePaths = new Dictionary<FileVersionForFilePaths, Utils.FilePath>
+        {
+            [FileVersionForFilePaths.V1] = new(location: Utils.FileLocation.ExeFolder, fileName: "settings.json"),
+            [FileVersionForFilePaths.V2] = new(location: Utils.FileLocation.LocalAppDataFolder, fileName: "Settings.json")
+        };
+
+        LoadFromDisk();
+    }
+
     private void OnLanguageChanged(LanguageManager.LanguageCode newLang)
     {
         LanguageChanged?.Invoke(this, newLang);
     }
 
-    private AppSettings()
+    private void LoadFromDisk()
+    {
+        var chosenFilePath = _filePaths.Values.FirstOrDefault(filePath => filePath.Exists);
+
+        if (chosenFilePath == null)
+        {
+            LoadDefaults();
+            SaveToDisk();
+            return;
+        }
+
+        string fileContents = File.ReadAllText(chosenFilePath.RealPath);
+
+        FileVersionForFilePaths confirmedFileVersion;
+
+        try
+        {
+            using var doc = JsonDocument.Parse(fileContents);
+            var root = doc.RootElement;
+
+            // Confirm which version the file is
+            if (root.TryGetProperty(FileSchemaV1.FileVersionPropertyName, out var versionV1Elem))
+            {
+                if (versionV1Elem.ValueKind is JsonValueKind.Number && versionV1Elem.TryGetInt32(out var fileVersionFound))
+                {
+                    if (fileVersionFound == FileSchemaV1.FileVersion)
+                        confirmedFileVersion = FileVersionForFilePaths.V1;
+                }
+                else
+                {
+                    LoadDefaults();
+                    SaveToDisk();
+                    return;
+                }
+            }
+            else if (root.TryGetProperty(FileSchemaV2.FileVersionPropertyName, out var versionV2Elem))
+            {
+                if (versionV2Elem.ValueKind is JsonValueKind.Number && versionV2Elem.TryGetInt32(out var fileVersionFound))
+                {
+                    if (fileVersionFound == FileSchemaV2.FileVersion)
+                        confirmedFileVersion = FileVersionForFilePaths.V2;
+                }
+                else
+                {
+                    LoadDefaults();
+                    SaveToDisk();
+                    return;
+                }
+            }
+        }
+        catch
+        {
+            LoadDefaults();
+            SaveToDisk();
+            return;
+        }
+
+
+    }
+
+    private void LoadDefaults()
     {
         LanguageCode = LanguageManager.LanguageCode.en_US;
+        _autoSaveEnabledStatus = 1;
+        _autoSaveIntervalInMinutes = 1;
     }
 
-    private class FileVersionTable
+    private int _autoSaveEnabledStatus;
+    private int _autoSaveIntervalInMinutes;
+    private readonly Dictionary<FileVersionForFilePaths, Utils.FilePath> _filePaths;
+
+    private enum FileVersionForFilePaths
     {
-        public int Id { get; init; }
-        public int Value { get; init; }
+        V1,
+        V2
     }
 
-    internal class FileSettingsTableV2
+    private class FileSchemaV1
     {
-        public int Id { get; init; }
-        public string ActiveLanguageCode { get; init; } = nameof(LanguageManager.LanguageCode.en_US);
+        public const int FileVersion = 1;
+        public const string FileVersionPropertyName = "file_version";
+        public const string AutoSaveEnabledStatusPropertyName = "auto_save_enabled_status";
+        public const string AutoSaveIntervalInMinutesPropertyName = "auto_save_interval_in_minutes";
+
+        public bool AutoSaveEnabledStatus { get; init; }
+        public int AutoSaveIntervalInMinutes { get; init; }
     }
 
-    private class FileDbContext : DbContext
+    private class FileSchemaV2
     {
-        public DbSet<FileVersionTable> FileVersions { get; set; }
-        public DbSet<LatestFileTable> AppSettings { get; set; }
+        public const int FileVersion = 2;
+        public const string FileVersionPropertyName = "file_version";
+        public const string AutoSaveEnabledStatusPropertyName = "auto_save_enabled_status";
+        public const string AutoSaveIntervalInMinutesPropertyName = "auto_save_interval_in_minutes";
+        public const string ActiveLanguageCodePropertyName = "active_language_code";
 
-        private readonly string _dbPath;
-
-        public FileDbContext(string dbPath)
-        {
-            _dbPath = dbPath;
-        }
-
-        protected override void OnConfiguring(DbContextOptionsBuilder opts) => opts.UseSqlite($"Data Source ={_dbPath}");
-    }
-
-    public class SettingsLoader
-    {
-        private readonly string _dbPath = Utils.GetFilepathInUserAppData("Settings.db");
-        private const int LatestVersion = 2;
-
-        public AppSettings LoadSettings()
-        {
-            if (!File.Exists(_dbPath))
-                return CreateFreshDatabase();
-
-            int version = ReadVersion();
-
-            if (version == LatestVersion)
-            {
-                using var db = new FileDbContext(_dbPath);
-                var row = db.AppSettings.FirstOrDefault();
-                return ConvertToAppSettings(row);
-            }
-
-            // Version mismatch - read old version using raw SQL
-            var oldData = ReadOldSettings(version);
-            var newSettings = MigrateToLatest(oldData);
-
-            // Delete and recreate with latest schema
-            File.Delete(_dbPath);
-            {
-                using var newDb = new FileDbContext(_dbPath);
-                newDb.Database.EnsureCreated();
-                newDb.FileVersions.Add(new FileVersionTable { Value = LatestVersion });
-                newDb.AppSettings.Add(ConvertToLatestFileTable(newSettings));
-                newDb.SaveChanges();
-            }
-
-            return newSettings;
-        }
-
-        public void SaveSettings(AppSettings settings)
-        {
-            using var db = new FileDbContext(_dbPath);
-            var row = db.AppSettings.FirstOrDefault();
-            if (row == null)
-            {
-                db.AppSettings.Add(ConvertToLatestFileTable(settings));
-            }
-        }
-
-        private int ReadVersion()
-        {
-            try
-            {
-                using var connection = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={_dbPath}");
-                connection.Open();
-                var cmd = connection.CreateCommand();
-                cmd.CommandText = "SELECT Value FROM FileVersions LIMIT 1";
-                var result = cmd.ExecuteScalar();
-                return result != null ? Convert.ToInt32(result) : 0;
-            }
-            catch
-            {
-                return 0;
-            }
-        }
-
-        // NOTE: This will not be called until we add newer file version
-        private object ReadOldSettings(int version)
-        {
-            using var connection = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={_dbPath}");
-            connection.Open();
-
-            if (version == 3)
-            {
-                var cmd = connection.CreateCommand();
-                cmd.CommandText = "SELECT ActiveLanguageCode FROM AppSettings LIMIT 1";
-                // example code, maybe language thingy will be gone...
-                var lang = cmd.ExecuteScalar()?.ToString() ?? nameof(LanguageManager.LanguageCode.en_US);
-                return new { ActiveLanguageCode = lang };
-            }
-            else if (version == 4)
-            {
-                var cmd = connection.CreateCommand();
-                cmd.CommandText = "SELECT ActiveLanguageCode FROM AppSettings LIMIT 1";
-                // example code, maybe language thingy will be gone...
-                var lang = cmd.ExecuteScalar()?.ToString() ?? nameof(LanguageManager.LanguageCode.en_US);
-                return new { ActiveLanguageCode = lang };
-            }
-            else
-            {
-                // example code, maybe language thingy will be gone...
-                return new { ActiveLanguageCode = nameof(LanguageManager.LanguageCode.en_US) }; // default
-            }
-        }
-
-        private static AppSettings MigrateToLatest(object oldData)
-        {
-            dynamic data = oldData;
-            return new AppSettings
-            {
-                LanguageCode = ParseLanguageCode(data.ActiveLanguageCode)
-            };
-        }
-
-        private static AppSettings ConvertToAppSettings(LatestFileTable? row)
-        {
-            if (row == null)
-                return new AppSettings();
-
-            return new AppSettings
-            {
-                LanguageCode = ParseLanguageCode(row.ActiveLanguageCode)
-            };
-        }
-
-        private static LatestFileTable ConvertToLatestFileTable(AppSettings appSettings) => ConvertToFileTableV2(appSettings);
-
-        // ReSharper disable once UseSymbolAlias
-        private static FileSettingsTableV2 ConvertToFileTableV2(AppSettings appSettings)
-        {
-            // ReSharper disable once UseSymbolAlias
-            return new FileSettingsTableV2
-            {
-                ActiveLanguageCode = appSettings.LanguageCode.ToString()
-            };
-        }
-
-        private AppSettings CreateFreshDatabase()
-        {
-            var defaultSettings = new AppSettings();
-            using var db = new FileDbContext(_dbPath);
-            db.Database.EnsureCreated();
-            db.FileVersions.Add(new FileVersionTable { Value = LatestVersion });
-            db.AppSettings.Add(ConvertToLatestFileTable(defaultSettings));
-            db.SaveChanges();
-            return defaultSettings;
-        }
-
-        private static LanguageManager.LanguageCode ParseLanguageCode(string code)
-        {
-            return Enum.TryParse<LanguageManager.LanguageCode>(code, out var result) ? result : LanguageManager.LanguageCode.en_US;
-        }
+        public bool AutoSaveEnabledStatus { get; init; }
+        public int AutoSaveIntervalInMinutes { get; init; }
+        public string ActiveLanguageCode { get; init; }
     }
 }

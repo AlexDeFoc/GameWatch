@@ -1,23 +1,41 @@
 ﻿using System;
 using System.IO;
+using System.Reflection;
+using System.Text.Json.Serialization;
 
 namespace MainApp;
 
 public static class Utils
 {
-    public static string GetFilepathInUserAppData(string filePath)
-    {
-        EnsureOurFolderExistsInAppData();
+    public static void EnsureOurFolderExistsInAppData() => Directory.CreateDirectory(GetOurFolderPathInAppData());
 
-        return Path.Combine(GetOurFolderPathInAppData(), filePath);
+    public enum FileLocation
+    {
+        ExeFolder,
+        LocalAppDataFolder
     }
 
-    private static string GetOurFolderPathInAppData()
+    public class FilePath
     {
-        string appDataFolderPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        public FileLocation FileLocation { get; private init; }
+        public string FileName { get; private init; }
+        public string RealPath { get; private init; }
+        public bool Exists => Path.Exists(RealPath);
 
-        return Path.Combine(appDataFolderPath, "GameWatchCon");
+        public FilePath(FileLocation location, string fileName)
+        {
+            FileLocation = location;
+            FileName = fileName;
+            RealPath = FileLocation == FileLocation.ExeFolder ? Path.Combine(AppDomain.CurrentDomain.BaseDirectory, FileName) : Path.Combine(GetOurFolderPathInAppData(), FileName);
+        }
     }
 
-    private static void EnsureOurFolderExistsInAppData() => Directory.CreateDirectory(GetOurFolderPathInAppData());
+    private static string GetOurFolderPathInAppData() => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "GameWatchCon");
+
+    public static string GetJsonPropertyName<T>(string propertyName)
+    {
+        var prop = typeof(T).GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance);
+        var attr = prop?.GetCustomAttribute<JsonPropertyNameAttribute>();
+        return attr?.Name ?? propertyName;
+    }
 }

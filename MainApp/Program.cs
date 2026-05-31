@@ -4,6 +4,8 @@ public static class Program
 {
     public static void Main()
     {
+        Utils.EnsureOurFolderExistsInAppData();
+
         var appSettingsLoader = new AppSettings.SettingsLoader();
         var appSettings = appSettingsLoader.LoadSettings();
         appSettings.LanguageChanged += appSettingsLoader.SaveSettings(appSettings);
