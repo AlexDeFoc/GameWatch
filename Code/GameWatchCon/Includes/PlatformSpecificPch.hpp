@@ -2,8 +2,6 @@
 // Copyright (C) 2026 Sava Alexandru-Andrei
 // License: GNU AGPL v3 or later - see LICENSE file
 
-#pragma once
-
 #if defined(_WIN32)
     #if !defined(UNICODE)
         #define UNICODE
@@ -30,10 +28,10 @@
         #include <Windows.h>
     #endif
 #elif defined(__linux__)
-    #include <termios.h> // for tcgetattr, termios, ECHO, ICANON, etc.
+    #include <termios.h>   // for tcgetattr, termios, ECHO, ICANON, etc.
     #include <unistd.h> // readlink
 #elif defined(__APPLE__)
-    #include <termios.h> // for tcgetattr, termios, ECHO, ICANON, etc.
+    #include <termios.h>   // for tcgetattr, termios, ECHO, ICANON, etc.
     #include <unistd.h> // getpid (readlink not needed here)
     #include <libproc.h> // proc_pidpath, PROC_PIDPATHINFO_MAXSIZE
 #endif
