@@ -160,7 +160,6 @@ public sealed class AppSettings
             };
         }
 
-        // TODO: Check if row can be null
         private static AppSettings ConvertToAppSettings(LatestFileTable? row)
         {
             if (row == null)
