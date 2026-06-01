@@ -4,7 +4,7 @@ namespace MainApp;
 
 public sealed class GameLibrary
 {
-    public void AddGame(string title) => _games.Add(new GameEntry(title));
+    public void AddGame(string title) => Games.Add(new GameEntry(title));
 
-    private readonly List<GameEntry> _games = [];
+    public List<GameEntry> Games { get; } = [];
 }

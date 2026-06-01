@@ -10,6 +10,7 @@ public sealed class MainMenu : IScene
         IScene nextScene = this;
         var menu = new Menu(_lang, _logger);
 
+        menu.AddOption(new MenuOption(displayText: _lang.ActiveLanguagePack.MainMenu_ListGames_DisplayText, action: () => { nextScene = new ListGames(lang: _lang, logger: _logger, appState: _appState, gameLibrary: _gameLibrary, appSettings: _appSettings); }));
         menu.AddOption(new MenuOption(displayText: _lang.ActiveLanguagePack.MainMenu_AddNewGameOption_DisplayText, action: () => { nextScene = new AddNewGame(lang: _lang, logger: _logger, appState: _appState, gameLibrary: _gameLibrary, appSettings: _appSettings); }));
         menu.AddOption(new MenuOption(displayText: _lang.ActiveLanguagePack.MainMenu_ExitAppOption_DisplayText, action: () => { _appState.ToggleAppRunningStatus(); }));
 
