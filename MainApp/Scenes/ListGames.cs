@@ -14,7 +14,7 @@ public sealed class ListGames : IScene
 
         menu.ListCollectionAndRequestAnyKeyPress();
 
-        return new MainMenu(lang: _lang, logger: _logger, gameLibrary: _gameLibrary, appState: _appState, appSettings: _appSettings);
+        return new MainMenu(colorManager: _colorManager, lang: _lang, logger: _logger, gameLibrary: _gameLibrary, appState: _appState, appSettings: _appSettings);
     }
 
     private List<string> ComposeWhichToListCollection()
@@ -31,8 +31,9 @@ public sealed class ListGames : IScene
         return collection;
     }
 
-    public ListGames(LanguageManager lang, Logger logger, GameLibrary gameLibrary, AppState appState, AppSettings appSettings)
+    public ListGames(ColorManager colorManager, LanguageManager lang, Logger logger, GameLibrary gameLibrary, AppState appState, AppSettings appSettings)
     {
+        _colorManager = colorManager;
         _lang = lang;
         _logger = logger;
         _gameLibrary = gameLibrary;
@@ -40,6 +41,7 @@ public sealed class ListGames : IScene
         _appSettings = appSettings;
     }
 
+    private readonly ColorManager _colorManager;
     private readonly LanguageManager _lang;
     private readonly Logger _logger;
     private readonly GameLibrary _gameLibrary;
