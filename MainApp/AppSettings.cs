@@ -43,6 +43,7 @@ public sealed class AppSettings
         SaveToDisk();
     }
 
+    // Constructor
     public AppSettings()
     {
         // Note: Order doesn't matter here
@@ -55,6 +56,14 @@ public sealed class AppSettings
         LoadFromDisk();
     }
 
+    // Private variables
+    private volatile bool _autoSaveEnabledStatus;
+    private volatile int _autoSaveIntervalInMinutes;
+    private LanguageManager.LanguageCode _activeLanguageCode;
+    private readonly Dictionary<FileExistenceOrder, Utils.FilePath> _filePaths;
+    private readonly JsonSerializerOptions _fileJsonSerializerOpts = new() { WriteIndented = true };
+
+    // Private methods
     private void OnLanguageChanged(LanguageManager.LanguageCode newLang)
     {
         LanguageChanged?.Invoke(this, newLang);
@@ -114,7 +123,14 @@ public sealed class AppSettings
 
         foreach (var filePath in foundFilesPaths.Values)
         {
-            File.Delete(filePath.RealPath);
+            try
+            {
+                File.Delete(filePath.RealPath);
+            }
+            catch
+            {
+                // ignore
+            }
         }
 
         SaveToDisk();
@@ -125,7 +141,6 @@ public sealed class AppSettings
         var fileSchema = new Dictionary<string, object>
         {
             [FileVersionPropertyName.Type1] = FileSchemaV2.FileVersion,
-            // ReSharper disable once RedundantTernaryExpression
             [FileSchemaV2.AutoSaveEnabledStatusPropertyName] = _autoSaveEnabledStatus,
             [FileSchemaV2.AutoSaveIntervalInMinutesPropertyName] = _autoSaveIntervalInMinutes,
             [FileSchemaV2.ActiveLanguageCodePropertyName] = LanguageCode.ToString()
@@ -142,7 +157,6 @@ public sealed class AppSettings
         _autoSaveIntervalInMinutes = Defaults.AutoSaveIntervalInMinutes;
     }
 
-    // Load from disk Utility methods
     private static int? LoadFileVersion(JsonElement jsonDocRoot)
     {
         if (!jsonDocRoot.TryGetProperty(FileVersionPropertyName.Type1, out var verType1Elem)) return null;
@@ -155,12 +169,7 @@ public sealed class AppSettings
         return null;
     }
 
-    private volatile bool _autoSaveEnabledStatus;
-    private volatile int _autoSaveIntervalInMinutes;
-    private LanguageManager.LanguageCode _activeLanguageCode;
-    private readonly Dictionary<FileExistenceOrder, Utils.FilePath> _filePaths;
-    private readonly JsonSerializerOptions _fileJsonSerializerOpts = new() { WriteIndented = true };
-
+    // Private structures
     private static class Defaults
     {
         public static LanguageManager.LanguageCode LanguageCode { get; } = LanguageManager.LanguageCode.en_US;
