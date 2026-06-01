@@ -13,7 +13,7 @@ public static class Program
         var logger = new Logger(colorManager, languageManager);
         var appState = new AppState();
 
-        IScene? currentScene = new Scenes.MainMenu(lang: languageManager, logger: logger, appState: appState, gameLibrary: gameLibrary, appSettings: appSettings);
+        IScene? currentScene = new Scenes.MainMenu(colorManager: colorManager, lang: languageManager, logger: logger, appState: appState, gameLibrary: gameLibrary, appSettings: appSettings);
 
         while (currentScene != null)
         {

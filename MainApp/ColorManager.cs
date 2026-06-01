@@ -1,4 +1,7 @@
-﻿using System.Drawing;
+﻿// FUTURE PLANS:
+// 1. Store colors to JSON file, to let people create their own themes
+
+using System.Drawing;
 
 namespace MainApp;
 
@@ -37,6 +40,9 @@ public sealed class ColorManager
         public ColorCode Console_SuccessLabel { get; init; } = new("#FF008000");
         public ColorCode Console_FatalErrorLabel { get; init; } = new("#FF8B0000");
         public ColorCode Console_InfoLabel { get; init; } = new("#FF00FFFF");
+        public ColorCode SettingsMenu_ToggleGameAutoSaveStatus_EnabledStatusComponent { get; init; } = new("#FF008000");
+        public ColorCode SettingsMenu_ToggleGameAutoSaveStatus_DisabledStatusComponent { get; init; } = new("#FFFF0000");
+        public ColorCode SettingsMenu_ChangeGameAutoSaveInterval_IntervalComponent { get; init; } = new("#FF008000");
         // ReSharper enable InconsistentNaming
     }
 }

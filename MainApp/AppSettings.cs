@@ -8,38 +8,64 @@ namespace MainApp;
 
 public sealed class AppSettings
 {
+    // Public variables
     public event EventHandler<LanguageManager.LanguageCode>? LanguageChanged;
 
+    // Public fields
     // Note: Single-threaded reader & writer
-    public LanguageManager.LanguageCode LanguageCode
+    public LanguageManager.LanguageCode ActiveAppLanguageCode
     {
-        get => _activeLanguageCode;
+        get => _activeActiveAppLanguageCode;
         private set
         {
-            if (_activeLanguageCode == value) return;
-            _activeLanguageCode = value;
+            if (_activeActiveAppLanguageCode == value) return;
+            _activeActiveAppLanguageCode = value;
             OnLanguageChanged(value);
         }
     }
 
     // Note: Single-threaded writer, Multi-threaded reader
-    public int AutoSaveIntervalInMinutes
+    public int GameAutoSaveIntervalInMinutes
     {
-        get => _autoSaveIntervalInMinutes;
+        get => _gameAutoSaveIntervalInMinutes;
         set
         {
-            _autoSaveIntervalInMinutes = value;
+            _gameAutoSaveIntervalInMinutes = value;
             SaveToDisk();
         }
     }
 
+    // Public methods
     // Note: Single-threaded writer, Multi-threaded reader
-    public bool IsAutoSaveEnabled() => _autoSaveEnabledStatus;
+    public bool IsGameAutoSaveEnabled() => _gameAutoSaveEnabledStatus;
 
     // Note: Single-threaded writer, Multi-threaded reader
-    public void ToggleAutoSaveStatus()
+    public void ToggleGameAutoSaveStatus()
     {
-        _autoSaveEnabledStatus = !_autoSaveEnabledStatus;
+        _gameAutoSaveEnabledStatus = !_gameAutoSaveEnabledStatus;
+        SaveToDisk();
+    }
+
+    public string GetPrintableGameAutoSaveInterval()
+    {
+        var parts = new List<string>();
+        var playTime = TimeSpan.FromMinutes(GameAutoSaveIntervalInMinutes);
+
+        if (playTime.Days > 0)
+            parts.Add($"{playTime.Days} day{(playTime.Days > 1 ? "s" : "")}");
+
+        if (playTime.Hours > 0)
+            parts.Add($"{playTime.Hours} h");
+
+        if (playTime.Minutes > 0)
+            parts.Add($"{playTime.Minutes} min");
+
+        return string.Join(" : ", parts);
+    }
+
+    public void ResetAllToDefault()
+    {
+        LoadDefaults();
         SaveToDisk();
     }
 
@@ -57,9 +83,9 @@ public sealed class AppSettings
     }
 
     // Private variables
-    private volatile bool _autoSaveEnabledStatus;
-    private volatile int _autoSaveIntervalInMinutes;
-    private LanguageManager.LanguageCode _activeLanguageCode;
+    private volatile bool _gameAutoSaveEnabledStatus;
+    private volatile int _gameAutoSaveIntervalInMinutes;
+    private LanguageManager.LanguageCode _activeActiveAppLanguageCode;
     private readonly Dictionary<FileExistenceOrder, Utils.FilePath> _filePaths;
     private readonly JsonSerializerOptions _fileJsonSerializerOpts = new() { WriteIndented = true };
 
@@ -96,21 +122,21 @@ public sealed class AppSettings
                 case FileSchemaV1.FileVersion:
                 {
                     // Note: Forcefully migrate with default; Reason: the app in newer version, auto elapses game playtime whenever the game is active & stops when its inactive
-                    _autoSaveEnabledStatus = Defaults.AutoSaveEnabledStatus;
+                    _gameAutoSaveEnabledStatus = Defaults.AutoSaveEnabledStatus;
 
                     // Note: Forcefully migrate with default; Reason: the app in newer version, auto elapses game playtime whenever the game is active & stops when its inactive
-                    _autoSaveIntervalInMinutes = Defaults.AutoSaveIntervalInMinutes;
+                    _gameAutoSaveIntervalInMinutes = Defaults.AutoSaveIntervalInMinutes;
 
                     break;
                 }
 
                 case FileSchemaV2.FileVersion:
                 {
-                    _autoSaveEnabledStatus = FileSchemaV2.LoadAutoSaveEnabledStatusProperty(jsonDocRoot) ?? _autoSaveEnabledStatus;
+                    _gameAutoSaveEnabledStatus = FileSchemaV2.LoadGameAutoSaveEnabledStatusProperty(jsonDocRoot) ?? _gameAutoSaveEnabledStatus;
 
-                    _autoSaveIntervalInMinutes = FileSchemaV2.LoadAutoSaveIntervalInMinutesProperty(jsonDocRoot) ?? _autoSaveIntervalInMinutes;
+                    _gameAutoSaveIntervalInMinutes = FileSchemaV2.LoadGameAutoSaveIntervalInMinutesProperty(jsonDocRoot) ?? _gameAutoSaveIntervalInMinutes;
 
-                    _activeLanguageCode = FileSchemaV2.LoadActiveLanguageCodeProperty(jsonDocRoot) ?? _activeLanguageCode;
+                    _activeActiveAppLanguageCode = FileSchemaV2.LoadActiveAppLanguageCodeProperty(jsonDocRoot) ?? _activeActiveAppLanguageCode;
 
                     break;
                 }
@@ -141,9 +167,9 @@ public sealed class AppSettings
         var fileSchema = new Dictionary<string, object>
         {
             [FileVersionPropertyName.Type1] = FileSchemaV2.FileVersion,
-            [FileSchemaV2.AutoSaveEnabledStatusPropertyName] = _autoSaveEnabledStatus,
-            [FileSchemaV2.AutoSaveIntervalInMinutesPropertyName] = _autoSaveIntervalInMinutes,
-            [FileSchemaV2.ActiveLanguageCodePropertyName] = LanguageCode.ToString()
+            [FileSchemaV2.GameAutoSaveEnabledStatusPropertyName] = _gameAutoSaveEnabledStatus,
+            [FileSchemaV2.GameAutoSaveIntervalInMinutesPropertyName] = _gameAutoSaveIntervalInMinutes,
+            [FileSchemaV2.ActiveAppLanguageCodePropertyName] = ActiveAppLanguageCode.ToString()
         };
 
         var jsonString = JsonSerializer.Serialize(fileSchema, _fileJsonSerializerOpts);
@@ -152,9 +178,9 @@ public sealed class AppSettings
 
     private void LoadDefaults()
     {
-        LanguageCode = Defaults.LanguageCode;
-        _autoSaveEnabledStatus = Defaults.AutoSaveEnabledStatus;
-        _autoSaveIntervalInMinutes = Defaults.AutoSaveIntervalInMinutes;
+        ActiveAppLanguageCode = Defaults.LanguageCode;
+        _gameAutoSaveEnabledStatus = Defaults.AutoSaveEnabledStatus;
+        _gameAutoSaveIntervalInMinutes = Defaults.AutoSaveIntervalInMinutes;
     }
 
     private static int? LoadFileVersion(JsonElement jsonDocRoot)
@@ -198,13 +224,13 @@ public sealed class AppSettings
     private record struct FileSchemaV2
     {
         public const int FileVersion = 2;
-        public const string AutoSaveEnabledStatusPropertyName = "auto_save_enabled_status";
-        public const string AutoSaveIntervalInMinutesPropertyName = "auto_save_interval_in_minutes";
-        public const string ActiveLanguageCodePropertyName = "active_language_code";
+        public const string GameAutoSaveEnabledStatusPropertyName = "game_auto_save_enabled_status";
+        public const string GameAutoSaveIntervalInMinutesPropertyName = "game_auto_save_interval_in_minutes";
+        public const string ActiveAppLanguageCodePropertyName = "active_app_language_code";
 
-        public static bool? LoadAutoSaveEnabledStatusProperty(JsonElement jsonDocRoot)
+        public static bool? LoadGameAutoSaveEnabledStatusProperty(JsonElement jsonDocRoot)
         {
-            if (!jsonDocRoot.TryGetProperty(AutoSaveEnabledStatusPropertyName, out var autoSaveEnabledStatusElem)) return null;
+            if (!jsonDocRoot.TryGetProperty(GameAutoSaveEnabledStatusPropertyName, out var autoSaveEnabledStatusElem)) return null;
 
             if (autoSaveEnabledStatusElem.ValueKind is JsonValueKind.True or JsonValueKind.False)
                 return autoSaveEnabledStatusElem.GetBoolean();
@@ -212,9 +238,9 @@ public sealed class AppSettings
             return null;
         }
 
-        public static int? LoadAutoSaveIntervalInMinutesProperty(JsonElement jsonDocRoot)
+        public static int? LoadGameAutoSaveIntervalInMinutesProperty(JsonElement jsonDocRoot)
         {
-            if (!jsonDocRoot.TryGetProperty(AutoSaveIntervalInMinutesPropertyName, out var autoSaveIntervalInMinutesElem)) return null;
+            if (!jsonDocRoot.TryGetProperty(GameAutoSaveIntervalInMinutesPropertyName, out var autoSaveIntervalInMinutesElem)) return null;
 
             if (autoSaveIntervalInMinutesElem.ValueKind is JsonValueKind.Number && autoSaveIntervalInMinutesElem.TryGetInt32(out var autoSaveIntervalInMinutesFound))
                 return autoSaveIntervalInMinutesFound;
@@ -222,9 +248,9 @@ public sealed class AppSettings
             return null;
         }
 
-        public static LanguageManager.LanguageCode? LoadActiveLanguageCodeProperty(JsonElement jsonDocRoot)
+        public static LanguageManager.LanguageCode? LoadActiveAppLanguageCodeProperty(JsonElement jsonDocRoot)
         {
-            if (!jsonDocRoot.TryGetProperty(ActiveLanguageCodePropertyName, out var activeLanguageCodeElem)) return null;
+            if (!jsonDocRoot.TryGetProperty(ActiveAppLanguageCodePropertyName, out var activeLanguageCodeElem)) return null;
 
             if (activeLanguageCodeElem.ValueKind is not JsonValueKind.String) return null;
 

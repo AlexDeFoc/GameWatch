@@ -6,9 +6,8 @@ public sealed class AddNewGame : IScene
 {
     public IScene Execute()
     {
-        var menu = new Form(lang: _lang,
+        var menu = new FormText(lang: _lang,
                             logger: _logger,
-                            cancellationTipMsg: _lang.ActiveLanguagePack.AddNewGame_CancellationTipMsg,
                             requestMsg: _lang.ActiveLanguagePack.AddNewGame_RequestMsg);
 
         string? title = menu.ReadInput();
@@ -20,21 +19,19 @@ public sealed class AddNewGame : IScene
             _gameLibrary.AddGame(title);
         }
 
-        return new MainMenu(lang: _lang, logger: _logger, gameLibrary: _gameLibrary, appState: _appState, appSettings: _appSettings);
+        return _previousScene;
     }
 
-    public AddNewGame(LanguageManager lang, Logger logger, GameLibrary gameLibrary, AppState appState, AppSettings appSettings)
+    public AddNewGame(IScene previousScene, LanguageManager lang, Logger logger, GameLibrary gameLibrary)
     {
+        _previousScene = previousScene;
         _lang = lang;
         _logger = logger;
         _gameLibrary = gameLibrary;
-        _appState = appState;
-        _appSettings = appSettings;
     }
 
+    private readonly IScene _previousScene;
     private readonly LanguageManager _lang;
     private readonly Logger _logger;
     private readonly GameLibrary _gameLibrary;
-    private readonly AppState _appState;
-    private readonly AppSettings _appSettings;
 }

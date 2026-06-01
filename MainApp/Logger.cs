@@ -41,6 +41,14 @@ public sealed class Logger
         Console.ReadKey();
     }
 
+    public string ColorText(ColorManager.ColorCode colorCode, string text)
+    {
+        if (_supportsAnsi)
+            return $"{colorCode}{text}{_colorManager.Colors.Reset}";
+
+        return text;
+    }
+
     public void WriteCached()
     {
         foreach (var msg in _cachedMsgs)

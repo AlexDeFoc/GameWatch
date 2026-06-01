@@ -10,9 +10,38 @@ public sealed class GameLibrary
 {
     public List<GameEntry> Games { get; private set; } = [];
 
+    // Public methods
     public void AddGame(string title)
     {
         Games.Add(new GameEntry(title));
+        SaveToDisk();
+    }
+
+    public void CreateGameLibraryBackup()
+    {
+        var backupFilePath = new Utils.FilePath(location: Utils.FileLocation.LocalAppDataFolder, fileName: "GameLibrary.bak.json");
+
+        try
+        {
+            File.Copy(_filePaths[FileExistenceOrder.V2].RealPath, backupFilePath.RealPath, true);
+        }
+        catch
+        {
+            // ignore
+        }
+    }
+
+    public void ResetAllGames()
+    {
+        foreach (var game in Games)
+            game.ResetPlaytime();
+
+        SaveToDisk();
+    }
+
+    public void DeleteAllGames()
+    {
+        Games.Clear();
         SaveToDisk();
     }
 
