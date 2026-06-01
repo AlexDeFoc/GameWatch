@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using System.Threading;
 
 namespace MainApp;
@@ -57,12 +56,10 @@ public sealed class AppSettings
 
     public AppSettings()
     {
-        // NOTE: Keep these in the order from 1 -> latest, cuz when we load the file, we check in that order which file exists first
-        // NOTE 2: The version isn't used, its being kept just to make it easier to keep in order filenames & filepaths
-        _filePaths = new Dictionary<FileVersionForFilePaths, Utils.FilePath>
+        _filePaths = new Dictionary<FileExistanceOrder, Utils.FilePath>
         {
-            [FileVersionForFilePaths.V1] = new(location: Utils.FileLocation.ExeFolder, fileName: "settings.json"),
-            [FileVersionForFilePaths.V2] = new(location: Utils.FileLocation.LocalAppDataFolder, fileName: "Settings.json")
+            [FileExistanceOrder.V1] = new(location: Utils.FileLocation.ExeFolder, fileName: "settings.json"),
+            [FileExistanceOrder.V2] = new(location: Utils.FileLocation.LocalAppDataFolder, fileName: "Settings.json")
         };
 
         LoadFromDisk();
@@ -75,7 +72,11 @@ public sealed class AppSettings
 
     private void LoadFromDisk()
     {
+        // var foundFiles = _filePaths.Values.Where(filePath => filePath.Exists).ToList();
+
         var chosenFilePath = _filePaths.Values.FirstOrDefault(filePath => filePath.Exists);
+
+        bool fileNeedsToBeRebuilt = false;
 
         if (chosenFilePath == null)
         {
@@ -86,51 +87,164 @@ public sealed class AppSettings
 
         string fileContents = File.ReadAllText(chosenFilePath.RealPath);
 
-        FileVersionForFilePaths confirmedFileVersion;
+        int foundFileVersion = 0;
 
         try
         {
-            using var doc = JsonDocument.Parse(fileContents);
-            var root = doc.RootElement;
+            using var doc = JsonDocument.Parse(fileContents); // may throw if completely invalid JSON
+            var jsonDocRoot = doc.RootElement;
 
-            // Confirm which version the file is
-            if (root.TryGetProperty(FileSchemaV1.FileVersionPropertyName, out var versionV1Elem))
+            if (jsonDocRoot.TryGetProperty(FileVersionPropertyName.Type1, out var verType1Elem))
             {
-                if (versionV1Elem.ValueKind is JsonValueKind.Number && versionV1Elem.TryGetInt32(out var fileVersionFound))
+                if (verType1Elem.ValueKind is JsonValueKind.Number && verType1Elem.TryGetInt32(out var verFound))
                 {
-                    if (fileVersionFound == FileSchemaV1.FileVersion)
-                        confirmedFileVersion = FileVersionForFilePaths.V1;
+                    if (verFound is FileSchemaV1.FileVersion or FileSchemaV2.FileVersion)
+                    {
+                        foundFileVersion = verFound;
+                    }
+                    else
+                    {
+                        fileNeedsToBeRebuilt = true;
+                    }
                 }
                 else
                 {
-                    LoadDefaults();
-                    SaveToDisk();
-                    return;
+                    fileNeedsToBeRebuilt = true;
                 }
             }
-            else if (root.TryGetProperty(FileSchemaV2.FileVersionPropertyName, out var versionV2Elem))
+            else
             {
-                if (versionV2Elem.ValueKind is JsonValueKind.Number && versionV2Elem.TryGetInt32(out var fileVersionFound))
+                fileNeedsToBeRebuilt = true;
+            }
+
+            if (fileNeedsToBeRebuilt)
+            {
+                // skip other branches
+            }
+            else switch (foundFileVersion)
+            {
+                case FileSchemaV1.FileVersion:
                 {
-                    if (fileVersionFound == FileSchemaV2.FileVersion)
-                        confirmedFileVersion = FileVersionForFilePaths.V2;
+                    if (jsonDocRoot.TryGetProperty(FileSchemaV1.AutoSaveEnabledStatusPropertyName, out var autoSaveEnabledStatusElem))
+                    {
+                        if (autoSaveEnabledStatusElem.ValueKind is JsonValueKind.True or JsonValueKind.False)
+                        {
+                            // ReSharper disable once RedundantBoolCompare
+                            _autoSaveEnabledStatus = autoSaveEnabledStatusElem.GetBoolean() == true ? 1 : 0;
+                        }
+                        else
+                        {
+                            fileNeedsToBeRebuilt = true;
+                        }
+                    }
+                    else
+                    {
+                        fileNeedsToBeRebuilt = true;
+                    }
+
+                    if (jsonDocRoot.TryGetProperty(FileSchemaV1.AutoSaveIntervalInMinutesPropertyName, out var autoSaveIntervalInMinutesElem))
+                    {
+                        if (autoSaveIntervalInMinutesElem.ValueKind is JsonValueKind.Number && autoSaveIntervalInMinutesElem.TryGetInt32(out var autoSaveIntervalInMinutesFound))
+                        {
+                            _autoSaveIntervalInMinutes = autoSaveIntervalInMinutesFound;
+                        }
+                        else
+                        {
+                            fileNeedsToBeRebuilt = true;
+                        }
+                    }
+                    else
+                    {
+                        fileNeedsToBeRebuilt = true;
+                    }
+
+                    break;
                 }
-                else
+
+                case FileSchemaV2.FileVersion:
                 {
-                    LoadDefaults();
-                    SaveToDisk();
-                    return;
+                    if (jsonDocRoot.TryGetProperty(FileSchemaV2.AutoSaveEnabledStatusPropertyName, out var autoSaveEnabledStatusElem))
+                    {
+                        if (autoSaveEnabledStatusElem.ValueKind is JsonValueKind.True or JsonValueKind.False)
+                        {
+                            // ReSharper disable once RedundantBoolCompare
+                            _autoSaveEnabledStatus = autoSaveEnabledStatusElem.GetBoolean() == true ? 1 : 0;
+                        }
+                        else
+                        {
+                            fileNeedsToBeRebuilt = true;
+                        }
+                    }
+                    else
+                    {
+                        fileNeedsToBeRebuilt = true;
+                    }
+
+                    if (jsonDocRoot.TryGetProperty(FileSchemaV2.AutoSaveIntervalInMinutesPropertyName, out var autoSaveIntervalInMinutesElem))
+                    {
+                        if (autoSaveIntervalInMinutesElem.ValueKind is JsonValueKind.Number && autoSaveIntervalInMinutesElem.TryGetInt32(out var autoSaveIntervalInMinutesFound))
+                        {
+                            _autoSaveIntervalInMinutes = autoSaveIntervalInMinutesFound;
+                        }
+                        else
+                        {
+                            fileNeedsToBeRebuilt = true;
+                        }
+                    }
+                    else
+                    {
+                        fileNeedsToBeRebuilt = true;
+                    }
+
+                    if (jsonDocRoot.TryGetProperty(FileSchemaV2.ActiveLanguageCodePropertyName, out var activeLanguageCodeElem))
+                    {
+                        if (activeLanguageCodeElem.ValueKind is JsonValueKind.String)
+                        {
+                            if (Enum.TryParse(activeLanguageCodeElem.GetString(), out LanguageManager.LanguageCode parsedCode))
+                            {
+                                LanguageCode = parsedCode;
+                            }
+                            else
+                            {
+                                fileNeedsToBeRebuilt = true;
+                            }
+                        }
+                        else
+                        {
+                            fileNeedsToBeRebuilt = true;
+                        }
+                    }
+                    else
+                    {
+                        fileNeedsToBeRebuilt = true;
+                    }
+
+                    break;
                 }
             }
         }
         catch
         {
-            LoadDefaults();
-            SaveToDisk();
-            return;
+            fileNeedsToBeRebuilt = true;
         }
 
+        if (fileNeedsToBeRebuilt)
+            SaveToDisk();
+    }
 
+    private void SaveToDisk()
+    {
+        var fileSchema = new Dictionary<string, object>
+        {
+            [FileVersionPropertyName.Type1] = FileSchemaV2.FileVersion,
+            // ReSharper disable once RedundantTernaryExpression
+            [FileSchemaV2.AutoSaveEnabledStatusPropertyName] = _autoSaveEnabledStatus == 1 ? true : false,
+            [FileSchemaV2.AutoSaveIntervalInMinutesPropertyName] = _autoSaveIntervalInMinutes,
+            [FileSchemaV2.ActiveLanguageCodePropertyName] = LanguageCode.ToString()
+        };
+
+        var jsonString = JsonSerializer.Serialize(fileSchema, _fileJsonSerializerOpts);
+        File.WriteAllText(_filePaths[FileExistanceOrder.V2].RealPath, jsonString);
     }
 
     private void LoadDefaults()
@@ -142,35 +256,33 @@ public sealed class AppSettings
 
     private int _autoSaveEnabledStatus;
     private int _autoSaveIntervalInMinutes;
-    private readonly Dictionary<FileVersionForFilePaths, Utils.FilePath> _filePaths;
+    private readonly Dictionary<FileExistanceOrder, Utils.FilePath> _filePaths;
+    private readonly JsonSerializerOptions _fileJsonSerializerOpts = new(){ WriteIndented = true };
 
-    private enum FileVersionForFilePaths
+    private enum FileExistanceOrder
     {
         V1,
         V2
     }
 
-    private class FileSchemaV1
+    private record struct FileVersionPropertyName
     {
-        public const int FileVersion = 1;
-        public const string FileVersionPropertyName = "file_version";
-        public const string AutoSaveEnabledStatusPropertyName = "auto_save_enabled_status";
-        public const string AutoSaveIntervalInMinutesPropertyName = "auto_save_interval_in_minutes";
-
-        public bool AutoSaveEnabledStatus { get; init; }
-        public int AutoSaveIntervalInMinutes { get; init; }
+        public const string Type1 = "file_version";
     }
 
-    private class FileSchemaV2
+    private record struct FileSchemaV1
+    {
+        public const int FileVersion = 1;
+        public const string AutoSaveEnabledStatusPropertyName = "auto_save_enabled_status";
+        public const string AutoSaveIntervalInMinutesPropertyName = "auto_save_interval_in_minutes";
+    }
+
+    // NOTE: Latest file schema
+    private record struct FileSchemaV2
     {
         public const int FileVersion = 2;
-        public const string FileVersionPropertyName = "file_version";
         public const string AutoSaveEnabledStatusPropertyName = "auto_save_enabled_status";
         public const string AutoSaveIntervalInMinutesPropertyName = "auto_save_interval_in_minutes";
         public const string ActiveLanguageCodePropertyName = "active_language_code";
-
-        public bool AutoSaveEnabledStatus { get; init; }
-        public int AutoSaveIntervalInMinutes { get; init; }
-        public string ActiveLanguageCode { get; init; }
     }
 }

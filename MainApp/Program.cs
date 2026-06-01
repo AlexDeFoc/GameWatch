@@ -6,10 +6,7 @@ public static class Program
     {
         Utils.EnsureOurFolderExistsInAppData();
 
-        var appSettingsLoader = new AppSettings.SettingsLoader();
-        var appSettings = appSettingsLoader.LoadSettings();
-        appSettings.LanguageChanged += appSettingsLoader.SaveSettings(appSettings);
-
+        var appSettings = new AppSettings();
         var gameLibrary = new GameLibrary();
         var colorManager = new ColorManager();
         var languageManager = new LanguageManager(appSettings);

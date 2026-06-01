@@ -1,7 +1,5 @@
 ﻿using System;
 using System.IO;
-using System.Reflection;
-using System.Text.Json.Serialization;
 
 namespace MainApp;
 
@@ -17,9 +15,9 @@ public static class Utils
 
     public class FilePath
     {
-        public FileLocation FileLocation { get; private init; }
-        public string FileName { get; private init; }
-        public string RealPath { get; private init; }
+        private FileLocation FileLocation { get; }
+        private string FileName { get; }
+        public string RealPath { get; }
         public bool Exists => Path.Exists(RealPath);
 
         public FilePath(FileLocation location, string fileName)
@@ -31,11 +29,4 @@ public static class Utils
     }
 
     private static string GetOurFolderPathInAppData() => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "GameWatchCon");
-
-    public static string GetJsonPropertyName<T>(string propertyName)
-    {
-        var prop = typeof(T).GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance);
-        var attr = prop?.GetCustomAttribute<JsonPropertyNameAttribute>();
-        return attr?.Name ?? propertyName;
-    }
 }
