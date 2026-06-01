@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
-using System.Threading;
 
 namespace MainApp;
 
@@ -11,6 +10,7 @@ public sealed class AppSettings
 {
     public event EventHandler<LanguageManager.LanguageCode>? LanguageChanged;
 
+    // Note: Single-threaded reader & writer
     public LanguageManager.LanguageCode LanguageCode
     {
         get;
@@ -22,44 +22,34 @@ public sealed class AppSettings
         }
     }
 
+    // Note: Single-threaded writer, Multi-threaded reader
     public int AutoSaveIntervalInMinutes
     {
-        get => Interlocked.CompareExchange(ref _autoSaveIntervalInMinutes, 1, 1);
+        get => _autoSaveIntervalInMinutes;
         set
         {
-            int initial, desired;
-
-            do
-            {
-                initial = _autoSaveIntervalInMinutes;
-                desired = value;
-            } while (Interlocked.CompareExchange(ref _autoSaveIntervalInMinutes, desired, initial) != initial);
-
+            _autoSaveIntervalInMinutes = value;
             SaveToDisk();
         }
     }
 
-    public bool IsAutoSaveEnabled() => Interlocked.CompareExchange(ref _autoSaveEnabledStatus, 1, 1) == 1;
+    // Note: Single-threaded writer, Multi-threaded reader
+    public bool IsAutoSaveEnabled() => _autoSaveEnabledStatus;
 
+    // Note: Single-threaded writer, Multi-threaded reader
     public void ToggleAutoSaveStatus()
     {
-        int initial, desired;
-
-        do
-        {
-            initial = _autoSaveEnabledStatus;
-            desired = initial ^ 1;
-        } while (Interlocked.CompareExchange(ref _autoSaveEnabledStatus, desired, initial) != initial);
-
+        _autoSaveEnabledStatus = !_autoSaveEnabledStatus;
         SaveToDisk();
     }
 
     public AppSettings()
     {
-        _filePaths = new Dictionary<FileExistanceOrder, Utils.FilePath>
+        // Note: Order doesn't matter here
+        _filePaths = new Dictionary<FileExistenceOrder, Utils.FilePath>
         {
-            [FileExistanceOrder.V1] = new(location: Utils.FileLocation.ExeFolder, fileName: "settings.json"),
-            [FileExistanceOrder.V2] = new(location: Utils.FileLocation.LocalAppDataFolder, fileName: "Settings.json")
+            [FileExistenceOrder.V2] = new(location: Utils.FileLocation.LocalAppDataFolder, fileName: "Settings.json"),
+            [FileExistenceOrder.V1] = new(location: Utils.FileLocation.ExeFolder, fileName: "settings.json")
         };
 
         LoadFromDisk();
@@ -72,21 +62,20 @@ public sealed class AppSettings
 
     private void LoadFromDisk()
     {
-        // var foundFiles = _filePaths.Values.Where(filePath => filePath.Exists).ToList();
+        var foundFilesPaths = _filePaths.Where(file => file.Value.Exists).OrderBy(file => file.Key).ToDictionary(file => file.Key, file => file.Value);
 
-        var chosenFilePath = _filePaths.Values.FirstOrDefault(filePath => filePath.Exists);
-
-        bool fileNeedsToBeRebuilt = false;
-
-        if (chosenFilePath == null)
+        if (foundFilesPaths.Count == 0)
         {
             LoadDefaults();
             SaveToDisk();
             return;
         }
 
+        var chosenFilePath = foundFilesPaths.First().Value;
+
         string fileContents = File.ReadAllText(chosenFilePath.RealPath);
 
+        var fileNeedsToBeRebuilt = false;
         int foundFileVersion = 0;
 
         try
@@ -130,7 +119,7 @@ public sealed class AppSettings
                         if (autoSaveEnabledStatusElem.ValueKind is JsonValueKind.True or JsonValueKind.False)
                         {
                             // ReSharper disable once RedundantBoolCompare
-                            _autoSaveEnabledStatus = autoSaveEnabledStatusElem.GetBoolean() == true ? 1 : 0;
+                            _autoSaveEnabledStatus = autoSaveEnabledStatusElem.GetBoolean();
                         }
                         else
                         {
@@ -168,7 +157,7 @@ public sealed class AppSettings
                         if (autoSaveEnabledStatusElem.ValueKind is JsonValueKind.True or JsonValueKind.False)
                         {
                             // ReSharper disable once RedundantBoolCompare
-                            _autoSaveEnabledStatus = autoSaveEnabledStatusElem.GetBoolean() == true ? 1 : 0;
+                            _autoSaveEnabledStatus = autoSaveEnabledStatusElem.GetBoolean();
                         }
                         else
                         {
@@ -228,8 +217,12 @@ public sealed class AppSettings
             fileNeedsToBeRebuilt = true;
         }
 
-        if (fileNeedsToBeRebuilt)
-            SaveToDisk();
+        foreach (var filePath in foundFilesPaths.Values)
+        {
+            File.Delete(filePath.RealPath);
+        }
+
+        SaveToDisk();
     }
 
     private void SaveToDisk()
@@ -238,31 +231,32 @@ public sealed class AppSettings
         {
             [FileVersionPropertyName.Type1] = FileSchemaV2.FileVersion,
             // ReSharper disable once RedundantTernaryExpression
-            [FileSchemaV2.AutoSaveEnabledStatusPropertyName] = _autoSaveEnabledStatus == 1 ? true : false,
+            [FileSchemaV2.AutoSaveEnabledStatusPropertyName] = _autoSaveEnabledStatus,
             [FileSchemaV2.AutoSaveIntervalInMinutesPropertyName] = _autoSaveIntervalInMinutes,
             [FileSchemaV2.ActiveLanguageCodePropertyName] = LanguageCode.ToString()
         };
 
         var jsonString = JsonSerializer.Serialize(fileSchema, _fileJsonSerializerOpts);
-        File.WriteAllText(_filePaths[FileExistanceOrder.V2].RealPath, jsonString);
+        File.WriteAllText(_filePaths[FileExistenceOrder.V2].RealPath, jsonString);
     }
 
     private void LoadDefaults()
     {
         LanguageCode = LanguageManager.LanguageCode.en_US;
-        _autoSaveEnabledStatus = 1;
+        _autoSaveEnabledStatus = true;
         _autoSaveIntervalInMinutes = 1;
     }
 
-    private int _autoSaveEnabledStatus;
-    private int _autoSaveIntervalInMinutes;
-    private readonly Dictionary<FileExistanceOrder, Utils.FilePath> _filePaths;
+    private volatile bool _autoSaveEnabledStatus;
+    private volatile int _autoSaveIntervalInMinutes;
+    private readonly Dictionary<FileExistenceOrder, Utils.FilePath> _filePaths;
     private readonly JsonSerializerOptions _fileJsonSerializerOpts = new(){ WriteIndented = true };
 
-    private enum FileExistanceOrder
+    // NOTE: Keep in descending order
+    private enum FileExistenceOrder
     {
-        V1,
-        V2
+        V2,
+        V1
     }
 
     private record struct FileVersionPropertyName
