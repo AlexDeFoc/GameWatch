@@ -47,6 +47,7 @@ public sealed class LanguageManager
         string Form_ReadInput_UnhandledInputStatusMsg { get; }
         string MainMenu_ListGames_DisplayText { get; }
         string MainMenu_AddNewGameOption_DisplayText { get; }
+        string MainMenu_SettingsMenu_DisplayText { get; }
         string MainMenu_ExitAppOption_DisplayText { get; }
         string AddNewGame_CancellationTipMsg { get; }
         string AddNewGame_RequestMsg { get; }
@@ -54,6 +55,7 @@ public sealed class LanguageManager
         public string AddNewGame_SuccessfullyAddedNewGameMsg(string title) => string.Format(AddNewGame_SuccessfullyAddedNewGameMsg_Pattern, title);
         string Info_GoBackTipMsg { get; }
         string ListGames_NoGamesFoundMsg { get; }
+        string SettingsMenu_GoBack_DisplayText { get; }
         // ReSharper restore InconsistentNaming
     }
 
@@ -80,12 +82,14 @@ public sealed class LanguageManager
         public string Form_ReadInput_UnhandledInputStatusMsg { get; } = "Developer mistake. Unhandled input status.";
         public string MainMenu_ListGames_DisplayText { get; } = "List games";
         public string MainMenu_AddNewGameOption_DisplayText { get; } = "Add new game";
+        public string MainMenu_SettingsMenu_DisplayText { get; } = "Settings";
         public string MainMenu_ExitAppOption_DisplayText { get; } = "Exit app";
         public string AddNewGame_CancellationTipMsg { get; } = "Enter CTRL+Z to cancel";
         public string AddNewGame_RequestMsg { get; } = "Enter game title";
         public string AddNewGame_SuccessfullyAddedNewGameMsg_Pattern { get; } = "Game: '{0}' added";
         public string Info_GoBackTipMsg { get; } = "Press any key to go back";
         public string ListGames_NoGamesFoundMsg { get; } = "No games found, add one first";
+        public string SettingsMenu_GoBack_DisplayText { get; } = "Go back";
     }
 
     private sealed class RomanianLanguagePack : ILanguagePack
@@ -112,12 +116,14 @@ public sealed class LanguageManager
         public string Form_ReadInput_UnhandledInputStatusMsg { get; } = "Greșeală a creatorului aplicației. Un status de introducere nu a fost prelucrat cu grijă.";
         public string MainMenu_ListGames_DisplayText { get; } = "Afișează jocurile";
         public string MainMenu_AddNewGameOption_DisplayText { get; } = "Adaugă un joc nou";
+        public string MainMenu_SettingsMenu_DisplayText { get; } = "Setări";
         public string MainMenu_ExitAppOption_DisplayText { get; } = "Ieșire aplicație";
         public string AddNewGame_CancellationTipMsg { get; } = "Apasă CTRL+Z pentru a anula acțiunea curentă";
         public string AddNewGame_RequestMsg { get; } = "Introdu titlul jocului";
         public string AddNewGame_SuccessfullyAddedNewGameMsg_Pattern { get; } = "Jocul: '{0}' a fost adăugat";
         public string Info_GoBackTipMsg { get; } = "Apasă orice tastă pentru a merge înapoi";
         public string ListGames_NoGamesFoundMsg { get; } = "Nu sa găsit niciun joc, adaugă unul mai întâi";
+        public string SettingsMenu_GoBack_DisplayText { get; } = "Merg înapoi";
         // ReSharper enable StringLiteralTypo
     }
 
