@@ -31,6 +31,7 @@ public sealed class LanguageManager
         IGetNewGameTitleSceneStrings GetNewGameTitleScene { get; }
         IAddNewGameSceneStrings AddNewGameScene { get; }
         IGetGameSavingModeSceneStrings GetGameSavingModeScene { get; }
+        IGetGameExePathSceneStrings GetGameExePathScene { get; }
     }
 
     public interface IConsoleStrings
@@ -125,6 +126,18 @@ public sealed class LanguageManager
         string InvalidInputMsg { get; }
     }
 
+    public interface IGetGameExePathSceneStrings
+    {
+        string CancelTip { get; }
+        string QuestionMsg { get; }
+        string RequestMsg { get; }
+        string InvalidInputMsg { get; }
+        string NoAvailableTitleFound { get; }
+        string DefaultDisplayExePath { get; }
+        string FallbackDisplayExePath(string exceptionMsg);
+        string PrintProcessFormat(string title, string exePath);
+    }
+
     private sealed class EnUsLanguagePack : ILanguagePack
     {
         public IConsoleStrings Console { get; } = new ConsoleStrings();
@@ -136,6 +149,7 @@ public sealed class LanguageManager
         public IGetNewGameTitleSceneStrings GetNewGameTitleScene { get; } = new GetNewGameTitleSceneStrings();
         public IAddNewGameSceneStrings AddNewGameScene { get; } = new AddNewGameSceneStrings();
         public IGetGameSavingModeSceneStrings GetGameSavingModeScene { get; } = new GetGameSavingModeSceneStrings();
+        public IGetGameExePathSceneStrings GetGameExePathScene { get; } = new GetGameExePathSceneStrings();
 
         private sealed class ConsoleStrings : IConsoleStrings
         {
@@ -257,6 +271,22 @@ public sealed class LanguageManager
             public string RequestMsg => "Enter mode id: ";
             public string InvalidInputMsg => "Invalid input. Try again!";
         }
+
+        private sealed class GetGameExePathSceneStrings : IGetGameExePathSceneStrings
+        {
+            public string CancelTip => "Press CTRL+Z to cancel";
+            public string QuestionMsg => "Choose what process is your game. (This process will be considered your game, and whenever its running your game will run)";
+            public string RequestMsg => "Enter process id: ";
+            public string InvalidInputMsg => "Invalid input. Try again!";
+            public string NoAvailableTitleFound => "No title found (Background process)";
+            public string DefaultDisplayExePath => "No path found (Failed to retrieve exe path)";
+            public string FallbackDisplayExePath(string exceptionMsg) => $"No path found (Reason: {exceptionMsg})";
+            public string PrintProcessFormat(string title, string exePath) => $"""
+                                                                               Process:
+                                                                               * Title: {title}
+                                                                               * Path: {exePath}
+                                                                               """;
+        }
     }
 
     private sealed class RoRoLanguagePack : ILanguagePack
@@ -270,6 +300,7 @@ public sealed class LanguageManager
         public IGetNewGameTitleSceneStrings GetNewGameTitleScene { get; } = new GetNewGameTitleSceneStrings();
         public IAddNewGameSceneStrings AddNewGameScene { get; } = new AddNewGameSceneStrings();
         public IGetGameSavingModeSceneStrings GetGameSavingModeScene { get; } = new GetGameSavingModeSceneStrings();
+        public IGetGameExePathSceneStrings GetGameExePathScene { get; } = new GetGameExePathSceneStrings();
 
         // ReSharper disable StringLiteralTypo
         private sealed class ConsoleStrings : IConsoleStrings
@@ -290,7 +321,7 @@ public sealed class LanguageManager
             public string AddNewGameOption => "Adaugă joc";
             public string SettingsOption => "Setări";
             public string ExitAppOption => "Ieși din aplicație";
-            public string RequestMsg => "Întrodu indicele opțiunii: ";
+            public string RequestMsg => "Introdu indicele opțiunii: ";
             public string InvalidInputMsg => "Introducere invalidă. Încearcă din nou!";
         }
 
@@ -304,7 +335,7 @@ public sealed class LanguageManager
             public string DeleteAllGamesOption => "Șterge toate jocurile";
             public string BackupGameLibraryOption => "Crează copie de rezervă a jocurilor";
             public string GoBackOption => "Mergi înapoi";
-            public string RequestMsg => "Întrodu indicele opțiunii: ";
+            public string RequestMsg => "Introdu indicele opțiunii: ";
             public string InvalidInputMsg => "Introducere invalidă. Încearcă din nou!";
             public string DeletedAllGamesMsg => "Toate jocurile au fost șterse";
             public string CancelledActionMsg => "Acțiune anulată";
@@ -337,7 +368,7 @@ public sealed class LanguageManager
             public string YesOption => "Da";
             public string NoOption => "Nu";
             public string QuestionMsg => "Sunteți sigur?";
-            public string RequestMsg => "Întrodu indicele opțiunii: ";
+            public string RequestMsg => "Introdu indicele opțiunii: ";
             public string InvalidInputMsg => "Introducere invalidă. Încearcă din nou!";
         }
 
@@ -345,7 +376,7 @@ public sealed class LanguageManager
         {
 
             public string CancelTip => "Apasă CTRL+Z pentru anula acțiunea";
-            public string RequestMsg => "Întrodu un interval nou (minim un 1 min): ";
+            public string RequestMsg => "Introdu un interval nou (minim un 1 min): ";
             public string InvalidInputMsg => "Introducere invalidă. Încearcă din nou!";
 
             public string CurrentAutoSaveInterval(AppContext ctx) => $"Intervalul curent este: {ctx.AppSettings.GetPrintableGameAutoSaveInterval()}";
@@ -354,14 +385,14 @@ public sealed class LanguageManager
         private sealed class ChangeLanguageSceneStrings : IChangeLanguageSceneStrings
         {
             public string CancelTip => "Apasă CTRL+Z pentru anula acțiunea";
-            public string RequestMsg => "Întrodu indicele limbajului: ";
+            public string RequestMsg => "Introdu indicele limbajului: ";
             public string InvalidInputMsg => "Introducere invalidă. Încearcă din nou!";
         }
 
         private sealed class GetNewGameTitleSceneStrings : IGetNewGameTitleSceneStrings
         {
             public string CancelTip => "Apasă CTRL+Z pentru anula acțiunea";
-            public string RequestMsg => "Întrodu titlul jocului: ";
+            public string RequestMsg => "Introdu titlul jocului: ";
         }
 
         private sealed class AddNewGameSceneStrings : IAddNewGameSceneStrings
@@ -391,6 +422,22 @@ public sealed class LanguageManager
             public string CancelTip => "Apasă CTRL+Z pentru anula acțiunea";
             public string RequestMsg => "Introdu indicele modului: ";
             public string InvalidInputMsg => "Introducere invalidă. Încearcă din nou!";
+        }
+
+        private sealed class GetGameExePathSceneStrings : IGetGameExePathSceneStrings
+        {
+            public string CancelTip => "Apasă CTRL+Z pentru anula acțiunea";
+            public string QuestionMsg => "Alege ce proces este jocul tău. (Acest process va fi considerat jocul tău, mereu când acesta va fi activ, și jocul tău va fi activ)";
+            public string RequestMsg => "Introdu indicele procesului: ";
+            public string InvalidInputMsg => "Introducere invalidă. Încearcă din nou!";
+            public string NoAvailableTitleFound => "Niciun titlu găsit (Procesul este în fundal)";
+            public string DefaultDisplayExePath => "Nici-o cale găsită (Eșuat în a găsi calea procesului)";
+            public string FallbackDisplayExePath(string exceptionMsg) => $"Nici-o cale găsită (Motiv: {exceptionMsg})";
+            public string PrintProcessFormat(string title, string exePath) => $"""
+                                                                               Proces:
+                                                                               * Titlu: {title}
+                                                                               * Calea: {exePath}
+                                                                               """;
         }
         // ReSharper restore StringLiteralTypo
     }

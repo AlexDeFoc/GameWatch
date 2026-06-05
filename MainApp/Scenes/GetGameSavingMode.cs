@@ -25,7 +25,7 @@ public sealed class GetGameSavingMode : Scene
 
             Console.Write("\n\n");
             logger.WriteLine(Logger.Label.Tip, strings.CancelTip);
-            logger.WriteLine(Logger.Label.Info, strings.QuestionMsg);
+            logger.WriteLine(Logger.Label.Request, strings.QuestionMsg);
             logger.Write(Logger.Label.Request, strings.RequestMsg);
 
             string? input = Console.ReadLine();

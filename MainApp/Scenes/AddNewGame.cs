@@ -46,9 +46,22 @@ public sealed class AddNewGame : Scene
                 }
                 else
                 {
-                    Ctx.Logger.WriteLineToCache(Logger.Label.Error, strings.NotYetImplementedMsg);
-                    _sceneManager.ReturnFrom(this);
+                    _sceneManager.NavigateTo(new GetGameExePath(Ctx));
                 }
+            }
+        }
+        else if (from is GetGameExePath)
+        {
+            if (result == null)
+            {
+                Ctx.Logger.WriteLineToCache(Logger.Label.Info, strings.CancelledActionMsg);
+                _sceneManager.ReturnFrom(this);
+            }
+            else
+            {
+                _retrievedExePath = (string)result;
+                ExecuteAddGameWithAutomaticWorkingMode();
+                _sceneManager.ReturnFrom(this);
             }
         }
     }
@@ -60,7 +73,15 @@ public sealed class AddNewGame : Scene
         Ctx.Logger.WriteLineToCache(Logger.Label.Success, strings.SuccessfullyAddedGame(_retrievedGameTitle));
     }
 
+    private void ExecuteAddGameWithAutomaticWorkingMode()
+    {
+        var strings = Ctx.LanguageManager.Strings.AddNewGameScene;
+        Ctx.GameLibrary.AddGame(_retrievedGameTitle, _retrievedExePath);
+        Ctx.Logger.WriteLineToCache(Logger.Label.Success, strings.SuccessfullyAddedGame(_retrievedGameTitle));
+    }
+
+    private SceneManager _sceneManager = null!;
     private string _retrievedGameTitle = "";
     private GameEntry.WorkingMode _gameWorkingMode;
-    private SceneManager _sceneManager = null!;
+    private string _retrievedExePath = "";
 }
