@@ -1,41 +1,34 @@
-﻿using MainApp.SceneTypes;
+﻿namespace MainApp.Scenes;
 
-namespace MainApp.Scenes;
-
-public sealed class ChangeAutoSaveInterval : IScene
+public sealed class ChangeAutoSaveInterval : Scene
 {
-    public IScene Execute()
+    public ChangeAutoSaveInterval(AppContext ctx) : base(ctx) {}
+
+    public override void Run(SceneManager manager) => manager.ReturnFrom(this, GetUserInput());
+
+    private int? GetUserInput()
     {
-        var menu = new FormNumber(lang: _lang,
-            logger: _logger,
-            requestMsg: _lang.ActiveLanguagePack.ChangeGameAutoSaveInterval_RequestMsg,
-            filterFunction: FilterFunction,
-            conditionNotMetMsg: _lang.ActiveLanguagePack.ChangeGameAutoSaveInterval_ConditionNotMetMsg);
+        var strings = Ctx.LanguageManager.Strings.ChangeAutoSaveIntervalScene;
+        var logger = Ctx.Logger;
 
-        int? newInterval = menu.ReadInput();
-
-        // ReSharper disable once InvertIf
-        if (newInterval != null)
+        while (true)
         {
-            _logger.WriteLineToCache(Logger.Label.Success, _lang.ActiveLanguagePack.ChangeGameAutoSaveInterval_SuccessMsg);
-            _appSettings.GameAutoSaveIntervalInMinutes = (int)newInterval;
+            Logger.Clear();
+            logger.WriteCached();
+
+            logger.WriteLine(Logger.Label.Tip, strings.CancelTip);
+            logger.WriteLine(Logger.Label.Info, strings.CurrentAutoSaveInterval(Ctx));
+
+            logger.Write(Logger.Label.Request, strings.RequestMsg);
+            string? input = System.Console.ReadLine();
+
+            if (input == null)
+                return null;
+
+            if (int.TryParse(input, out int choice) && choice >= 1)
+                return choice;
+
+            logger.WriteLineToCache(Logger.Label.Error, strings.InvalidInputMsg);
         }
-
-        return _previousScene;
     }
-
-    public ChangeAutoSaveInterval(IScene previousScene, LanguageManager lang, Logger logger, AppSettings appSettings)
-    {
-        _previousScene = previousScene;
-        _lang = lang;
-        _logger = logger;
-        _appSettings = appSettings;
-    }
-
-    private static bool FilterFunction(int input) => input > 1;
-
-    private readonly IScene _previousScene;
-    private readonly LanguageManager _lang;
-    private readonly Logger _logger;
-    private readonly AppSettings _appSettings;
 }

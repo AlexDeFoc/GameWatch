@@ -1,23 +1,30 @@
-﻿namespace MainApp;
+﻿using System;
+
+namespace MainApp;
 
 public static class Program
 {
     public static void Main()
     {
-        Utils.EnsureOurFolderExistsInAppData();
-
-        var appSettings = new AppSettings();
-        var gameLibrary = new GameLibrary();
-        var colorManager = new ColorManager();
-        var languageManager = new LanguageManager(appSettings);
-        var logger = new Logger(colorManager, languageManager);
-        var appState = new AppState();
-
-        IScene? currentScene = new Scenes.MainMenu(colorManager: colorManager, lang: languageManager, logger: logger, appState: appState, gameLibrary: gameLibrary, appSettings: appSettings);
-
-        while (currentScene != null)
+        try
         {
-            currentScene = currentScene.Execute();
+            Utils.EnsureOurFolderExistsInAppData();
+            var ctx = new AppContext();
+
+            var manager = new SceneManager(ctx);
+            manager.Run(new Scenes.MainMenu(ctx));
+        }
+        catch (Exception e)
+        {
+            if (e is not Logger.UnexpectedError and not Logger.UnexpectedFatalError)
+            {
+                Console.WriteLine("[Fatal error]: An unexpected exception has occured.");
+                Console.WriteLine($"[Info]: Exception msg: '{e.Message}'");
+                Console.WriteLine($"[Info]: Stack trace: '{e.StackTrace}'");
+                Console.WriteLine("[Info]: The app will now exit, press any key to continue.");
+            }
+
+            Console.ReadKey();
         }
     }
 }

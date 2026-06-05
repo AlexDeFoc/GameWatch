@@ -1,40 +1,69 @@
-﻿using MainApp.SceneItems;
-using MainApp.SceneTypes;
+﻿using System.Collections.Generic;
+using System.Linq;
 
 namespace MainApp.Scenes;
 
-public sealed class MainMenu : IScene
+public sealed class MainMenu : Scene
 {
-    public IScene? Execute()
+    public MainMenu(AppContext ctx) : base(ctx) {}
+
+    public override void Run(SceneManager manager)
     {
-        IScene nextScene = this;
-        var menu = new Menu(_lang, _logger);
-
-        menu.AddOption(new MenuOption(displayText: _lang.ActiveLanguagePack.MainMenu_ListGames_DisplayText, action: () => { nextScene = new ListGames(colorManager: _colorManager, lang: _lang, logger: _logger, appState: _appState, gameLibrary: _gameLibrary, appSettings: _appSettings); }));
-        menu.AddOption(new MenuOption(displayText: _lang.ActiveLanguagePack.MainMenu_AddNewGameOption_DisplayText, action: () => { nextScene = new AddNewGame(previousScene: this, lang: _lang, logger: _logger, gameLibrary: _gameLibrary); }));
-        menu.AddOption(new MenuOption(displayText: _lang.ActiveLanguagePack.MainMenu_SettingsMenu_DisplayText,
-            action: () => { nextScene = new SettingsMenu(previousScene: this, colorManager: _colorManager, lang: _lang, logger: _logger, appState: _appState, gameLibrary: _gameLibrary, appSettings: _appSettings); }));
-        menu.AddOption(new MenuOption(displayText: _lang.ActiveLanguagePack.MainMenu_ExitAppOption_DisplayText, action: () => { _appState.ToggleAppRunningStatus(); }));
-
-        menu.ReadInputAndProcessOption();
-
-        return _appState.ShouldAppContinueToRun() ? nextScene : null;
+        BuildOptions();
+        int index = GetUserInput();
+        _options[index].Execute(manager);
     }
 
-    public MainMenu(ColorManager colorManager, LanguageManager lang, Logger logger, GameLibrary gameLibrary, AppState appState, AppSettings appSettings)
+    private void BuildOptions()
     {
-        _colorManager = colorManager;
-        _lang = lang;
-        _logger = logger;
-        _gameLibrary = gameLibrary;
-        _appState = appState;
-        _appSettings = appSettings;
+        var strings = Ctx.LanguageManager.Strings.MainMenuScene;
+
+        _options.Clear();
+
+        _options.Add(new("settings", strings.SettingsOption, m => m.NavigateTo(new SettingsMenu(Ctx))));
+        _options.Add(new("exit_app", strings.ExitAppOption, _ => Ctx.AppState.ToggleAppRunningStatus()));
     }
 
-    private readonly ColorManager _colorManager;
-    private readonly LanguageManager _lang;
-    private readonly Logger _logger;
-    private readonly GameLibrary _gameLibrary;
-    private readonly AppState _appState;
-    private readonly AppSettings _appSettings;
+    // Menu related methods
+    private int GetUserInput()
+    {
+        var strings = Ctx.LanguageManager.Strings.MainMenuScene;
+        var logger = Ctx.Logger;
+
+        while (true)
+        {
+            Logger.Clear();
+            logger.WriteCached();
+
+            ListOptions();
+
+            logger.Write(Logger.Label.Request, strings.RequestMsg);
+            string? input = System.Console.ReadLine();
+
+            if (int.TryParse(input, out int choice) && choice >= 0 && choice < _options.Count)
+            {
+                if (choice == 0)
+                    return _options.Count - 1;
+                else
+                    return choice - 1;
+            }
+
+            logger.WriteLineToCache(Logger.Label.Error, strings.InvalidInputMsg);
+        }
+    }
+
+    private void ListOptions()
+    {
+        var logger = Ctx.Logger;
+
+        for (int i = 0; i < _options.Count - 1; i++)
+        {
+            logger.WriteLine($"{i + 1}. {_options[i].DisplayText}");
+        }
+
+        logger.WriteLine($"0. {_options[^1].DisplayText}");
+    }
+
+    // Private variables
+    private List<MenuOption> _options = new();
 }

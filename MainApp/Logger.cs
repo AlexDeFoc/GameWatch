@@ -41,7 +41,7 @@ public sealed class Logger
         Console.ReadKey();
     }
 
-    public string ColorText(ColorManager.ColorCode colorCode, string text)
+    public string ColorText(ColorCode colorCode, string text)
     {
         if (_supportsAnsi)
             return $"{colorCode}{text}{_colorManager.Colors.Reset}";
@@ -60,7 +60,7 @@ public sealed class Logger
     public void Write(string msg)
     {
         if (_supportsAnsi)
-            Console.Write($"{_colorManager.Colors.Console_GeneralText}{msg}{_colorManager.Colors.Reset}");
+            Console.Write($"{_colorManager.Colors.Console.GeneralText}{msg}{_colorManager.Colors.Reset}");
         else
             Console.Write(msg);
     }
@@ -73,7 +73,7 @@ public sealed class Logger
     public void Write(Label label, string msg)
     {
         if (_supportsAnsi)
-            Console.Write($"{GetLabelAsColor(label)}{GetLabelAsText(label)}:{_colorManager.Colors.Reset} {_colorManager.Colors.Console_GeneralText}{msg}{_colorManager.Colors.Reset}");
+            Console.Write($"{GetLabelAsColor(label)}{GetLabelAsText(label)}:{_colorManager.Colors.Reset} {_colorManager.Colors.Console.GeneralText}{msg}{_colorManager.Colors.Reset}");
         else
             Console.Write($"{GetLabelAsText(label)}: {msg}");
     }
@@ -81,12 +81,12 @@ public sealed class Logger
     public void WriteToCache(Label label, string msg)
     {
         if (_supportsAnsi)
-            _cachedMsgs.Add($"{GetLabelAsColor(label)}{GetLabelAsText(label)}:{_colorManager.Colors.Reset} {_colorManager.Colors.Console_GeneralText}{msg}{_colorManager.Colors.Reset}");
+            _cachedMsgs.Add($"{GetLabelAsColor(label)}{GetLabelAsText(label)}:{_colorManager.Colors.Reset} {_colorManager.Colors.Console.GeneralText}{msg}{_colorManager.Colors.Reset}");
         else
             _cachedMsgs.Add($"{GetLabelAsText(label)}: {msg}");
     }
 
-    public void Write(ColorManager.ColorCode colorString, string msg)
+    public void Write(ColorCode colorString, string msg)
     {
         if (_supportsAnsi)
             Console.Write($"{colorString}{msg}{_colorManager.Colors.Reset}");
@@ -94,7 +94,7 @@ public sealed class Logger
             Console.Write(msg);
     }
 
-    public void WriteToCache(ColorManager.ColorCode colorString, string msg)
+    public void WriteToCache(ColorCode colorString, string msg)
     {
         if (_supportsAnsi)
             _cachedMsgs.Add($"{colorString}{msg}{_colorManager.Colors.Reset}");
@@ -105,7 +105,7 @@ public sealed class Logger
     public void WriteLine(string msg)
     {
         if (_supportsAnsi)
-            Console.WriteLine($"{_colorManager.Colors.Console_GeneralText}{msg}{_colorManager.Colors.Reset}");
+            Console.WriteLine($"{_colorManager.Colors.Console.GeneralText}{msg}{_colorManager.Colors.Reset}");
         else
             Console.WriteLine(msg);
     }
@@ -113,7 +113,7 @@ public sealed class Logger
     public void WriteLineToCache(string msg)
     {
         if (_supportsAnsi)
-            _cachedMsgs.Add($"{_colorManager.Colors.Console_GeneralText}{msg}{_colorManager.Colors.Reset}\n");
+            _cachedMsgs.Add($"{_colorManager.Colors.Console.GeneralText}{msg}{_colorManager.Colors.Reset}\n");
         else
             _cachedMsgs.Add($"{msg}\n");
     }
@@ -121,7 +121,7 @@ public sealed class Logger
     public void WriteLine(Label label, string msg)
     {
         if (_supportsAnsi)
-            Console.WriteLine($"{GetLabelAsColor(label)}{GetLabelAsText(label)}:{_colorManager.Colors.Reset} {_colorManager.Colors.Console_GeneralText}{msg}{_colorManager.Colors.Reset}");
+            Console.WriteLine($"{GetLabelAsColor(label)}{GetLabelAsText(label)}:{_colorManager.Colors.Reset} {_colorManager.Colors.Console.GeneralText}{msg}{_colorManager.Colors.Reset}");
         else
             Console.WriteLine($"{GetLabelAsText(label)}: {msg}");
     }
@@ -129,12 +129,12 @@ public sealed class Logger
     public void WriteLineToCache(Label label, string msg)
     {
         if (_supportsAnsi)
-            _cachedMsgs.Add($"{GetLabelAsColor(label)}{GetLabelAsText(label)}:{_colorManager.Colors.Reset} {_colorManager.Colors.Console_GeneralText}{msg}{_colorManager.Colors.Reset}\n");
+            _cachedMsgs.Add($"{GetLabelAsColor(label)}{GetLabelAsText(label)}:{_colorManager.Colors.Reset} {_colorManager.Colors.Console.GeneralText}{msg}{_colorManager.Colors.Reset}\n");
         else
             _cachedMsgs.Add($"{GetLabelAsText(label)}: {msg}\n");
     }
 
-    public void WriteLine(ColorManager.ColorCode colorString, string msg)
+    public void WriteLine(ColorCode colorString, string msg)
     {
         if (_supportsAnsi)
             Console.WriteLine($"{colorString}{msg}{_colorManager.Colors.Reset}");
@@ -142,7 +142,7 @@ public sealed class Logger
             Console.WriteLine(msg);
     }
 
-    public void WriteLineToCache(ColorManager.ColorCode colorString, string msg)
+    public void WriteLineToCache(ColorCode colorString, string msg)
     {
         if (_supportsAnsi)
             _cachedMsgs.Add($"{colorString}{msg}{_colorManager.Colors.Reset}\n");
@@ -195,50 +195,30 @@ public sealed class Logger
     // Internal functions
     private string GetLabelAsText(Label label)
     {
-        switch (label)
+        return label switch
         {
-            case Label.Tip:
-                return _languageManager.ActiveLanguagePack.Console_GetLabelAsText_TipLabel;
-            case Label.Error:
-                return _languageManager.ActiveLanguagePack.Console_GetLabelAsText_ErrorLabel;
-            case Label.Request:
-                return _languageManager.ActiveLanguagePack.Console_GetLabelAsText_RequestLabel;
-            case Label.Success:
-                return _languageManager.ActiveLanguagePack.Console_GetLabelAsText_SuccessLabel;
-            case Label.FatalError:
-                return _languageManager.ActiveLanguagePack.Console_GetLabelAsText_FatalErrorLabel;
-            case Label.Info:
-                return _languageManager.ActiveLanguagePack.Console_GetLabelAsText_InfoLabel;
-            default:
-                if (_supportsAnsi)
-                    throw new UnhandledCaseException(this, $"{_languageManager.ActiveLanguagePack.Console_GetLabelAsText_UnhandledCaseMsg}: '{label}'");
-
-                throw new UnhandledCaseException(this, $"{_colorManager.Colors.Console_GeneralText}{_languageManager.ActiveLanguagePack.Console_GetLabelAsText_UnhandledCaseMsg}: '{label}'{_colorManager.Colors.Reset}");
-        }
+            Label.Info => _languageManager.Strings.Console.InfoLabel,
+            Label.Tip => _languageManager.Strings.Console.TipLabel,
+            Label.Request => _languageManager.Strings.Console.RequestLabel,
+            Label.Success => _languageManager.Strings.Console.SuccessLabel,
+            Label.Error => _languageManager.Strings.Console.ErrorLabel,
+            Label.FatalError => _languageManager.Strings.Console.FatalErrorLabel,
+            _ => throw new UnexpectedError(this)
+        };
     }
 
-    private ColorManager.ColorCode GetLabelAsColor(Label label)
+    private ColorCode GetLabelAsColor(Label label)
     {
-        switch (label)
+        return label switch
         {
-            case Label.Tip:
-                return _colorManager.Colors.Console_TipLabel;
-            case Label.Error:
-                return _colorManager.Colors.Console_ErrorLabel;
-            case Label.Request:
-                return _colorManager.Colors.Console_RequestLabel;
-            case Label.Success:
-                return _colorManager.Colors.Console_SuccessLabel;
-            case Label.FatalError:
-                return _colorManager.Colors.Console_FatalErrorLabel;
-            case Label.Info:
-                return _colorManager.Colors.Console_InfoLabel;
-            default:
-                if (_supportsAnsi)
-                    throw new UnhandledCaseException(this, $"{_languageManager.ActiveLanguagePack.Console_GetLabelAsColor_UnhandledCaseMsg}: '{label}'");
-
-                throw new UnhandledCaseException(this, $"{_colorManager.Colors.Console_GeneralText}{_languageManager.ActiveLanguagePack.Console_GetLabelAsColor_UnhandledCaseMsg}: '{label}'{_colorManager.Colors.Reset}");
-        }
+            Label.Info => _colorManager.Colors.Console.InfoLabel,
+            Label.Tip => _colorManager.Colors.Console.TipLabel,
+            Label.Request => _colorManager.Colors.Console.RequestLabel,
+            Label.Success => _colorManager.Colors.Console.SuccessLabel,
+            Label.Error => _colorManager.Colors.Console.ErrorLabel,
+            Label.FatalError => _colorManager.Colors.Console.FatalErrorLabel,
+            _ => throw new UnexpectedError(this)
+        };
     }
 
     private static bool DetectAnsiSupport()
@@ -289,27 +269,37 @@ public sealed class Logger
     private readonly Encoding _originalInputEncoding = Encoding.UTF8;
     private readonly Encoding _originalOutputEncoding = Encoding.UTF8;
 
-    // Internal structures
-    public class CriticalUnhandledCaseException : Exception
+    // Structures
+    /// <summary>
+    ///  Exception to be thrown only when inside a constructor class of a class which depends on its self. E.g: ColorManager, LanguageManager
+    /// </summary>
+    public sealed class UnexpectedFatalError : Exception
     {
-        public CriticalUnhandledCaseException(string? extraCtx = null, [CallerFilePath] string file = "", [CallerLineNumber] int line = 0, [CallerMemberName] string member = "") : base(extraCtx)
+        public UnexpectedFatalError([CallerFilePath] string file = "", [CallerLineNumber] int line = 0, [CallerMemberName] string funcName = "")
         {
-            Console.WriteLine($"[CRITICAL ERROR]: Unhandled case at {file}:{line} in {member}");
-            if (extraCtx != null)
-                Console.WriteLine($"[TIP]: Extra context: {extraCtx}");
-            Console.WriteLine("The app will now exit, press any key to proceed.");
+            Console.WriteLine($"[Fatal error]: An unexpected fatal error has occured in file '{file}', at line '{line}', in function '{funcName}'");
+            Console.WriteLine("[Info]: The app will now exit, press any key to continue.");
         }
     }
 
-    public class UnhandledCaseException : Exception
+    public sealed class UnexpectedError : Exception
     {
-        public UnhandledCaseException(Logger logger, string? extraCtx = null, [CallerFilePath] string file = "", [CallerLineNumber] int line = 0, [CallerMemberName] string funcName = "") : base(extraCtx)
+        public UnexpectedError(AppContext appContext, [CallerFilePath] string file = "", [CallerLineNumber] int line = 0, [CallerMemberName] string funcName = "") : this(appContext.Logger, file, line, funcName)
         {
-            // logger.WriteLine(Label.FatalError, logger._languageManager.ActiveLanguagePack.ConsoleUnhandledCaseExceptionSourceLocationMsg(file, line, member));
-            logger.WriteLine(Label.FatalError, logger._languageManager.ActiveLanguagePack.Console_UnhandledCaseException_SourceLocationMsg(file, line, funcName));
-            if (extraCtx != null)
-                logger.WriteLine(Label.Tip, $"{logger._languageManager.ActiveLanguagePack.Console_UnhandledCaseException_ExtraContextLabel}: {extraCtx}");
-            logger.WriteLine(Label.Info, logger._languageManager.ActiveLanguagePack.Console_UnhandledCaseException_AppExitMsg);
+        }
+
+        public UnexpectedError(Logger logger, [CallerFilePath] string file = "", [CallerLineNumber] int line = 0, [CallerMemberName] string funcName = "")
+        {
+            if (logger._supportsAnsi)
+            {
+                logger.WriteLine(Label.Error, logger._languageManager.Strings.Console.UnexpectedErrorLocationMsg(file, line, funcName));
+                logger.WriteLine(Label.Info, logger._languageManager.Strings.Console.UnexpectedErrorAppExitMsg);
+            }
+            else
+            {
+                Console.WriteLine($"{logger.GetLabelAsText(Label.Error)} {logger._languageManager.Strings.Console.UnexpectedErrorLocationMsg(file, line, funcName)}");
+                Console.WriteLine($"{logger.GetLabelAsText(Label.Info)} {logger._languageManager.Strings.Console.UnexpectedErrorAppExitMsg}");
+            }
         }
     }
 }

@@ -1,48 +1,72 @@
-﻿// FUTURE PLANS:
-// 1. Store colors to JSON file, to let people create their own themes
+﻿namespace MainApp;
 
-using System.Drawing;
+public interface IConsoleColors
+{
+    ColorCode GeneralText { get; }
+    ColorCode InfoLabel { get; }
+    ColorCode TipLabel { get; }
+    ColorCode RequestLabel { get; }
+    ColorCode SuccessLabel { get; }
+    ColorCode ErrorLabel { get; }
+    ColorCode FatalErrorLabel { get; }
+}
 
-namespace MainApp;
+public interface ISettingsMenuSceneColors
+{
+    ColorCode AutoSaveIntervalSegment { get; }
+    ColorCode AutoSaveIsEnabledSegment { get; }
+    ColorCode AutoSaveIsDisabledSegment { get; }
+}
+
+public interface IColorScheme
+{
+    /// <summary>ANSI reset code</summary>
+    string Reset { get; }
+
+    IConsoleColors Console { get; }
+    ISettingsMenuSceneColors SettingsMenuScene { get; }
+}
+
+/// <summary>Default color scheme - dark mode</summary>
+public sealed class DefaultColorScheme : IColorScheme
+{
+    public string Reset => "\e[0m";
+
+    public IConsoleColors Console { get; } = new ConsoleColors();
+    public ISettingsMenuSceneColors SettingsMenuScene { get; } = new SettingsMenuSceneColors();
+
+    public sealed class ConsoleColors : IConsoleColors
+    {
+        public ColorCode GeneralText => new("#FFFFFFFF");
+        public ColorCode InfoLabel => new("#FF00FFFF");
+        public ColorCode TipLabel => new("#FFFFFFFF");
+        public ColorCode RequestLabel => new("#FFFF00FF");
+        public ColorCode SuccessLabel => new("#FF008000");
+        public ColorCode ErrorLabel => new("#FFFF0000");
+        public ColorCode FatalErrorLabel => new("#FF8B0000");
+    }
+
+    public sealed class SettingsMenuSceneColors : ISettingsMenuSceneColors
+    {
+        public ColorCode AutoSaveIntervalSegment => new("#FF00FFFF");
+        public ColorCode AutoSaveIsEnabledSegment => new("#FF008000");
+        public ColorCode AutoSaveIsDisabledSegment => new("#FFFF0000");
+    }
+}
 
 public sealed class ColorManager
 {
-    public ColorsStorage Colors { get; } = new(); // TODO: Remove the 'new()' cuz we'd load from disk
+    public IColorScheme Colors { get; private set; }
 
-    public readonly record struct ColorCode
+    public ColorManager() : this(new DefaultColorScheme()) {}
+
+    public ColorManager(IColorScheme scheme)
     {
-        private readonly string _hexColor;
-
-        public ColorCode(string hexColorCode)
-        {
-            _hexColor = hexColorCode.StartsWith('#') ? hexColorCode : $"#{hexColorCode}";
-        }
-
-        public override string ToString()
-        {
-            var c = ToColor();
-            return $"\e[38;2;{c.R};{c.G};{c.B}m";
-        }
-
-        private Color ToColor() => ColorTranslator.FromHtml(_hexColor);
-
-        public string ToHex() => _hexColor;
+        Colors = scheme ?? throw new Logger.UnexpectedFatalError();
     }
 
-    public sealed class ColorsStorage
+    public void LoadScheme(IColorScheme newScheme)
     {
-        // ReSharper disable InconsistentNaming
-        public string Reset { get; } = "\e[0m";
-        public ColorCode Console_GeneralText { get; init; } = new("#FFFFFFFF");
-        public ColorCode Console_TipLabel { get; init; } = new("#FFFFFFFF");
-        public ColorCode Console_ErrorLabel { get; init; } = new("#FFFF0000");
-        public ColorCode Console_RequestLabel { get; init; } = new("#FFFF00FF");
-        public ColorCode Console_SuccessLabel { get; init; } = new("#FF008000");
-        public ColorCode Console_FatalErrorLabel { get; init; } = new("#FF8B0000");
-        public ColorCode Console_InfoLabel { get; init; } = new("#FF00FFFF");
-        public ColorCode SettingsMenu_ToggleGameAutoSaveStatus_EnabledStatusComponent { get; init; } = new("#FF008000");
-        public ColorCode SettingsMenu_ToggleGameAutoSaveStatus_DisabledStatusComponent { get; init; } = new("#FFFF0000");
-        public ColorCode SettingsMenu_ChangeGameAutoSaveInterval_IntervalComponent { get; init; } = new("#FF008000");
-        // ReSharper enable InconsistentNaming
+        Colors = newScheme ?? throw new Logger.UnexpectedFatalError();
     }
 }

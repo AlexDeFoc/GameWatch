@@ -2,9 +2,9 @@
 
 public sealed class AppState
 {
-    public bool ShouldAppContinueToRun() => _appRunningStatus;
+    public bool ShouldQuit() => !_continueToRunApp;
 
-    public void ToggleAppRunningStatus() => _appRunningStatus = !_appRunningStatus;
+    public void ToggleAppRunningStatus() => _continueToRunApp = !_continueToRunApp;
 
-    private bool _appRunningStatus = true;
+    private bool _continueToRunApp = true;
 }

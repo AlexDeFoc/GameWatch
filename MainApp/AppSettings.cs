@@ -37,12 +37,12 @@ public sealed class AppSettings
 
     // Public methods
     // Note: Single-threaded writer, Multi-threaded reader
-    public bool IsGameAutoSaveEnabled() => _gameAutoSaveEnabledStatus;
+    public bool IsGameAutoSaveEnabled() => _gameAutoSaveEnabled;
 
     // Note: Single-threaded writer, Multi-threaded reader
-    public void ToggleGameAutoSaveStatus()
+    public void ToggleGameAutoSave()
     {
-        _gameAutoSaveEnabledStatus = !_gameAutoSaveEnabledStatus;
+        _gameAutoSaveEnabled = !_gameAutoSaveEnabled;
         SaveToDisk();
     }
 
@@ -83,7 +83,7 @@ public sealed class AppSettings
     }
 
     // Private variables
-    private volatile bool _gameAutoSaveEnabledStatus;
+    private volatile bool _gameAutoSaveEnabled;
     private volatile int _gameAutoSaveIntervalInMinutes;
     private LanguageManager.LanguageCode _activeActiveAppLanguageCode;
     private readonly Dictionary<FileExistenceOrder, Utils.FilePath> _filePaths;
@@ -122,7 +122,7 @@ public sealed class AppSettings
                 case FileSchemaV1.FileVersion:
                 {
                     // Note: Forcefully migrate with default; Reason: the app in newer version, auto elapses game playtime whenever the game is active & stops when its inactive
-                    _gameAutoSaveEnabledStatus = Defaults.AutoSaveEnabledStatus;
+                    _gameAutoSaveEnabled = Defaults.AutoSaveEnabled;
 
                     // Note: Forcefully migrate with default; Reason: the app in newer version, auto elapses game playtime whenever the game is active & stops when its inactive
                     _gameAutoSaveIntervalInMinutes = Defaults.AutoSaveIntervalInMinutes;
@@ -132,7 +132,7 @@ public sealed class AppSettings
 
                 case FileSchemaV2.FileVersion:
                 {
-                    _gameAutoSaveEnabledStatus = FileSchemaV2.LoadGameAutoSaveEnabledStatusProperty(jsonDocRoot) ?? _gameAutoSaveEnabledStatus;
+                    _gameAutoSaveEnabled = FileSchemaV2.LoadGameAutoSaveEnabledProperty(jsonDocRoot) ?? _gameAutoSaveEnabled;
 
                     _gameAutoSaveIntervalInMinutes = FileSchemaV2.LoadGameAutoSaveIntervalInMinutesProperty(jsonDocRoot) ?? _gameAutoSaveIntervalInMinutes;
 
@@ -167,7 +167,7 @@ public sealed class AppSettings
         var fileSchema = new Dictionary<string, object>
         {
             [FileVersionPropertyName.Type1] = FileSchemaV2.FileVersion,
-            [FileSchemaV2.GameAutoSaveEnabledStatusPropertyName] = _gameAutoSaveEnabledStatus,
+            [FileSchemaV2.GameAutoSaveEnabledPropertyName] = _gameAutoSaveEnabled,
             [FileSchemaV2.GameAutoSaveIntervalInMinutesPropertyName] = _gameAutoSaveIntervalInMinutes,
             [FileSchemaV2.ActiveAppLanguageCodePropertyName] = ActiveAppLanguageCode.ToString()
         };
@@ -179,7 +179,7 @@ public sealed class AppSettings
     private void LoadDefaults()
     {
         ActiveAppLanguageCode = Defaults.LanguageCode;
-        _gameAutoSaveEnabledStatus = Defaults.AutoSaveEnabledStatus;
+        _gameAutoSaveEnabled = Defaults.AutoSaveEnabled;
         _gameAutoSaveIntervalInMinutes = Defaults.AutoSaveIntervalInMinutes;
     }
 
@@ -199,7 +199,7 @@ public sealed class AppSettings
     private static class Defaults
     {
         public static LanguageManager.LanguageCode LanguageCode { get; } = LanguageManager.LanguageCode.en_US;
-        public static bool AutoSaveEnabledStatus { get; } = true;
+        public static bool AutoSaveEnabled { get; } = true;
         public static int AutoSaveIntervalInMinutes { get; } = 1;
     }
 
@@ -224,16 +224,16 @@ public sealed class AppSettings
     private record struct FileSchemaV2
     {
         public const int FileVersion = 2;
-        public const string GameAutoSaveEnabledStatusPropertyName = "game_auto_save_enabled_status";
+        public const string GameAutoSaveEnabledPropertyName = "game_auto_save_enabled";
         public const string GameAutoSaveIntervalInMinutesPropertyName = "game_auto_save_interval_in_minutes";
         public const string ActiveAppLanguageCodePropertyName = "active_app_language_code";
 
-        public static bool? LoadGameAutoSaveEnabledStatusProperty(JsonElement jsonDocRoot)
+        public static bool? LoadGameAutoSaveEnabledProperty(JsonElement jsonDocRoot)
         {
-            if (!jsonDocRoot.TryGetProperty(GameAutoSaveEnabledStatusPropertyName, out var autoSaveEnabledStatusElem)) return null;
+            if (!jsonDocRoot.TryGetProperty(GameAutoSaveEnabledPropertyName, out var autoSaveEnabledElem)) return null;
 
-            if (autoSaveEnabledStatusElem.ValueKind is JsonValueKind.True or JsonValueKind.False)
-                return autoSaveEnabledStatusElem.GetBoolean();
+            if (autoSaveEnabledElem.ValueKind is JsonValueKind.True or JsonValueKind.False)
+                return autoSaveEnabledElem.GetBoolean();
 
             return null;
         }

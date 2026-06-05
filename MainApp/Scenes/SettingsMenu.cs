@@ -1,122 +1,141 @@
-﻿using MainApp.SceneItems;
-using MainApp.SceneTypes;
+﻿using System.Collections.Generic;
 
 namespace MainApp.Scenes;
 
-public sealed class SettingsMenu : IScene
+public sealed class SettingsMenu : Scene
 {
-    public IScene? Execute()
+    public SettingsMenu(AppContext ctx) : base(ctx) {}
+
+    public override void Run(SceneManager manager)
     {
-        IScene nextScene = this;
-        var menu = new Menu(_lang, _logger);
+        BuildOptions();
+        int index = GetUserInput();
+        _options[index].Execute(manager);
+    }
 
-        menu.AddOption(new MenuOption(displayText: _lang.ActiveLanguagePack.SettingsMenu_ToggleGameAutoSaveStatus_DisplayText(_logger, _colorManager, _appSettings.IsGameAutoSaveEnabled()), action: () => { _appSettings.ToggleGameAutoSaveStatus(); }));
-
-        menu.AddOption(new MenuOption(displayText: _lang.ActiveLanguagePack.SettingsMenu_ChangeGameAutoSaveInterval_DisplayText(_logger, _colorManager, _appSettings.GetPrintableGameAutoSaveInterval()),
-            action: () => { nextScene = new ChangeAutoSaveInterval(previousScene: this, lang: _lang, logger: _logger, appSettings: _appSettings); }));
-
-        menu.AddOption(new MenuOption(displayText: _lang.ActiveLanguagePack.SettingsMenu_ResetSettingsToDefault_DisplayText, action: () =>
+    // Override to handle return from ConfirmDecisionMenu
+    public override void OnReturnedFrom(Scene from, object? result)
+    {
+        if (from is ConfirmDecisionMenu)
         {
-            var optionMethods = new ResetSettingsToDefaultMethods(_logger, _lang, _appSettings);
-            nextScene = new ChoiceConfirmationMenu(previousScene: this, lang: _lang, logger: _logger, actionToPerformOnYesChoice: optionMethods.ConfirmationYesChoiceAction, actionToPerformOnNoChoice: optionMethods.ConfirmationNoChoiceAction);
-        }));
-
-        menu.AddOption(new MenuOption(displayText: _lang.ActiveLanguagePack.SettingsMenu_CreateGameLibraryBackup_DisplayText, action: () =>
-        {
-            if (_gameLibrary.Games.Count == 0)
-                _logger.WriteLineToCache(Logger.Label.Error, _lang.ActiveLanguagePack.SettingsMenu_CreateGameLibraryBackup_NoGamesAvailableToBackupMsg);
-            else
+            switch (result)
             {
-                _logger.WriteLineToCache(Logger.Label.Success, _lang.ActiveLanguagePack.SettingsMenu_CreateGameLibraryBackup_SuccessfullyDoneActionMsg);
-                _gameLibrary.CreateGameLibraryBackup();
+                case ("delete_all_games", true):
+                    ExecuteDeleteAllGamesOption();
+                    break;
+                case ("reset_all_games", true):
+                    ExecuteResetAllGamesOption();
+                    break;
+                case ("reset_all_settings", true):
+                    ExecuteAllSettingsOption();
+                    break;
+                default:
+                    Ctx.Logger.WriteLineToCache(Logger.Label.Info, Ctx.LanguageManager.Strings.SettingsMenuScene.CancelledActionMsg);
+                    break;
             }
-        }));
-
-        menu.AddOption(new MenuOption(displayText: _lang.ActiveLanguagePack.SettingsMenu_ResetAllGamesPlaytime_DisplayText, action: () =>
+        }
+        else if (from is ChangeAutoSaveInterval)
         {
-            var optionMethods = new ResetAllGamesPlaytimeMethods(_logger, _lang, _gameLibrary);
-
-            if (_gameLibrary.Games.Count == 0)
-                _logger.WriteLineToCache(Logger.Label.Error, _lang.ActiveLanguagePack.SettingsMenu_ResetAllGamesPlaytime_NoGamesAvailableToResetMsg);
+            if (result == null)
+                Ctx.Logger.WriteLineToCache(Logger.Label.Info, Ctx.LanguageManager.Strings.SettingsMenuScene.CancelledActionMsg);
             else
-                nextScene = new ChoiceConfirmationMenu(previousScene: this, lang: _lang, logger: _logger, actionToPerformOnYesChoice: optionMethods.ConfirmationYesChoiceAction, actionToPerformOnNoChoice: optionMethods.ConfirmationNoChoiceAction);
-        }));
-
-        menu.AddOption(new MenuOption(displayText: _lang.ActiveLanguagePack.SettingsMenu_DeleteAllGames_DisplayText, action: () =>
-        {
-            var optionMethods = new DeleteAllGamesMethods(_logger, _lang, _gameLibrary);
-
-            if (_gameLibrary.Games.Count == 0)
-                _logger.WriteLineToCache(Logger.Label.Error, _lang.ActiveLanguagePack.SettingsMenu_DeleteAllGames_NoGamesAvailableToDeleteMsg);
-            else
-                nextScene = new ChoiceConfirmationMenu(previousScene: this, lang: _lang, logger: _logger, actionToPerformOnYesChoice: optionMethods.ConfirmationYesChoiceAction, actionToPerformOnNoChoice: optionMethods.ConfirmationNoChoiceAction);
-        }));
-
-        menu.AddOption(new MenuOption(displayText: _lang.ActiveLanguagePack.SettingsMenu_GoBack_DisplayText, action: () => { nextScene = _previousScene; }));
-
-        menu.ReadInputAndProcessOption();
-
-        return _appState.ShouldAppContinueToRun() ? nextScene : null;
+                ExecuteChangeGameAutoSaveInterval((int)result);
+        }
     }
 
-    public SettingsMenu(IScene previousScene, ColorManager colorManager, LanguageManager lang, Logger logger, GameLibrary gameLibrary, AppState appState, AppSettings appSettings)
+    private void BuildOptions()
     {
-        _previousScene = previousScene;
-        _colorManager = colorManager;
-        _lang = lang;
-        _logger = logger;
-        _gameLibrary = gameLibrary;
-        _appState = appState;
-        _appSettings = appSettings;
+        var strings = Ctx.LanguageManager.Strings.SettingsMenuScene;
+
+        _options.Clear();
+
+        _options.Add(new("toggle_game_auto_save", strings.ToggleGameAutoSaveOption(Ctx), _ => ExecuteToggleGameAutoSave()));
+        _options.Add(new("change_game_auto_save_interval", strings.ChangeGameAutoSaveIntervalOption(Ctx), m => m.NavigateTo(new ChangeAutoSaveInterval(Ctx))));
+        _options.Add(new("reset_all_settings", strings.ResetAllSettingsOption, m => m.NavigateTo(new ConfirmDecisionMenu(Ctx, "reset_all_settings"))));
+
+        if (Ctx.GameLibrary.Games.Count > 0)
+        {
+            _options.Add(new("reset_all_games", strings.ResetAllGamesOption, m => m.NavigateTo(new ConfirmDecisionMenu(Ctx, "reset_all_games"))));
+            _options.Add(new("delete_all_games", strings.DeleteAllGamesOption, m => m.NavigateTo(new ConfirmDecisionMenu(Ctx, "delete_all_games"))));
+            _options.Add(new("backup_game_library", strings.BackupGameLibraryOption, _ => ExecuteBackupGameLibraryOption()));
+        }
+
+        _options.Add(new("go_back", strings.GoBackOption, (m) => m.ReturnFrom(this)));
     }
 
-    private readonly IScene _previousScene;
-    private readonly ColorManager _colorManager;
-    private readonly LanguageManager _lang;
-    private readonly Logger _logger;
-    private readonly GameLibrary _gameLibrary;
-    private readonly AppState _appState;
-    private readonly AppSettings _appSettings;
-
-    private class ResetSettingsToDefaultMethods(Logger logger, LanguageManager lang, AppSettings appSettings)
+    private void ExecuteToggleGameAutoSave()
     {
-        public void ConfirmationYesChoiceAction()
-        {
-            appSettings.ResetAllToDefault();
-            logger.WriteLineToCache(Logger.Label.Success, lang.ActiveLanguagePack.SettingsMenu_ResetSettingsToDefaultMethods_ConfirmationYesChoiceAction_SuccessfullyDoneActionMsg);
-        }
-
-        public void ConfirmationNoChoiceAction()
-        {
-            logger.WriteLineToCache(Logger.Label.Info, lang.ActiveLanguagePack.SettingsMenu_ResetSettingsToDefaultMethods_ConfirmationNoChoiceAction_ActionCancelledMsg);
-        }
+        Ctx.AppSettings.ToggleGameAutoSave();
     }
 
-    private class ResetAllGamesPlaytimeMethods(Logger logger, LanguageManager lang, GameLibrary gameLibrary)
+    private void ExecuteChangeGameAutoSaveInterval(int newInterval)
     {
-        public void ConfirmationYesChoiceAction()
-        {
-            gameLibrary.ResetAllGames();
-            logger.WriteLineToCache(Logger.Label.Success, lang.ActiveLanguagePack.SettingsMenu_ResetAllGamesPlaytimeMethods_ConfirmationYesChoiceAction_SuccessfullyDoneActionMsg);
-        }
-
-        public void ConfirmationNoChoiceAction()
-        {
-            logger.WriteLineToCache(Logger.Label.Info, lang.ActiveLanguagePack.SettingsMenu_ResetAllGamesPlaytimeMethods_ConfirmationNoChoiceAction_ActionCancelledMsg);
-        }
+        Ctx.AppSettings.GameAutoSaveIntervalInMinutes = newInterval;
     }
 
-    private class DeleteAllGamesMethods(Logger logger, LanguageManager lang, GameLibrary gameLibrary)
+    private void ExecuteAllSettingsOption()
     {
-        public void ConfirmationYesChoiceAction()
-        {
-            gameLibrary.DeleteAllGames();
-            logger.WriteLineToCache(Logger.Label.Success, lang.ActiveLanguagePack.SettingsMenu_DeleteAllGames_ConfirmationYesChoiceAction_SuccessfullyDoneActionMsg);
-        }
+        Ctx.AppSettings.ResetAllToDefault();
+        Ctx.Logger.WriteLineToCache(Logger.Label.Success, Ctx.LanguageManager.Strings.SettingsMenuScene.SuccessfullyResetSettings);
+    }
 
-        public void ConfirmationNoChoiceAction()
+    private void ExecuteResetAllGamesOption()
+    {
+        Ctx.GameLibrary.ResetAllGames();
+        Ctx.Logger.WriteLineToCache(Logger.Label.Success, Ctx.LanguageManager.Strings.SettingsMenuScene.SuccessfullyResetAllGames);
+    }
+
+    private void ExecuteBackupGameLibraryOption()
+    {
+        Ctx.GameLibrary.CreateGameLibraryBackup();
+        Ctx.Logger.WriteLineToCache(Logger.Label.Success, Ctx.LanguageManager.Strings.SettingsMenuScene.CreatedGamesBackupMsg);
+    }
+
+    private void ExecuteDeleteAllGamesOption()
+    {
+        Ctx.GameLibrary.DeleteAllGames();
+        Ctx.Logger.WriteLineToCache(Logger.Label.Success, Ctx.LanguageManager.Strings.SettingsMenuScene.DeletedAllGamesMsg);
+    }
+
+    private int GetUserInput()
+    {
+        var strings = Ctx.LanguageManager.Strings.SettingsMenuScene;
+        var logger = Ctx.Logger;
+
+        while (true)
         {
-            logger.WriteLineToCache(Logger.Label.Info, lang.ActiveLanguagePack.SettingsMenu_DeleteAllGames_ConfirmationNoChoiceAction_ActionCancelledMsg);
+            Logger.Clear();
+            logger.WriteCached();
+
+            ListOptions();
+
+            logger.Write(Logger.Label.Request, strings.RequestMsg);
+            string? input = System.Console.ReadLine();
+
+            if (int.TryParse(input, out int choice) && choice >= 0 && choice < _options.Count)
+            {
+                if (choice == 0)
+                    return _options.Count - 1;
+                else
+                    return choice - 1;
+            }
+
+            logger.WriteLineToCache(Logger.Label.Error, strings.InvalidInputMsg);
         }
     }
+
+    private void ListOptions()
+    {
+        var logger = Ctx.Logger;
+
+        for (int i = 0; i < _options.Count - 1; i++)
+        {
+            logger.WriteLine($"{i + 1}. {_options[i].DisplayText}");
+        }
+
+        logger.WriteLine($"0. {_options[^1].DisplayText}");
+    }
+
+    // Private variables
+    private readonly List<MenuOption> _options = [];
 }
