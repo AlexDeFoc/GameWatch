@@ -31,24 +31,9 @@ public sealed class ConfirmDecisionMenu : Scene
             logger.Write(Logger.Label.Request, strings.RequestMsg);
 
             string? input = System.Console.ReadLine();
-            if (input == null)
-            {
-                logger.WriteLineToCache(Logger.Label.Error, strings.InvalidInputMsg);
-                continue;
-            }
 
-            if (int.TryParse(input.Trim(), out int inputAsInt))
-            {
-                bool isInRange = inputAsInt is 1 or 2;
-
-                if (isInRange)
-                    return inputAsInt == 1;
-                else
-                {
-                    logger.WriteLineToCache(Logger.Label.Error, strings.InputOutOfRangeMsg);
-                    continue;
-                }
-            }
+            if (int.TryParse(input, out int choice) && choice is 1 or 2)
+                return choice == 1;
 
             logger.WriteLineToCache(Logger.Label.Error, strings.InvalidInputMsg);
         }
