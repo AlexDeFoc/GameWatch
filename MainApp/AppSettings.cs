@@ -16,7 +16,7 @@ public sealed class AppSettings
     public LanguageManager.LanguageCode ActiveAppLanguageCode
     {
         get => _activeActiveAppLanguageCode;
-        private set
+        set
         {
             if (_activeActiveAppLanguageCode == value) return;
             _activeActiveAppLanguageCode = value;

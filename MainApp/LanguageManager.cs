@@ -1,4 +1,6 @@
-﻿namespace MainApp;
+﻿using System.Collections.Generic;
+
+namespace MainApp;
 
 public sealed class LanguageManager
 {
@@ -10,6 +12,14 @@ public sealed class LanguageManager
         appSettings.LanguageChanged += OnAppSettingsLanguageChanged;
     }
 
+    public static List<string> GetLanguagesList()
+    {
+        return [
+            nameof(LanguageCode.en_US),
+            nameof(LanguageCode.ro_RO)
+        ];
+    }
+
     public interface ILanguagePack
     {
         IConsoleStrings Console { get; }
@@ -17,6 +27,7 @@ public sealed class LanguageManager
         ISettingsMenuSceneStrings SettingsMenuScene { get; }
         IConfirmDecisionMenuSceneStrings ConfirmDecisionMenuScene { get; }
         IChangeAutoSaveIntervalSceneStrings ChangeAutoSaveIntervalScene { get; }
+        IChangeLanguageSceneStrings ChangeLanguageScene { get; }
     }
 
     public interface IConsoleStrings
@@ -44,6 +55,7 @@ public sealed class LanguageManager
     {
         string AutoSaveIsEnabledSegment { get; }
         string AutoSaveIsDisabledSegment { get; }
+        string ChangeLanguageOption { get; }
         string ResetAllSettingsOption { get; }
         string ResetAllGamesOption { get; }
         string DeleteAllGamesOption { get; }
@@ -77,6 +89,13 @@ public sealed class LanguageManager
         string CurrentAutoSaveInterval(AppContext ctx);
     }
 
+    public interface IChangeLanguageSceneStrings
+    {
+        string CancelTip { get; }
+        string RequestMsg { get; }
+        string InvalidInputMsg { get; }
+    }
+
     private sealed class EnUsLanguagePack : ILanguagePack
     {
         public IConsoleStrings Console { get; } = new ConsoleStrings();
@@ -84,6 +103,7 @@ public sealed class LanguageManager
         public ISettingsMenuSceneStrings SettingsMenuScene { get; } = new SettingsMenuSceneStrings();
         public IConfirmDecisionMenuSceneStrings ConfirmDecisionMenuScene { get; } = new ConfirmDecisionMenuSceneStrings();
         public IChangeAutoSaveIntervalSceneStrings ChangeAutoSaveIntervalScene { get; } = new ChangeAutoSaveIntervalSceneStrings();
+        public IChangeLanguageSceneStrings ChangeLanguageScene { get; } = new ChangeLanguageSceneStrings();
 
         private sealed class ConsoleStrings : IConsoleStrings
         {
@@ -110,6 +130,7 @@ public sealed class LanguageManager
         {
             public string AutoSaveIsEnabledSegment => "enabled";
             public string AutoSaveIsDisabledSegment => "disabled";
+            public string ChangeLanguageOption => "Change language";
             public string ResetAllSettingsOption => "Reset all settings";
             public string ResetAllGamesOption => "Reset all games";
             public string DeleteAllGamesOption => "Delete all games";
@@ -160,6 +181,13 @@ public sealed class LanguageManager
 
             public string CurrentAutoSaveInterval(AppContext ctx) => $"Current auto save interval: {ctx.AppSettings.GetPrintableGameAutoSaveInterval()}";
         }
+
+        private sealed class ChangeLanguageSceneStrings : IChangeLanguageSceneStrings
+        {
+            public string CancelTip => "Press CTRL+Z to cancel";
+            public string RequestMsg => "Enter language id: ";
+            public string InvalidInputMsg => "Invalid input. Try again!";
+        }
     }
 
     private sealed class RoRoLanguagePack : ILanguagePack
@@ -169,6 +197,7 @@ public sealed class LanguageManager
         public ISettingsMenuSceneStrings SettingsMenuScene { get; } = new SettingsMenuSceneStrings();
         public IConfirmDecisionMenuSceneStrings ConfirmDecisionMenuScene { get; } = new ConfirmDecisionMenuSceneStrings();
         public IChangeAutoSaveIntervalSceneStrings ChangeAutoSaveIntervalScene { get; } = new ChangeAutoSaveIntervalSceneStrings();
+        public IChangeLanguageSceneStrings ChangeLanguageScene { get; } = new ChangeLanguageSceneStrings();
 
         // ReSharper disable StringLiteralTypo
         private sealed class ConsoleStrings : IConsoleStrings
@@ -196,6 +225,7 @@ public sealed class LanguageManager
         {
             public string AutoSaveIsEnabledSegment => "activat";
             public string AutoSaveIsDisabledSegment => "dezactivat";
+            public string ChangeLanguageOption => "Schimbă limba";
             public string ResetAllSettingsOption => "Resetează toate setările";
             public string ResetAllGamesOption => "Resetează toate jocurile";
             public string DeleteAllGamesOption => "Șterge toate jocurile";
@@ -242,11 +272,17 @@ public sealed class LanguageManager
         {
 
             public string CancelTip => "Apasă CTRL+Z pentru anula acțiunea";
-
             public string RequestMsg => "Întrodu un interval nou (minim un 1 min): ";
             public string InvalidInputMsg => "Introducere invalidă. Încearcă din nou!";
 
             public string CurrentAutoSaveInterval(AppContext ctx) => $"Intervalul curent este: {ctx.AppSettings.GetPrintableGameAutoSaveInterval()}";
+        }
+
+        private sealed class ChangeLanguageSceneStrings : IChangeLanguageSceneStrings
+        {
+            public string CancelTip => "Apasă CTRL+Z pentru anula acțiunea";
+            public string RequestMsg => "Întrodu indicele limbajului: ";
+            public string InvalidInputMsg => "Introducere invalidă. Încearcă din nou!";
         }
         // ReSharper restore StringLiteralTypo
     }

@@ -41,6 +41,13 @@ public sealed class SettingsMenu : Scene
             else
                 ExecuteChangeGameAutoSaveInterval((int)result);
         }
+        else if (from is ChangeLanguage)
+        {
+            if (result == null)
+                Ctx.Logger.WriteLineToCache(Logger.Label.Info, Ctx.LanguageManager.Strings.SettingsMenuScene.CancelledActionMsg);
+            else
+                ExecuteChangeLanguage((LanguageManager.LanguageCode)result);
+        }
     }
 
     private void BuildOptions()
@@ -51,6 +58,7 @@ public sealed class SettingsMenu : Scene
 
         _options.Add(new("toggle_game_auto_save", strings.ToggleGameAutoSaveOption(Ctx), _ => ExecuteToggleGameAutoSave()));
         _options.Add(new("change_game_auto_save_interval", strings.ChangeGameAutoSaveIntervalOption(Ctx), m => m.NavigateTo(new ChangeAutoSaveInterval(Ctx))));
+        _options.Add(new("change_language", strings.ChangeLanguageOption, m => m.NavigateTo(new ChangeLanguage(Ctx))));
         _options.Add(new("reset_all_settings", strings.ResetAllSettingsOption, m => m.NavigateTo(new ConfirmDecisionMenu(Ctx, "reset_all_settings"))));
 
         if (Ctx.GameLibrary.Games.Count > 0)
@@ -61,6 +69,11 @@ public sealed class SettingsMenu : Scene
         }
 
         _options.Add(new("go_back", strings.GoBackOption, (m) => m.ReturnFrom(this)));
+    }
+
+    private void ExecuteChangeLanguage(LanguageManager.LanguageCode newLanguageCode)
+    {
+        Ctx.AppSettings.ActiveAppLanguageCode = newLanguageCode;
     }
 
     private void ExecuteToggleGameAutoSave()
