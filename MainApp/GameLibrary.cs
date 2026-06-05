@@ -8,12 +8,34 @@ namespace MainApp;
 
 public sealed class GameLibrary
 {
+    // Public properties
     public List<GameEntry> Games { get; private set; } = [];
 
     // Public methods
+    /// <summary>
+    /// Add a game with automatic working mode
+    /// </summary>
+    public void AddGame(string title, string exePath)
+    {
+        Games.Add(new GameEntry(title, exePath));
+        SaveToDisk();
+    }
+
+    /// <summary>
+    /// Add a game with manual working mode
+    /// </summary>
     public void AddGame(string title)
     {
         Games.Add(new GameEntry(title));
+        SaveToDisk();
+    }
+
+    /// <summary>
+    /// Add a game with automatic/manual working mode
+    /// </summary>
+    public void AddGame(string title, TimeSpan playtime, GameEntry.WorkingMode workingMode, string exePath = "")
+    {
+        Games.Add(new GameEntry(title, playtime, workingMode, exePath));
         SaveToDisk();
     }
 
@@ -117,7 +139,9 @@ public sealed class GameLibrary
         var gamesCollectionSchemaPart = Games.Select(game => new Dictionary<string, object>
         {
             [FileSchemaV2.GameTitlePropertyName] = game.Title,
-            [FileSchemaV2.GamePlaytimePropertyName] = game.PlayTime.ToString(FileSchemaV2.GamePlaytimePropertyValueFormat)
+            [FileSchemaV2.GamePlaytimePropertyName] = game.PlayTime.ToString(FileSchemaV2.GamePlaytimePropertyValueFormat),
+            [FileSchemaV2.GameWorkingModePropertyName] = game.CurrentWorkingMode.ToString(),
+            [FileSchemaV2.GameExePathModePropertyName] = game.ExePath
         }).ToList();
 
         var fileSchema = new Dictionary<string, object>
@@ -182,7 +206,7 @@ public sealed class GameLibrary
                 if (title == null)
                     continue;
 
-                result.Add(new GameEntry(title: title, playTimeFound));
+                result.Add(new GameEntry(title: title, playTime: playTimeFound));
             }
 
             return result;
@@ -196,6 +220,8 @@ public sealed class GameLibrary
         public const string GamesCollectionPropertyName = "games";
         public const string GameTitlePropertyName = "title";
         public const string GamePlaytimePropertyName = "playtime";
+        public const string GameWorkingModePropertyName = "working_mode";
+        public const string GameExePathModePropertyName = "exe_path";
         public const string GamePlaytimePropertyValueFormat = @"d\.hh\:mm\:ss";
 
         public static List<GameEntry>? LoadGames(JsonElement jsonDocRoot)
@@ -215,11 +241,23 @@ public sealed class GameLibrary
                 if (!TimeSpan.TryParseExact(playtimeElem.GetString(), GamePlaytimePropertyValueFormat, null, out var playTimeFound))
                     continue;
 
+                if (!gameElem.TryGetProperty(GameWorkingModePropertyName, out var workingModeElem) || workingModeElem.ValueKind != JsonValueKind.String || workingModeElem.GetString() is not "Automatic" and not "Manual")
+                    continue;
+
+                if (!gameElem.TryGetProperty(GameExePathModePropertyName, out var exePathElem) || workingModeElem.ValueKind != JsonValueKind.String)
+                    continue;
+
                 var title = titleElem.GetString();
                 if (title == null)
                     continue;
 
-                result.Add(new GameEntry(title: title, playTimeFound));
+                var workingMode = workingModeElem.GetString() == "Automatic" ? GameEntry.WorkingMode.Automatic : GameEntry.WorkingMode.Manual;
+
+                var exePath = workingModeElem.GetString();
+                if (exePath == null)
+                    continue;
+
+                result.Add(new GameEntry(title: title, playTimeFound, workingMode, exePath));
             }
 
             return result;

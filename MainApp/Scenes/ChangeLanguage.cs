@@ -33,9 +33,7 @@ public sealed class ChangeLanguage : Scene
             if (int.TryParse(input, out int choice) && choice >= 1 && choice <= optsCount)
             {
                 if (Enum.TryParse((choice - 1).ToString(), out LanguageManager.LanguageCode result))
-                {
                     return result;
-                }
                 else
                     throw new Logger.UnexpectedError(Ctx);
             }

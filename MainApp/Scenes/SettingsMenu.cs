@@ -13,7 +13,6 @@ public sealed class SettingsMenu : Scene
         _options[index].Execute(manager);
     }
 
-    // Override to handle return from ConfirmDecisionMenu
     public override void OnReturnedFrom(Scene from, object? result)
     {
         if (from is ConfirmDecisionMenu)
