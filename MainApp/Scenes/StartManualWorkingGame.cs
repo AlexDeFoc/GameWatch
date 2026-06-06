@@ -15,7 +15,7 @@ public sealed class StartManualWorkingGame : Scene
 
         if (selectedGameId == null)
         {
-            _logger.WriteLine(Logger.Label.Info, _strings.CancelledActionMsg);
+            _logger.WriteLineToCache(Logger.Label.Info, _strings.CancelledActionMsg);
         }
         else
         {

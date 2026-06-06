@@ -77,8 +77,10 @@ public sealed class SettingsMenu : Scene
                 }
             }
         }
-
-        _sceneManager.ReturnToPreviousScene();
+        else
+        {
+            _sceneManager.ReturnToPreviousScene();
+        }
     }
 
     private void BuildOptions()

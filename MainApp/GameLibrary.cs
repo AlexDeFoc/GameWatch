@@ -242,7 +242,42 @@ public sealed class GameLibrary
     {
         return Games[gameId - 1].Title;
     }
-    
+
+    /// <param name="gameId">1 indexed</param>
+    public GameEntry.WorkingMode GetGameWorkingMode(int gameId)
+    {
+        return Games[gameId - 1].CurrentWorkingMode;
+    }
+
+    /// <param name="gameId">1 indexed</param>
+    public void SetGameWorkingMode(int gameId, GameEntry.WorkingMode workingMode, string? exePath = null)
+    {
+        if (workingMode == GameEntry.WorkingMode.Manual)
+        {
+            var target = Games[gameId - 1];
+
+            target.CurrentWorkingMode = workingMode;
+            var tmpValueOfGameActiveStatus = target.ProcessIsActive;
+            target.ProcessIsActive = false;
+            target.ExePath = "";
+            if (tmpValueOfGameActiveStatus)
+                OnGameStopped(target);
+            target.ManualWorkingGameIsActive = tmpValueOfGameActiveStatus;
+        }
+        else if (workingMode == GameEntry.WorkingMode.Automatic)
+        {
+            var target = Games[gameId - 1];
+
+            target.CurrentWorkingMode = workingMode;
+            target.ExePath = exePath ?? "";
+            OnGameStopped(target);
+        }
+        else
+        {
+            throw new Logger.UnexpectedError(_logger);
+        }
+    }
+
     // Constructor
     public GameLibrary(AppContext ctx)
     {

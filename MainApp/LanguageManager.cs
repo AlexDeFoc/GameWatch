@@ -23,6 +23,7 @@ public sealed class LanguageManager
     public interface ILanguagePack
     {
         IConsoleStrings Console { get; }
+        IGameEntryClassStrings GameEntryClass { get; }
         IGameLibraryStrings GameLibrary { get; }
         IMainMenuSceneStrings MainMenuScene { get; }
         ISettingsMenuSceneStrings SettingsMenuScene { get; }
@@ -32,7 +33,7 @@ public sealed class LanguageManager
         IChangeLanguageSceneStrings ChangeLanguageScene { get; }
         IGetNewGameTitleSceneStrings GetNewGameTitleScene { get; }
         IAddNewGameSceneStrings AddNewGameScene { get; }
-        IGetGameSavingModeSceneStrings GetGameSavingModeScene { get; }
+        IGetGameWorkingModeSceneStrings GetGameWorkingModeScene { get; }
         IGetGameExePathSceneStrings GetGameExePathScene { get; }
         IStartManualWorkingGameSceneStrings StartManualWorkingGameScene { get; }
         IStopOneOfManyManualWorkingGameSceneStrings StopOneOfManyManualWorkingGameScene { get; }
@@ -40,6 +41,7 @@ public sealed class LanguageManager
         IDeleteGameSceneStrings DeleteGameScene { get; }
         IResetGameSceneStrings ResetGameScene { get; }
         IListGamesSceneStrings ListGamesScene { get; }
+        IChangeGameWorkingModeSceneStrings ChangeGameWorkingModeScene { get; }
     }
 
     public interface IConsoleStrings
@@ -53,6 +55,12 @@ public sealed class LanguageManager
         string UnexpectedErrorAppExitMsg { get; }
 
         string UnexpectedErrorLocationMsg(string file, int line, string funcName);
+    }
+
+    public interface IGameEntryClassStrings
+    {
+        string ManualWorkingMode { get; }
+        string AutomaticWorkingMode { get; }
     }
 
     public interface IGameLibraryStrings
@@ -99,6 +107,7 @@ public sealed class LanguageManager
     public interface IEditGamesMenuSceneStrings
     {
         string ChangeGameTitleOption { get; }
+        string ChangeGameWorkingModeOption { get; }
         string ResetGameOption { get; }
         string DeleteGameOption { get; }
         string GoBackOption { get; }
@@ -142,7 +151,7 @@ public sealed class LanguageManager
         string SuccessfullyAddedGame(string gameTitle);
     }
 
-    public interface IGetGameSavingModeSceneStrings
+    public interface IGetGameWorkingModeSceneStrings
     {
         string AutomaticModeOption { get; }
         string ManualModeOption { get; }
@@ -216,9 +225,20 @@ public sealed class LanguageManager
         string RequestMsg { get; }
     }
 
+    public interface IChangeGameWorkingModeSceneStrings
+    {
+        string CancelTip { get; }
+        string RequestMsgForGameId { get; }
+        string InvalidInputMsg { get; }
+        string CancelledActionMsg { get; }
+        string ModeAlreadyThisValueMsg(AppContext ctx, GameEntry.WorkingMode workingMode);
+        string ChangedModeTo(AppContext ctx, GameEntry.WorkingMode workingMode);
+    }
+
     private sealed class EnUsLanguagePack : ILanguagePack
     {
         public IConsoleStrings Console { get; } = new ConsoleStrings();
+        public IGameEntryClassStrings GameEntryClass { get; } = new GameEntryClassClassStrings();
         public IGameLibraryStrings GameLibrary { get; } = new GameLibraryStrings();
         public IMainMenuSceneStrings MainMenuScene { get; } = new MainMenuSceneStrings();
         public ISettingsMenuSceneStrings SettingsMenuScene { get; } = new SettingsMenuSceneStrings();
@@ -228,7 +248,7 @@ public sealed class LanguageManager
         public IChangeLanguageSceneStrings ChangeLanguageScene { get; } = new ChangeLanguageSceneStrings();
         public IGetNewGameTitleSceneStrings GetNewGameTitleScene { get; } = new GetNewGameTitleSceneStrings();
         public IAddNewGameSceneStrings AddNewGameScene { get; } = new AddNewGameSceneStrings();
-        public IGetGameSavingModeSceneStrings GetGameSavingModeScene { get; } = new GetGameSavingModeSceneStrings();
+        public IGetGameWorkingModeSceneStrings GetGameWorkingModeScene { get; } = new GetGameWorkingModeSceneStrings();
         public IGetGameExePathSceneStrings GetGameExePathScene { get; } = new GetGameExePathSceneStrings();
         public IStartManualWorkingGameSceneStrings StartManualWorkingGameScene { get; } = new StartManualWorkingGameSceneStrings();
         public IStopOneOfManyManualWorkingGameSceneStrings StopOneOfManyManualWorkingGameScene { get; } = new StopOneOfManyManualWorkingGameSceneStrings();
@@ -236,6 +256,7 @@ public sealed class LanguageManager
         public IDeleteGameSceneStrings DeleteGameScene { get; } = new DeleteGameSceneStrings();
         public IResetGameSceneStrings ResetGameScene { get; } = new ResetGameSceneStrings();
         public IListGamesSceneStrings ListGamesScene { get; } = new ListGamesSceneStrings();
+        public IChangeGameWorkingModeSceneStrings ChangeGameWorkingModeScene { get; } = new ChangeGameWorkingModeSceneStrings();
 
         private sealed class ConsoleStrings : IConsoleStrings
         {
@@ -248,6 +269,12 @@ public sealed class LanguageManager
             public string UnexpectedErrorAppExitMsg => "The app will now exit, press any key to continue.";
 
             public string UnexpectedErrorLocationMsg(string file, int line, string funcName) => $"An unexpected error has occured in file '{file}', at line '{line}', in function '{funcName}'";
+        }
+
+        private sealed class GameEntryClassClassStrings : IGameEntryClassStrings
+        {
+            public string ManualWorkingMode => "Manual";
+            public string AutomaticWorkingMode => "Automatic";
         }
 
         private sealed class GameLibraryStrings : IGameLibraryStrings
@@ -311,6 +338,7 @@ public sealed class LanguageManager
         private sealed class EditGamesMenuSceneStrings : IEditGamesMenuSceneStrings
         {
             public string ChangeGameTitleOption => "Change game title";
+            public string ChangeGameWorkingModeOption => "Change game working mode";
             public string ResetGameOption => "Reset game";
             public string DeleteGameOption => "Delete game";
             public string GoBackOption => "Go back";
@@ -355,7 +383,7 @@ public sealed class LanguageManager
             public string SuccessfullyAddedGame(string gameTitle) => $"Game '{gameTitle}' added";
         }
 
-        private sealed class GetGameSavingModeSceneStrings : IGetGameSavingModeSceneStrings
+        private sealed class GetGameWorkingModeSceneStrings : IGetGameWorkingModeSceneStrings
         {
             public string AutomaticModeOption => "Automatic";
             public string ManualModeOption => "Manual";
@@ -443,11 +471,22 @@ public sealed class LanguageManager
         {
             public string RequestMsg => "Press any key to back";
         }
+
+        private sealed class ChangeGameWorkingModeSceneStrings : IChangeGameWorkingModeSceneStrings
+        {
+            public string CancelTip => "Press CTRL+Z to cancel";
+            public string RequestMsgForGameId => "Enter game id: ";
+            public string InvalidInputMsg => "Invalid input. Try again!";
+            public string CancelledActionMsg => "Action cancelled";
+            public string ModeAlreadyThisValueMsg(AppContext ctx, GameEntry.WorkingMode workingMode) => $"Game was already in '{GameEntry.GetPrintableCurrentWorkingMode(ctx, workingMode)}' mode";
+            public string ChangedModeTo(AppContext ctx, GameEntry.WorkingMode workingMode) => $"Game changed to '{GameEntry.GetPrintableCurrentWorkingMode(ctx, workingMode)}' mode";
+        }
     }
 
     private sealed class RoRoLanguagePack : ILanguagePack
     {
         public IConsoleStrings Console { get; } = new ConsoleStrings();
+        public IGameEntryClassStrings GameEntryClass { get; } = new GameEntryClassStrings();
         public IGameLibraryStrings GameLibrary { get; } = new GameLibraryStrings();
         public IMainMenuSceneStrings MainMenuScene { get; } = new MainMenuSceneStrings();
         public ISettingsMenuSceneStrings SettingsMenuScene { get; } = new SettingsMenuSceneStrings();
@@ -457,7 +496,7 @@ public sealed class LanguageManager
         public IChangeLanguageSceneStrings ChangeLanguageScene { get; } = new ChangeLanguageSceneStrings();
         public IGetNewGameTitleSceneStrings GetNewGameTitleScene { get; } = new GetNewGameTitleSceneStrings();
         public IAddNewGameSceneStrings AddNewGameScene { get; } = new AddNewGameSceneStrings();
-        public IGetGameSavingModeSceneStrings GetGameSavingModeScene { get; } = new GetGameSavingModeSceneStrings();
+        public IGetGameWorkingModeSceneStrings GetGameWorkingModeScene { get; } = new GetGameWorkingModeSceneStrings();
         public IGetGameExePathSceneStrings GetGameExePathScene { get; } = new GetGameExePathSceneStrings();
         public IStartManualWorkingGameSceneStrings StartManualWorkingGameScene { get; } = new StartManualWorkingGameSceneStrings();
         public IStopOneOfManyManualWorkingGameSceneStrings StopOneOfManyManualWorkingGameScene { get; } = new StopOneOfManyManualWorkingGameSceneStrings();
@@ -465,6 +504,7 @@ public sealed class LanguageManager
         public IDeleteGameSceneStrings DeleteGameScene { get; } = new DeleteGameSceneStrings();
         public IResetGameSceneStrings ResetGameScene { get; } = new ResetGameSceneStrings();
         public IListGamesSceneStrings ListGamesScene { get; } = new ListGamesSceneStrings();
+        public IChangeGameWorkingModeSceneStrings ChangeGameWorkingModeScene { get; } = new ChangeGameWorkingModeSceneStrings();
 
         // ReSharper disable StringLiteralTypo
         private sealed class ConsoleStrings : IConsoleStrings
@@ -478,6 +518,12 @@ public sealed class LanguageManager
             public string UnexpectedErrorAppExitMsg => "Aplicația se va închide acum, apasă orice tastă pentru a continua.";
 
             public string UnexpectedErrorLocationMsg(string file, int line, string funcName) => $"O eroare neașteptată a apărut în fișierul '{file}', pe linia '{line}', în funcția '{funcName}'";
+        }
+
+        private sealed class GameEntryClassStrings : IGameEntryClassStrings
+        {
+            public string ManualWorkingMode => "Manual";
+            public string AutomaticWorkingMode => "Automat";
         }
 
         private sealed class GameLibraryStrings : IGameLibraryStrings
@@ -541,6 +587,7 @@ public sealed class LanguageManager
         private sealed class EditGamesMenuSceneStrings : IEditGamesMenuSceneStrings
         {
             public string ChangeGameTitleOption => "Schimbă titlul unui joc";
+            public string ChangeGameWorkingModeOption => "Schimbă modul de funcționare al unui joc";
             public string ResetGameOption => "Resetează un joc";
             public string DeleteGameOption => "Șterge un joc";
             public string GoBackOption => "Mergi înapoi";
@@ -586,7 +633,7 @@ public sealed class LanguageManager
             public string SuccessfullyAddedGame(string gameTitle) => $"Jocul '{gameTitle}' adăugat";
         }
 
-        private sealed class GetGameSavingModeSceneStrings : IGetGameSavingModeSceneStrings
+        private sealed class GetGameWorkingModeSceneStrings : IGetGameWorkingModeSceneStrings
         {
             public string AutomaticModeOption => "Automat";
             public string ManualModeOption => "Manual";
@@ -672,6 +719,16 @@ public sealed class LanguageManager
         private sealed class ListGamesSceneStrings : IListGamesSceneStrings
         {
             public string RequestMsg => "Apasă orice tastă pentru a merge înapoi";
+        }
+
+        private sealed class ChangeGameWorkingModeSceneStrings : IChangeGameWorkingModeSceneStrings
+        {
+            public string CancelTip => "Apasă CTRL+Z pentru anula acțiunea";
+            public string RequestMsgForGameId => "Introdu indicele jocului: ";
+            public string InvalidInputMsg => "Introducere invalidă. Încearcă din nou!";
+            public string CancelledActionMsg => "Acțiune anulată";
+            public string ModeAlreadyThisValueMsg(AppContext ctx, GameEntry.WorkingMode workingMode) => $"Jocul era deja in modul '{GameEntry.GetPrintableCurrentWorkingMode(ctx, workingMode)}'";
+            public string ChangedModeTo(AppContext ctx, GameEntry.WorkingMode workingMode) => $"Jocul a fost schimbat în modul '{GameEntry.GetPrintableCurrentWorkingMode(ctx, workingMode)}'";
         }
         // ReSharper restore StringLiteralTypo
     }

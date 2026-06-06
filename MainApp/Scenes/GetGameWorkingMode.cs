@@ -3,14 +3,14 @@ using System.Collections.Generic;
 
 namespace MainApp.Scenes;
 
-public sealed class GetGameSavingMode : Scene
+public sealed class GetGameWorkingMode : Scene
 {
     private readonly string _purposeId;
 
-    public GetGameSavingMode(AppContext ctx, string purposeId) : base(ctx)
+    public GetGameWorkingMode(AppContext ctx, string purposeId) : base(ctx)
     {
         _purposeId = purposeId;
-        _strings = ctx.LanguageManager.Strings.GetGameSavingModeScene;
+        _strings = ctx.LanguageManager.Strings.GetGameWorkingModeScene;
         _logger = ctx.Logger;
     }
 
@@ -73,6 +73,6 @@ public sealed class GetGameSavingMode : Scene
     }
 
     // Aliases
-    private readonly LanguageManager.IGetGameSavingModeSceneStrings _strings;
+    private readonly LanguageManager.IGetGameWorkingModeSceneStrings _strings;
     private readonly Logger _logger;
 }

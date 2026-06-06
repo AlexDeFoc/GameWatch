@@ -30,11 +30,11 @@ public sealed class AddNewGame : Scene
                 else if (rawValue is string newGameTitle && purposeId == "request_of_new_game_title")
                 {
                     _retrievedGameTitle = newGameTitle;
-                    _sceneManager.NavigateTo(new GetGameSavingMode(Ctx, purposeId: "request_of_game_saving_mode"));
+                    _sceneManager.NavigateTo(new GetGameWorkingMode(Ctx, purposeId: "request_of_game_working_mode"));
                 }
             }
         }
-        else if (from is GetGameSavingMode)
+        else if (from is GetGameWorkingMode)
         {
             if (result is { PurposeId: var purposeId, Data: var rawValue })
             {
@@ -43,7 +43,7 @@ public sealed class AddNewGame : Scene
                     _logger.WriteLineToCache(Logger.Label.Info, _strings.CancelledActionMsg);
                     _sceneManager.ReturnToPreviousScene();
                 }
-                else if (rawValue is GameEntry.WorkingMode workingMode && purposeId == "request_of_game_saving_mode")
+                else if (rawValue is GameEntry.WorkingMode workingMode && purposeId == "request_of_game_working_mode")
                 {
                     _gameWorkingMode = workingMode;
 
@@ -76,8 +76,10 @@ public sealed class AddNewGame : Scene
                 }
             }
         }
-
-        _sceneManager.ReturnToPreviousScene();
+        else
+        {
+            _sceneManager.ReturnToPreviousScene();
+        }
     }
 
     private void ExecuteAddGameWithManualWorkingMode()

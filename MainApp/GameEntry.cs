@@ -8,8 +8,8 @@ public sealed class GameEntry
     // Properties
     public string Title { get; set; }
     public TimeSpan PlayTime { get; private set; }
-    public WorkingMode CurrentWorkingMode { get; private set; }
-    public string ExePath { get; private set; }
+    public WorkingMode CurrentWorkingMode { get; set; }
+    public string ExePath { get; set; }
     public int Pid { get; set; }
     public DateTime ProcessCreationTime { get; set; }
     public bool ProcessIsActive { get; set; }
@@ -59,6 +59,17 @@ public sealed class GameEntry
         PlayTime = playtime;
         ExePath = exePath;
         CurrentWorkingMode = workingMode;
+    }
+
+    // Public static methods
+    public static string GetPrintableCurrentWorkingMode(AppContext ctx, WorkingMode workingMode)
+    {
+        if (workingMode is WorkingMode.Manual)
+            return ctx.LanguageManager.Strings.GameEntryClass.ManualWorkingMode;
+        else if (workingMode is WorkingMode.Automatic)
+            return ctx.LanguageManager.Strings.GameEntryClass.AutomaticWorkingMode;
+        else
+            throw new Logger.UnexpectedError(ctx);
     }
 
     // Public methods

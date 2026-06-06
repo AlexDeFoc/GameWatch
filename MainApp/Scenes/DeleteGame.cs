@@ -16,7 +16,7 @@ public sealed class DeleteGame : Scene
 
         if (gottenGameId is null)
         {
-            _logger.WriteLine(Logger.Label.Info, _strings.CancelledActionMsg);
+            _logger.WriteLineToCache(Logger.Label.Info, _strings.CancelledActionMsg);
             _sceneManager.ReturnToPreviousScene();
         }
         else
@@ -46,8 +46,10 @@ public sealed class DeleteGame : Scene
                 }
             }
         }
-
-        _sceneManager.ReturnToPreviousScene();
+        else
+        {
+            _sceneManager.ReturnToPreviousScene();
+        }
     }
 
     // Menu related methods

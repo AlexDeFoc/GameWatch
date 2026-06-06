@@ -22,6 +22,7 @@ public sealed class EditGamesMenu : Scene
         _options.Clear();
 
         _options.Add(new("change_game_title", _strings.ChangeGameTitleOption, m => m.NavigateTo(new ChangeGameTitle(Ctx))));
+        _options.Add(new("change_game_working_mode", _strings.ChangeGameWorkingModeOption, m => m.NavigateTo(new ChangeGameWorkingMode(Ctx))));
         _options.Add(new("reset_game", _strings.ResetGameOption, m => m.NavigateTo(new ResetGame(Ctx))));
         _options.Add(new("delete_game", _strings.DeleteGameOption, m => m.NavigateTo(new DeleteGame(Ctx))));
         _options.Add(new("go_back", _strings.GoBackOption, m => m.ReturnToPreviousScene()));
