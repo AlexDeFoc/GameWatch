@@ -31,7 +31,7 @@ public sealed class MainMenu : Scene
         }
 
         if (Ctx.GameLibrary.ContainsAnyGames())
-            _options.Add(new("edit_games", strings.EditGamesOption, _ => { }));
+            _options.Add(new("edit_games", strings.EditGamesOption, m => m.NavigateTo(new EditGamesMenu(Ctx))));
 
         _options.Add(new("add_new_game", strings.AddNewGameOption, m => m.NavigateTo(new AddNewGame(Ctx))));
         _options.Add(new("settings", strings.SettingsOption, m => m.NavigateTo(new SettingsMenu(Ctx))));

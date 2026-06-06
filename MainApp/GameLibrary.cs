@@ -10,6 +10,7 @@ namespace MainApp;
 public sealed class GameLibrary
 {
     // Public properties
+    public List<GameEntry> Games { get; private set; } = [];
     public bool ContainsAnyGames() => Games.Count != 0;
 
     // Public methods
@@ -149,7 +150,7 @@ public sealed class GameLibrary
         var games = GetActiveManualWorkingGames();
         return games[gameId - 1].Title;
     }
-
+    
     /// <param name="gameId">1 indexed</param>
     public string GetManualWorkingGameTitle(int gameId)
     {
@@ -215,6 +216,18 @@ public sealed class GameLibrary
             OnGameStopped(targetGame);
     }
 
+    /// <param name="gameId">1 indexed</param>
+    public void ChangeGameTitle(int gameId, string newGameTitle)
+    {
+        Games[gameId - 1].Title = newGameTitle;
+    }
+
+    /// <param name="gameId">1 indexed</param>
+    public string GetGameTitle(int gameId)
+    {
+        return Games[gameId - 1].Title;
+    }
+    
     // Constructor
     public GameLibrary(AppContext ctx)
     {
@@ -234,7 +247,6 @@ public sealed class GameLibrary
     }
 
     // Private variables
-    private List<GameEntry> Games { get; set; } = [];
     private readonly Dictionary<FileExistenceOrder, Utils.FilePath> _filePaths;
     private readonly JsonSerializerOptions _fileJsonSerializerOpts = new() { WriteIndented = true };
     private Timer? _monitorTimer;

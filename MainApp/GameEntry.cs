@@ -6,7 +6,7 @@ namespace MainApp;
 public sealed class GameEntry
 {
     // Properties
-    public string Title { get; }
+    public string Title { get; set; }
     public TimeSpan PlayTime { get; private set; }
     public WorkingMode CurrentWorkingMode { get; private set; }
     public string ExePath { get; private set; }
