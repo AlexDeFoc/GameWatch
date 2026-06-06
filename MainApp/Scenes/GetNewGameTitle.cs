@@ -17,7 +17,7 @@ public sealed class GetNewGameTitle : Scene
     {
         var newGameTitle = GetUserInput();
 
-        manager.ReturnToPreviousScene(new SceneManager.SceneResult(purposeId: _purposeId, value: newGameTitle));
+        manager.ReturnToPreviousScene(new SceneManager.SceneResult(PurposeId: _purposeId, Data: newGameTitle));
     }
 
     private string? GetUserInput()

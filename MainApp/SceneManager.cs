@@ -37,14 +37,6 @@ public sealed class SceneManager
         previous.OnReturnedFrom(finished, result); // pass result to previous scene
     }
 
-    // Replace current scene without keeping it on the stack
-    // NOTE: Might not be needed, can remove potentially
-    public void ReplaceCurrent(Scene newScene)
-    {
-        _stack.Pop();
-        _stack.Push(newScene);
-    }
-
     // Structures
-    public readonly record struct SceneResult(string purposeId, object? value);
+    public readonly record struct SceneResult(string PurposeId, object? Data);
 }

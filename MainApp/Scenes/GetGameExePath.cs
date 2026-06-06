@@ -19,7 +19,7 @@ public sealed class GetGameExePath : Scene
     {
         var gottenExePath = GetUserInput();
 
-        manager.ReturnToPreviousScene(new SceneManager.SceneResult(purposeId: _purposeId, value: gottenExePath));
+        manager.ReturnToPreviousScene(new SceneManager.SceneResult(PurposeId: _purposeId, Data: gottenExePath));
     }
 
     private string? GetUserInput()

@@ -38,6 +38,8 @@ public sealed class LanguageManager
         IStopOneOfManyManualWorkingGameSceneStrings StopOneOfManyManualWorkingGameScene { get; }
         IChangeGameTitleSceneStrings ChangeGameTitleScene { get; }
         IDeleteGameSceneStrings DeleteGameScene { get; }
+        IResetGameSceneStrings ResetGameScene { get; }
+        IListGamesSceneStrings ListGamesScene { get; }
     }
 
     public interface IConsoleStrings
@@ -60,6 +62,7 @@ public sealed class LanguageManager
 
     public interface IMainMenuSceneStrings
     {
+        string ListGamesOption { get; }
         string StartGameOption { get; }
         string StopMultipleGamesOption { get; }
         string EditGamesOption { get; }
@@ -96,6 +99,7 @@ public sealed class LanguageManager
     public interface IEditGamesMenuSceneStrings
     {
         string ChangeGameTitleOption { get; }
+        string ResetGameOption { get; }
         string DeleteGameOption { get; }
         string GoBackOption { get; }
         string RequestMsg { get; }
@@ -198,6 +202,20 @@ public sealed class LanguageManager
         string DeletedGame(AppContext ctx, int gameId);
     }
 
+    public interface IResetGameSceneStrings
+    {
+        string CancelTip { get; }
+        string RequestMsgForGameId { get; }
+        string InvalidInputMsg { get; }
+        string CancelledActionMsg { get; }
+        string SuccessfullyResetGame(AppContext ctx, int gameId);
+    }
+
+    public interface IListGamesSceneStrings
+    {
+        string RequestMsg { get; }
+    }
+
     private sealed class EnUsLanguagePack : ILanguagePack
     {
         public IConsoleStrings Console { get; } = new ConsoleStrings();
@@ -216,6 +234,8 @@ public sealed class LanguageManager
         public IStopOneOfManyManualWorkingGameSceneStrings StopOneOfManyManualWorkingGameScene { get; } = new StopOneOfManyManualWorkingGameSceneStrings();
         public IChangeGameTitleSceneStrings ChangeGameTitleScene { get; } = new ChangeGameTitleSceneStrings();
         public IDeleteGameSceneStrings DeleteGameScene { get; } = new DeleteGameSceneStrings();
+        public IResetGameSceneStrings ResetGameScene { get; } = new ResetGameSceneStrings();
+        public IListGamesSceneStrings ListGamesScene { get; } = new ListGamesSceneStrings();
 
         private sealed class ConsoleStrings : IConsoleStrings
         {
@@ -237,6 +257,7 @@ public sealed class LanguageManager
 
         private sealed class MainMenuSceneStrings : IMainMenuSceneStrings
         {
+            public string ListGamesOption => "List games";
             public string StartGameOption => "Start game";
             public string StopMultipleGamesOption => "Stop game";
             public string EditGamesOption => "Edit games";
@@ -290,6 +311,7 @@ public sealed class LanguageManager
         private sealed class EditGamesMenuSceneStrings : IEditGamesMenuSceneStrings
         {
             public string ChangeGameTitleOption => "Change game title";
+            public string ResetGameOption => "Reset game";
             public string DeleteGameOption => "Delete game";
             public string GoBackOption => "Go back";
             public string RequestMsg => "Enter option id: ";
@@ -407,6 +429,20 @@ public sealed class LanguageManager
             public string CancelledActionMsg => "Action cancelled";
             public string DeletedGame(AppContext ctx, int gameId) => $"Deleted '{ctx.GameLibrary.GetGameTitle(gameId)}'";
         }
+
+        private sealed class ResetGameSceneStrings : IResetGameSceneStrings
+        {
+            public string CancelTip => "Press CTRL+Z to cancel";
+            public string RequestMsgForGameId => "Enter game id: ";
+            public string InvalidInputMsg => "Invalid input. Try again!";
+            public string CancelledActionMsg => "Action cancelled";
+            public string SuccessfullyResetGame(AppContext ctx, int gameId) => $"Game '{ctx.GameLibrary.GetGameTitle(gameId)}' got reset";
+        }
+
+        private sealed class ListGamesSceneStrings : IListGamesSceneStrings
+        {
+            public string RequestMsg => "Press any key to back";
+        }
     }
 
     private sealed class RoRoLanguagePack : ILanguagePack
@@ -427,6 +463,8 @@ public sealed class LanguageManager
         public IStopOneOfManyManualWorkingGameSceneStrings StopOneOfManyManualWorkingGameScene { get; } = new StopOneOfManyManualWorkingGameSceneStrings();
         public IChangeGameTitleSceneStrings ChangeGameTitleScene { get; } = new ChangeGameTitleSceneStrings();
         public IDeleteGameSceneStrings DeleteGameScene { get; } = new DeleteGameSceneStrings();
+        public IResetGameSceneStrings ResetGameScene { get; } = new ResetGameSceneStrings();
+        public IListGamesSceneStrings ListGamesScene { get; } = new ListGamesSceneStrings();
 
         // ReSharper disable StringLiteralTypo
         private sealed class ConsoleStrings : IConsoleStrings
@@ -449,6 +487,7 @@ public sealed class LanguageManager
 
         private sealed class MainMenuSceneStrings : IMainMenuSceneStrings
         {
+            public string ListGamesOption => "Enumeră jocurile";
             public string StartGameOption => "Pornește joc";
             public string StopMultipleGamesOption => "Oprește joc";
             public string EditGamesOption => "Editează jocurile";
@@ -502,6 +541,7 @@ public sealed class LanguageManager
         private sealed class EditGamesMenuSceneStrings : IEditGamesMenuSceneStrings
         {
             public string ChangeGameTitleOption => "Schimbă titlul unui joc";
+            public string ResetGameOption => "Resetează un joc";
             public string DeleteGameOption => "Șterge un joc";
             public string GoBackOption => "Mergi înapoi";
             public string RequestMsg => "Introdu indicele opțiunii: ";
@@ -618,6 +658,20 @@ public sealed class LanguageManager
             public string InvalidInputMsg => "Introducere invalidă. Încearcă din nou!";
             public string CancelledActionMsg => "Acțiune anulată";
             public string DeletedGame(AppContext ctx, int gameId) => $"Jocul '{ctx.GameLibrary.GetGameTitle(gameId)}' a fost șters";
+        }
+
+        private sealed class ResetGameSceneStrings : IResetGameSceneStrings
+        {
+            public string CancelTip => "Apasă CTRL+Z pentru anula acțiunea";
+            public string RequestMsgForGameId => "Introdu indicele jocului: ";
+            public string InvalidInputMsg => "Introducere invalidă. Încearcă din nou!";
+            public string CancelledActionMsg => "Acțiune anulată";
+            public string SuccessfullyResetGame(AppContext ctx, int gameId) => $"Jocul '{ctx.GameLibrary.GetGameTitle(gameId)}' a fost resetat";
+        }
+
+        private sealed class ListGamesSceneStrings : IListGamesSceneStrings
+        {
+            public string RequestMsg => "Apasă orice tastă pentru a merge înapoi";
         }
         // ReSharper restore StringLiteralTypo
     }

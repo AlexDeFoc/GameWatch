@@ -15,7 +15,7 @@ public sealed class ConfirmDecisionMenu : Scene
     {
         bool userSaidYes = GetUserInput();
 
-        manager.ReturnToPreviousScene(new SceneManager.SceneResult(purposeId: _purposeId, value: userSaidYes));
+        manager.ReturnToPreviousScene(new SceneManager.SceneResult(PurposeId: _purposeId, Data: userSaidYes));
     }
 
     private bool GetUserInput()

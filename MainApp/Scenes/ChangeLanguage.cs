@@ -17,7 +17,7 @@ public sealed class ChangeLanguage : Scene
     {
         var newLanguageCode = GetUserInput();
 
-        manager.ReturnToPreviousScene(new SceneManager.SceneResult(purposeId: _purposeId, value: newLanguageCode));
+        manager.ReturnToPreviousScene(new SceneManager.SceneResult(PurposeId: _purposeId, Data: newLanguageCode));
     }
 
     private LanguageManager.LanguageCode? GetUserInput()

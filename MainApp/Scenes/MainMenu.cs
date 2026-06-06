@@ -23,6 +23,9 @@ public sealed class MainMenu : Scene
     {
         _options.Clear();
 
+        if (_gameLib.ContainsAnyGames())
+            _options.Add(new("list_games", _strings.ListGamesOption, m => m.NavigateTo(new ListGames(Ctx))));
+
         if (_gameLib.ContainsAnyManualWorkingGames() && !_gameLib.AreAllManualWorkingGamesActive())
             _options.Add(new("start_game", _strings.StartGameOption, m => m.NavigateTo(new StartManualWorkingGame(Ctx))));
 

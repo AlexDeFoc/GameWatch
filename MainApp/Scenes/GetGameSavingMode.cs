@@ -18,7 +18,7 @@ public sealed class GetGameSavingMode : Scene
     {
         var gottenWorkingMode = GetUserInput();
 
-        manager.ReturnToPreviousScene(new SceneManager.SceneResult(purposeId: _purposeId, value: gottenWorkingMode));
+        manager.ReturnToPreviousScene(new SceneManager.SceneResult(PurposeId: _purposeId, Data: gottenWorkingMode));
     }
 
     private GameEntry.WorkingMode? GetUserInput()

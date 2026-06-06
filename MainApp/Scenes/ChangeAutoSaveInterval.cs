@@ -15,7 +15,7 @@ public sealed class ChangeAutoSaveInterval : Scene
     {
         var newInterval = GetUserInput();
 
-        manager.ReturnToPreviousScene(new SceneManager.SceneResult(purposeId: _purposeId, value: newInterval));
+        manager.ReturnToPreviousScene(new SceneManager.SceneResult(PurposeId: _purposeId, Data: newInterval));
     }
 
     private int? GetUserInput()

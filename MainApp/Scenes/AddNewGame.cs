@@ -20,7 +20,7 @@ public sealed class AddNewGame : Scene
     {
         if (from is GetNewGameTitle)
         {
-            if (result is { purposeId: var purposeId, value: var rawValue })
+            if (result is { PurposeId: var purposeId, Data: var rawValue })
             {
                 if (rawValue is null)
                 {
@@ -36,7 +36,7 @@ public sealed class AddNewGame : Scene
         }
         else if (from is GetGameSavingMode)
         {
-            if (result is { purposeId: var purposeId, value: var rawValue })
+            if (result is { PurposeId: var purposeId, Data: var rawValue })
             {
                 if (rawValue is null)
                 {
@@ -61,7 +61,7 @@ public sealed class AddNewGame : Scene
         }
         else if (from is GetGameExePath)
         {
-            if (result is { purposeId: var purposeId, value: var rawValue })
+            if (result is { PurposeId: var purposeId, Data: var rawValue })
             {
                 if (rawValue is null)
                 {

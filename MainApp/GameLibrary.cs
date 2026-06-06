@@ -54,6 +54,13 @@ public sealed class GameLibrary
         SaveToDisk();
     }
 
+    /// <param name="gameId">1 indexed</param>
+    public void ResetGame(int gameId)
+    {
+        Games[gameId - 1].ResetPlaytime();
+        SaveToDisk();
+    }
+
     public void DeleteAllGames()
     {
         Games.Clear();

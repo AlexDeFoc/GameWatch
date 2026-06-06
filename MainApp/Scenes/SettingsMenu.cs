@@ -24,7 +24,7 @@ public sealed class SettingsMenu : Scene
     {
         if (from is ConfirmDecisionMenu)
         {
-            if (result is { purposeId: var purposeId, value: bool condition })
+            if (result is { PurposeId: var purposeId, Data: bool condition })
             {
                 if (purposeId == "deletion_of_all_games")
                 {
@@ -51,7 +51,7 @@ public sealed class SettingsMenu : Scene
         }
         else if (from is ChangeAutoSaveInterval)
         {
-            if (result is { purposeId: var purposeId, value: var rawValue })
+            if (result is { PurposeId: var purposeId, Data: var rawValue })
             {
                 if (rawValue is null)
                 {
@@ -65,7 +65,7 @@ public sealed class SettingsMenu : Scene
         }
         else if (from is ChangeLanguage)
         {
-            if (result is { purposeId: var purposeId, value: var rawValue })
+            if (result is { PurposeId: var purposeId, Data: var rawValue })
             {
                 if (rawValue is null)
                 {

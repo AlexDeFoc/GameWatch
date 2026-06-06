@@ -1,10 +1,10 @@
 ﻿namespace MainApp.Scenes;
 
-public sealed class DeleteGame : Scene
+public sealed class ResetGame : Scene
 {
-    public DeleteGame(AppContext ctx) : base(ctx)
+    public ResetGame(AppContext ctx) : base(ctx)
     {
-        _strings = ctx.LanguageManager.Strings.DeleteGameScene;
+        _strings = ctx.LanguageManager.Strings.ResetGameScene;
         _logger = ctx.Logger;
         _gameLib = ctx.GameLibrary;
     }
@@ -22,7 +22,7 @@ public sealed class DeleteGame : Scene
         else
         {
             _selectedGameId = (int)gottenGameId;
-            manager.NavigateTo(new ConfirmDecisionMenu(Ctx, purposeId: "deletion_of_game"));
+            manager.NavigateTo(new ConfirmDecisionMenu(Ctx, purposeId: "reset_game"));
         }
     }
 
@@ -32,12 +32,12 @@ public sealed class DeleteGame : Scene
         {
             if (result is { PurposeId: var purposeId, Data: bool condition })
             {
-                if (purposeId == "deletion_of_game")
+                if (purposeId == "reset_game")
                 {
                     if (condition)
                     {
-                        _logger.WriteLineToCache(Logger.Label.Success, _strings.DeletedGame(Ctx, _selectedGameId));
-                        _gameLib.DeleteGame(_selectedGameId);
+                        _logger.WriteLineToCache(Logger.Label.Success, _strings.SuccessfullyResetGame(Ctx, _selectedGameId));
+                        _gameLib.ResetGame(_selectedGameId);
                     }
                     else
                     {
@@ -78,7 +78,7 @@ public sealed class DeleteGame : Scene
         for (int i = 0; i < _gameLib.Games.Count; i++)
         {
             var curGame = _gameLib.Games[i];
-            _logger.WriteLine($"{i + 1}. {curGame.Title}");
+            _logger.WriteLine($"{i + 1}. {curGame.Title} - {curGame.GetPrintablePlaytime()}");
         }
 
         return _gameLib.Games.Count;
@@ -89,7 +89,7 @@ public sealed class DeleteGame : Scene
     private int _selectedGameId;
 
     // Aliases
-    private readonly LanguageManager.IDeleteGameSceneStrings _strings;
+    private readonly LanguageManager.IResetGameSceneStrings _strings;
     private readonly Logger _logger;
     private readonly GameLibrary _gameLib;
 }
