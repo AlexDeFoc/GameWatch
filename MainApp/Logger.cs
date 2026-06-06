@@ -151,10 +151,10 @@ public sealed class Logger
     }
 
     // Constructor
-    public Logger(ColorManager colorManager, LanguageManager languageManager)
+    public Logger(AppContext ctx)
     {
-        _colorManager = colorManager;
-        _languageManager = languageManager;
+        _colorManager = ctx.ColorManager;
+        _languageManager = ctx.LanguageManager;
 
         try
         {

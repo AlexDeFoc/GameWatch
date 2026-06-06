@@ -7,12 +7,13 @@ public sealed class GameEntry
 {
     // Properties
     public string Title { get; }
-
     public TimeSpan PlayTime { get; private set; }
-
     public WorkingMode CurrentWorkingMode { get; private set; }
-
     public string ExePath { get; private set; }
+    public int Pid { get; set; }
+    public DateTime ProcessCreationTime { get; set; }
+    public bool ProcessIsActive { get; set; }
+    public DateTime? SessionStartTime { get; set; }
 
     // Constructors
     /// <summary>
@@ -58,10 +59,6 @@ public sealed class GameEntry
         ExePath = exePath;
         CurrentWorkingMode = workingMode;
     }
-
-    // Private variables
-    private int _pid;
-    private TimeOnly _processCreationTime;
 
     // Public methods
     public void ResetPlaytime() => PlayTime = TimeSpan.Zero;

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using System.Threading;
 
 namespace MainApp;
 
@@ -27,15 +28,6 @@ public sealed class GameLibrary
     public void AddGame(string title)
     {
         Games.Add(new GameEntry(title));
-        SaveToDisk();
-    }
-
-    /// <summary>
-    /// Add a game with automatic/manual working mode
-    /// </summary>
-    public void AddGame(string title, TimeSpan playtime, GameEntry.WorkingMode workingMode, string exePath = "")
-    {
-        Games.Add(new GameEntry(title, playtime, workingMode, exePath));
         SaveToDisk();
     }
 
@@ -68,8 +60,12 @@ public sealed class GameLibrary
     }
 
     // Constructor
-    public GameLibrary()
+    public GameLibrary(AppContext ctx)
     {
+        _languageManager = ctx.LanguageManager;
+        _logger = ctx.Logger;
+        ctx.AppState.AppRunningStatusChanged += OnAppRunningStatusChanged;
+
         // Note: Order doesn't matter here
         _filePaths = new Dictionary<FileExistenceOrder, Utils.FilePath>
         {
@@ -77,12 +73,19 @@ public sealed class GameLibrary
             [FileExistenceOrder.V1] = new(location: Utils.FileLocation.ExeFolder, fileName: "games_library.json")
         };
 
+        StartMonitoring();
         LoadFromDisk();
     }
 
     // Private variables
     private readonly Dictionary<FileExistenceOrder, Utils.FilePath> _filePaths;
     private readonly JsonSerializerOptions _fileJsonSerializerOpts = new() { WriteIndented = true };
+    private Timer? _monitorTimer;
+    private bool _monitorIsWorking;
+    private readonly Lock _monitorLock = new();
+    private const int MonitorIntervalMs = 5000; // 5 seconds
+    private readonly Logger _logger;
+    private readonly LanguageManager _languageManager;
 
     // Private methods
     private void LoadFromDisk()
@@ -164,6 +167,136 @@ public sealed class GameLibrary
             return verFound;
 
         return null;
+    }
+
+    private void OnAppRunningStatusChanged(object? sender, bool newState)
+    {
+        if (newState == false)
+        {
+            // 1. Finalize all active automatic games
+            FinalizeActiveGames();
+
+            // 2. Stop the timer
+            StopMonitoring();
+        }
+    }
+
+    private void FinalizeActiveGames()
+    {
+        // Take a snapshot to avoid modification during iteration
+        List<GameEntry> snapshot;
+        lock (_monitorLock) { snapshot = Games.ToList(); }
+
+        foreach (var game in snapshot.Where(game => game is { CurrentWorkingMode: GameEntry.WorkingMode.Automatic, ProcessIsActive: true }))
+        {
+            // Simulate a clean stop
+            game.ProcessIsActive = false;
+            game.Pid = 0;
+            game.ProcessCreationTime = default;
+
+            if (game.SessionStartTime.HasValue)
+            {
+                var sessionLength = DateTime.Now - game.SessionStartTime.Value;
+                game.AddPlaytime(sessionLength);
+                game.SessionStartTime = null;
+            }
+        }
+
+        // 3. Persist to disk
+        SaveToDisk();
+    }
+
+    private void StartMonitoring()
+    {
+        if (_monitorTimer != null)
+            return; // already running
+
+        _monitorTimer = new Timer(MonitorTick, null, 0, MonitorIntervalMs);
+    }
+
+    private void StopMonitoring()
+    {
+        _monitorTimer?.Dispose();
+        _monitorTimer = null;
+    }
+
+    private void MonitorTick(object? state)
+    {
+        if (_monitorIsWorking)
+            return;
+
+        _monitorIsWorking = true;
+
+        try
+        {
+            // Snapshot list to safely iterate while UI may modify it
+            List<GameEntry> snapshot;
+            lock (_monitorLock)
+            {
+                snapshot = Games.ToList();
+            }
+
+            foreach (var game in snapshot.Where(game => game.CurrentWorkingMode == GameEntry.WorkingMode.Automatic))
+            {
+                if (game.ProcessIsActive)
+                {
+                    if (!ProcessHelper.IsProcessMatching(game.ExePath, game.Pid, game.ProcessCreationTime))
+                    {
+                        // Game stopped
+                        game.ProcessIsActive = false;
+                        game.Pid = 0;
+                        game.ProcessCreationTime = default;
+                        OnGameStopped(game);
+                    }
+                }
+                else
+                {
+                    var found = ProcessHelper.FindProcessByExePath(game.ExePath);
+                    if (found.HasValue)
+                    {
+                        game.ProcessIsActive = true;
+                        game.Pid = found.Value.Pid;
+                        game.ProcessCreationTime = found.Value.CreationTime;
+                        game.SessionStartTime = DateTime.Now;
+                        OnGameStarted(game);
+                    }
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            // Log the error and continue – do NOT re‑throw
+            _logger.WriteLine(Logger.Label.Error, _languageManager.Strings.GameLibrary.GameMonitorException(e.Message));
+        }
+        finally
+        {
+            _monitorIsWorking = false;
+        }
+    }
+
+    // These will be called when a game starts/stops.
+    // They handle playtime calculation and saving.
+    private void OnGameStarted(GameEntry _)
+    {
+        // Optionally later
+        // Additional UI notification can be triggered here
+        // e.g., RaiseEvent(GameEvent.Started, game);
+
+        // No immediate save – we only save on stop, auto‑save timer, or app exit.
+    }
+
+    private void OnGameStopped(GameEntry game)
+    {
+        // 1. Calculate elapsed time since last start
+        if (game.SessionStartTime.HasValue)
+        {
+            TimeSpan sessionLength = DateTime.Now - game.SessionStartTime.Value;
+            game.AddPlaytime(sessionLength);
+            game.SessionStartTime = null;
+        }
+
+        // 2. Save to disk immediately
+        SaveToDisk();
     }
 
     // Private structures
@@ -253,7 +386,7 @@ public sealed class GameLibrary
 
                 var workingMode = workingModeElem.GetString() == "Automatic" ? GameEntry.WorkingMode.Automatic : GameEntry.WorkingMode.Manual;
 
-                var exePath = workingModeElem.GetString();
+                var exePath = exePathElem.GetString();
                 if (exePath == null)
                     continue;
 

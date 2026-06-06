@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 
 namespace MainApp.Scenes;
@@ -43,37 +42,15 @@ public sealed class GetGameExePath : Scene
 
     private List<string> ListProcesses()
     {
-        var strings = Ctx.LanguageManager.Strings.GetGameExePathScene;
-        var processInfoList = new List<(string Title, string ExePath)>();
+        var candidates = ProcessHelper.GetCandidateProcesses();
 
-        // Gather proc
-        foreach (var proc in Process.GetProcesses())
+        for (int i = 0; i < candidates.Count; ++i)
         {
-            string title = string.IsNullOrEmpty(proc.MainWindowTitle) ? strings.NoAvailableTitleFound : proc.MainWindowTitle;
-            string exePath = strings.DefaultDisplayExePath;
-
-            try
-            {
-                // MainModule can be null or throw an exception (e.g. access denied)
-                if (proc.MainModule is not null)
-                    exePath = proc.MainModule.FileName;
-            }
-            catch (Exception e)
-            {
-                exePath = strings.FallbackDisplayExePath(e.Message);
-            }
-
-            processInfoList.Add((title, exePath));
-        }
-
-        // List proc
-        for (int i = 0; i < processInfoList.Count; ++i)
-        {
-            Ctx.Logger.WriteLine($"{i + 1}. {Ctx.LanguageManager.Strings.GetGameExePathScene.PrintProcessFormat(processInfoList[i].Title, processInfoList[i].ExePath)}");
+            var (displayName, exePath) = candidates[i];
+            Ctx.Logger.WriteLine($"{i + 1}. {Ctx.LanguageManager.Strings.GetGameExePathScene.PrintProcessFormat(displayName, exePath)}");
             Console.WriteLine();
         }
 
-        // Return procPaths
-        return processInfoList.Select(tuple => tuple.ExePath).ToList();
+        return candidates.Select(c => c.ExePath).ToList();
     }
 }

@@ -7,9 +7,9 @@ public sealed class AppContext
         AppSettings = new AppSettings();
         AppState = new AppState();
         ColorManager = new ColorManager();
-        GameLibrary = new GameLibrary();
-        LanguageManager = new LanguageManager(appSettings: AppSettings);
-        Logger = new Logger(colorManager: ColorManager, languageManager: LanguageManager);
+        LanguageManager = new LanguageManager(this);
+        Logger = new Logger(this);
+        GameLibrary = new GameLibrary(this);
     }
 
     public Logger Logger { get; }

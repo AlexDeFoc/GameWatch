@@ -6,10 +6,10 @@ public sealed class LanguageManager
 {
     public ILanguagePack Strings { get; private set; }
 
-    public LanguageManager(AppSettings appSettings)
+    public LanguageManager(AppContext ctx)
     {
-        Strings = CreatePack(appSettings.ActiveAppLanguageCode);
-        appSettings.LanguageChanged += OnAppSettingsLanguageChanged;
+        Strings = CreatePack(ctx.AppSettings.ActiveAppLanguageCode);
+        ctx.AppSettings.LanguageChanged += OnAppSettingsLanguageChanged;
     }
 
     public static List<string> GetLanguagesList()
@@ -23,6 +23,7 @@ public sealed class LanguageManager
     public interface ILanguagePack
     {
         IConsoleStrings Console { get; }
+        IGameLibraryStrings GameLibrary { get; }
         IMainMenuSceneStrings MainMenuScene { get; }
         ISettingsMenuSceneStrings SettingsMenuScene { get; }
         IConfirmDecisionMenuSceneStrings ConfirmDecisionMenuScene { get; }
@@ -45,6 +46,11 @@ public sealed class LanguageManager
         string UnexpectedErrorAppExitMsg { get; }
 
         string UnexpectedErrorLocationMsg(string file, int line, string funcName);
+    }
+
+    public interface IGameLibraryStrings
+    {
+        string GameMonitorException(string exceptionMsg);
     }
 
     public interface IMainMenuSceneStrings
@@ -132,7 +138,6 @@ public sealed class LanguageManager
         string QuestionMsg { get; }
         string RequestMsg { get; }
         string InvalidInputMsg { get; }
-        string NoAvailableTitleFound { get; }
         string DefaultDisplayExePath { get; }
         string FallbackDisplayExePath(string exceptionMsg);
         string PrintProcessFormat(string title, string exePath);
@@ -141,6 +146,7 @@ public sealed class LanguageManager
     private sealed class EnUsLanguagePack : ILanguagePack
     {
         public IConsoleStrings Console { get; } = new ConsoleStrings();
+        public IGameLibraryStrings GameLibrary { get; } = new GameLibraryStrings();
         public IMainMenuSceneStrings MainMenuScene { get; } = new MainMenuSceneStrings();
         public ISettingsMenuSceneStrings SettingsMenuScene { get; } = new SettingsMenuSceneStrings();
         public IConfirmDecisionMenuSceneStrings ConfirmDecisionMenuScene { get; } = new ConfirmDecisionMenuSceneStrings();
@@ -162,6 +168,11 @@ public sealed class LanguageManager
             public string UnexpectedErrorAppExitMsg => "The app will now exit, press any key to continue.";
 
             public string UnexpectedErrorLocationMsg(string file, int line, string funcName) => $"An unexpected error has occured in file '{file}', at line '{line}', in function '{funcName}'";
+        }
+
+        private sealed class GameLibraryStrings : IGameLibraryStrings
+        {
+            public string GameMonitorException(string exceptionMsg) => $"Game monitor error msg: '{exceptionMsg}'";
         }
 
         private sealed class MainMenuSceneStrings : IMainMenuSceneStrings
@@ -278,7 +289,6 @@ public sealed class LanguageManager
             public string QuestionMsg => "Choose what process is your game. (This process will be considered your game, and whenever its running your game will run)";
             public string RequestMsg => "Enter process id: ";
             public string InvalidInputMsg => "Invalid input. Try again!";
-            public string NoAvailableTitleFound => "No title found (Background process)";
             public string DefaultDisplayExePath => "No path found (Failed to retrieve exe path)";
             public string FallbackDisplayExePath(string exceptionMsg) => $"No path found (Reason: {exceptionMsg})";
             public string PrintProcessFormat(string title, string exePath) => $"""
@@ -292,6 +302,7 @@ public sealed class LanguageManager
     private sealed class RoRoLanguagePack : ILanguagePack
     {
         public IConsoleStrings Console { get; } = new ConsoleStrings();
+        public IGameLibraryStrings GameLibrary { get; } = new GameLibraryStrings();
         public IMainMenuSceneStrings MainMenuScene { get; } = new MainMenuSceneStrings();
         public ISettingsMenuSceneStrings SettingsMenuScene { get; } = new SettingsMenuSceneStrings();
         public IConfirmDecisionMenuSceneStrings ConfirmDecisionMenuScene { get; } = new ConfirmDecisionMenuSceneStrings();
@@ -314,6 +325,11 @@ public sealed class LanguageManager
             public string UnexpectedErrorAppExitMsg => "Aplicația se va închide acum, apasă orice tastă pentru a continua.";
 
             public string UnexpectedErrorLocationMsg(string file, int line, string funcName) => $"O eroare neașteptată a apărut în fișierul '{file}', pe linia '{line}', în funcția '{funcName}'";
+        }
+
+        private sealed class GameLibraryStrings : IGameLibraryStrings
+        {
+            public string GameMonitorException(string exceptionMsg) => $"Mesaj al erorii monitorului de jocuri: '{exceptionMsg}'";
         }
 
         private sealed class MainMenuSceneStrings : IMainMenuSceneStrings
@@ -430,7 +446,6 @@ public sealed class LanguageManager
             public string QuestionMsg => "Alege ce proces este jocul tău. (Acest process va fi considerat jocul tău, mereu când acesta va fi activ, și jocul tău va fi activ)";
             public string RequestMsg => "Introdu indicele procesului: ";
             public string InvalidInputMsg => "Introducere invalidă. Încearcă din nou!";
-            public string NoAvailableTitleFound => "Niciun titlu găsit (Procesul este în fundal)";
             public string DefaultDisplayExePath => "Nici-o cale găsită (Eșuat în a găsi calea procesului)";
             public string FallbackDisplayExePath(string exceptionMsg) => $"Nici-o cale găsită (Motiv: {exceptionMsg})";
             public string PrintProcessFormat(string title, string exePath) => $"""
