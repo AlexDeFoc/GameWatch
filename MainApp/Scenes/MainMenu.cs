@@ -19,6 +19,20 @@ public sealed class MainMenu : Scene
 
         _options.Clear();
 
+        if (Ctx.GameLibrary.ContainsAnyManualWorkingGames() && !Ctx.GameLibrary.AreAllManualWorkingGamesActive())
+            _options.Add(new("start_game", strings.StartGameOption, m => m.NavigateTo(new StartManualWorkingGame(Ctx))));
+
+        if (Ctx.GameLibrary.IsAnyManualWorkingGameActive())
+        {
+            if (Ctx.GameLibrary.ContainsMultipleManualWorkingActiveGames())
+                _options.Add(new("stop_game", strings.StopMultipleGamesOption, m => m.NavigateTo(new StopOneOfManyManualWorkingGame(Ctx))));
+            else
+                _options.Add(new("stop_game", strings.StopActiveGameOption(Ctx), _ => Ctx.GameLibrary.StopSingleManualWorkingActiveGame()));
+        }
+
+        if (Ctx.GameLibrary.ContainsAnyGames())
+            _options.Add(new("edit_games", strings.EditGamesOption, _ => { }));
+
         _options.Add(new("add_new_game", strings.AddNewGameOption, m => m.NavigateTo(new AddNewGame(Ctx))));
         _options.Add(new("settings", strings.SettingsOption, m => m.NavigateTo(new SettingsMenu(Ctx))));
         _options.Add(new("exit_app", strings.ExitAppOption, _ => Ctx.AppState.ToggleAppRunningStatus()));
@@ -65,5 +79,5 @@ public sealed class MainMenu : Scene
     }
 
     // Private variables
-    private List<MenuOption> _options = new();
+    private readonly List<MenuOption> _options = [];
 }

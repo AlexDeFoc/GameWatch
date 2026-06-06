@@ -13,6 +13,7 @@ public sealed class GameEntry
     public int Pid { get; set; }
     public DateTime ProcessCreationTime { get; set; }
     public bool ProcessIsActive { get; set; }
+    public bool ManualWorkingGameIsActive { get; set; }
     public DateTime? SessionStartTime { get; set; }
 
     // Constructors

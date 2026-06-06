@@ -33,6 +33,8 @@ public sealed class LanguageManager
         IAddNewGameSceneStrings AddNewGameScene { get; }
         IGetGameSavingModeSceneStrings GetGameSavingModeScene { get; }
         IGetGameExePathSceneStrings GetGameExePathScene { get; }
+        IStartManualWorkingGameSceneStrings StartManualWorkingGameScene { get; }
+        IStopOneOfManyManualWorkingGameSceneStrings StopOneOfManyManualWorkingGameScene { get; }
     }
 
     public interface IConsoleStrings
@@ -55,11 +57,16 @@ public sealed class LanguageManager
 
     public interface IMainMenuSceneStrings
     {
+        string StartGameOption { get; }
+        string StopMultipleGamesOption { get; }
+        string EditGamesOption { get; }
         string AddNewGameOption { get; }
         string SettingsOption { get; }
         string ExitAppOption { get; }
         string RequestMsg { get; }
         string InvalidInputMsg { get; }
+
+        string StopActiveGameOption(AppContext ctx);
     }
 
     public interface ISettingsMenuSceneStrings
@@ -143,6 +150,24 @@ public sealed class LanguageManager
         string PrintProcessFormat(string title, string exePath);
     }
 
+    public interface IStartManualWorkingGameSceneStrings
+    {
+        string CancelTip { get; }
+        string RequestMsg { get; }
+        string InvalidInputMsg { get; }
+        string CancelledActionMsg { get; }
+        string StartedGameMsg(AppContext ctx, int gameId);
+    }
+
+    public interface IStopOneOfManyManualWorkingGameSceneStrings
+    {
+        string CancelTip { get; }
+        string RequestMsg { get; }
+        string InvalidInputMsg { get; }
+        string CancelledActionMsg { get; }
+        string StoppedGameMsg(AppContext ctx, int gameId);
+    }
+
     private sealed class EnUsLanguagePack : ILanguagePack
     {
         public IConsoleStrings Console { get; } = new ConsoleStrings();
@@ -156,6 +181,8 @@ public sealed class LanguageManager
         public IAddNewGameSceneStrings AddNewGameScene { get; } = new AddNewGameSceneStrings();
         public IGetGameSavingModeSceneStrings GetGameSavingModeScene { get; } = new GetGameSavingModeSceneStrings();
         public IGetGameExePathSceneStrings GetGameExePathScene { get; } = new GetGameExePathSceneStrings();
+        public IStartManualWorkingGameSceneStrings StartManualWorkingGameScene { get; } = new StartManualWorkingGameSceneStrings();
+        public IStopOneOfManyManualWorkingGameSceneStrings StopOneOfManyManualWorkingGameScene { get; } = new StopOneOfManyManualWorkingGameSceneStrings();
 
         private sealed class ConsoleStrings : IConsoleStrings
         {
@@ -177,11 +204,16 @@ public sealed class LanguageManager
 
         private sealed class MainMenuSceneStrings : IMainMenuSceneStrings
         {
+            public string StartGameOption => "Start game";
+            public string StopMultipleGamesOption => "Stop game";
+            public string EditGamesOption => "Edit games";
             public string AddNewGameOption => "Add new game";
             public string SettingsOption => "Settings";
             public string ExitAppOption => "Exit app";
             public string RequestMsg => "Enter option id: ";
             public string InvalidInputMsg => "Invalid input. Try again!";
+
+            public string StopActiveGameOption(AppContext ctx) => $"Stop game: {ctx.GameLibrary.GetSingleActiveManualWorkingGameTitle()}";
         }
 
         private sealed class SettingsMenuSceneStrings : ISettingsMenuSceneStrings
@@ -297,6 +329,24 @@ public sealed class LanguageManager
                                                                                * Path: {exePath}
                                                                                """;
         }
+
+        private sealed class StartManualWorkingGameSceneStrings : IStartManualWorkingGameSceneStrings
+        {
+            public string CancelTip => "Press CTRL+Z to cancel";
+            public string RequestMsg => "Enter game id: ";
+            public string InvalidInputMsg => "Invalid input. Try again!";
+            public string CancelledActionMsg => "Action cancelled";
+            public string StartedGameMsg(AppContext ctx, int gameId) => $"'{ctx.GameLibrary.GetManualWorkingGameTitle(gameId)}' started";
+        }
+
+        private sealed class StopOneOfManyManualWorkingGameSceneStrings : IStopOneOfManyManualWorkingGameSceneStrings
+        {
+            public string CancelTip => "Press CTRL+Z to cancel";
+            public string RequestMsg => "Enter game id: ";
+            public string InvalidInputMsg => "Invalid input. Try again!";
+            public string CancelledActionMsg => "Action cancelled";
+            public string StoppedGameMsg(AppContext ctx, int gameId) => $"'{ctx.GameLibrary.GetActiveManualWorkingGameTitle(gameId)}' stopped";
+        }
     }
 
     private sealed class RoRoLanguagePack : ILanguagePack
@@ -312,6 +362,8 @@ public sealed class LanguageManager
         public IAddNewGameSceneStrings AddNewGameScene { get; } = new AddNewGameSceneStrings();
         public IGetGameSavingModeSceneStrings GetGameSavingModeScene { get; } = new GetGameSavingModeSceneStrings();
         public IGetGameExePathSceneStrings GetGameExePathScene { get; } = new GetGameExePathSceneStrings();
+        public IStartManualWorkingGameSceneStrings StartManualWorkingGameScene { get; } = new StartManualWorkingGameSceneStrings();
+        public IStopOneOfManyManualWorkingGameSceneStrings StopOneOfManyManualWorkingGameScene { get; } = new StopOneOfManyManualWorkingGameSceneStrings();
 
         // ReSharper disable StringLiteralTypo
         private sealed class ConsoleStrings : IConsoleStrings
@@ -334,11 +386,16 @@ public sealed class LanguageManager
 
         private sealed class MainMenuSceneStrings : IMainMenuSceneStrings
         {
+            public string StartGameOption => "Pornește joc";
+            public string StopMultipleGamesOption => "Oprește joc";
+            public string EditGamesOption => "Editează jocurile";
             public string AddNewGameOption => "Adaugă joc";
             public string SettingsOption => "Setări";
             public string ExitAppOption => "Ieși din aplicație";
             public string RequestMsg => "Introdu indicele opțiunii: ";
             public string InvalidInputMsg => "Introducere invalidă. Încearcă din nou!";
+
+            public string StopActiveGameOption(AppContext ctx) => $"Oprește joc: {ctx.GameLibrary.GetSingleActiveManualWorkingGameTitle()}";
         }
 
         private sealed class SettingsMenuSceneStrings : ISettingsMenuSceneStrings
@@ -453,6 +510,24 @@ public sealed class LanguageManager
                                                                                * Titlu: {title}
                                                                                * Calea: {exePath}
                                                                                """;
+        }
+
+        private sealed class StartManualWorkingGameSceneStrings : IStartManualWorkingGameSceneStrings
+        {
+            public string CancelTip => "Apasă CTRL+Z pentru anula acțiunea";
+            public string RequestMsg => "Introdu indicele jocului: ";
+            public string InvalidInputMsg => "Introducere invalidă. Încearcă din nou!";
+            public string CancelledActionMsg => "Acțiune anulată";
+            public string StartedGameMsg(AppContext ctx, int gameId) => $"'{ctx.GameLibrary.GetActiveManualWorkingGameTitle(gameId)}' a fost pornit";
+        }
+
+        private sealed class StopOneOfManyManualWorkingGameSceneStrings : IStopOneOfManyManualWorkingGameSceneStrings
+        {
+            public string CancelTip => "Apasă CTRL+Z pentru anula acțiunea";
+            public string RequestMsg => "Introdu indicele jocului: ";
+            public string InvalidInputMsg => "Introducere invalidă. Încearcă din nou!";
+            public string CancelledActionMsg => "Acțiune anulată";
+            public string StoppedGameMsg(AppContext ctx, int gameId) => $"'{ctx.GameLibrary.GetActiveManualWorkingGameTitle(gameId)}' a fost oprit";
         }
         // ReSharper restore StringLiteralTypo
     }

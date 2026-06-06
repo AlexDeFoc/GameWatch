@@ -10,7 +10,7 @@ namespace MainApp;
 public sealed class GameLibrary
 {
     // Public properties
-    public List<GameEntry> Games { get; private set; } = [];
+    public bool ContainsAnyGames() => Games.Count != 0;
 
     // Public methods
     /// <summary>
@@ -59,6 +59,162 @@ public sealed class GameLibrary
         SaveToDisk();
     }
 
+    public bool ContainsAnyManualWorkingGames()
+    {
+        bool foundManualWorkingGame = false;
+        foreach (var game in Games)
+        {
+            if (game.CurrentWorkingMode == GameEntry.WorkingMode.Manual)
+            {
+                foundManualWorkingGame = true;
+                break;
+            }
+        }
+
+        return foundManualWorkingGame;
+    }
+
+    public bool AreAllManualWorkingGamesActive()
+    {
+        bool statement = true;
+
+        foreach (var game in Games)
+        {
+            if (game is { CurrentWorkingMode: GameEntry.WorkingMode.Manual, ManualWorkingGameIsActive: false })
+            {
+                statement = false;
+                break;
+            }
+        }
+
+        return statement;
+    }
+
+    public bool IsAnyManualWorkingGameActive()
+    {
+        bool statement = false;
+
+        foreach (var game in Games)
+        {
+            if (game is { CurrentWorkingMode: GameEntry.WorkingMode.Manual, ManualWorkingGameIsActive: true })
+            {
+                statement = true;
+                break;
+            }
+        }
+
+        return statement;
+    }
+
+    public bool ContainsMultipleManualWorkingActiveGames()
+    {
+        bool statement = false;
+        int count = 0;
+
+        foreach (var game in Games)
+        {
+            if (game is { CurrentWorkingMode: GameEntry.WorkingMode.Manual, ManualWorkingGameIsActive: true })
+            {
+                ++count;
+
+                if (count > 1)
+                {
+                    statement = true;
+                    break;
+                }
+            }
+        }
+
+        return statement;
+    }
+
+    public string GetSingleActiveManualWorkingGameTitle()
+    {
+        int gameIndex = 0;
+
+        foreach (var game in Games)
+        {
+            if (game is { CurrentWorkingMode: GameEntry.WorkingMode.Manual, ManualWorkingGameIsActive: true })
+                break;
+
+            ++gameIndex;
+        }
+
+        return Games[gameIndex].Title;
+    }
+
+    /// <param name="gameId">1 indexed</param>
+    public string GetActiveManualWorkingGameTitle(int gameId)
+    {
+        var games = GetActiveManualWorkingGames();
+        return games[gameId - 1].Title;
+    }
+
+    /// <param name="gameId">1 indexed</param>
+    public string GetManualWorkingGameTitle(int gameId)
+    {
+        var games = GetManualWorkingGames();
+        return games[gameId - 1].Title;
+    }
+
+    public List<GameEntry> GetManualWorkingGames()
+    {
+        List<GameEntry> games = [];
+
+        foreach (var game in Games)
+        {
+            if (game.CurrentWorkingMode == GameEntry.WorkingMode.Manual)
+                games.Add(game);
+        }
+
+        return games;
+    }
+
+    public List<GameEntry> GetActiveManualWorkingGames()
+    {
+        List<GameEntry> games = [];
+
+        foreach (var game in Games)
+        {
+            if (game is {CurrentWorkingMode: GameEntry.WorkingMode.Manual, ManualWorkingGameIsActive: true})
+                games.Add(game);
+        }
+
+        return games;
+    }
+
+    /// <param name="gameId">1 indexed</param>
+    public void StartManualWorkingGame(int gameId)
+    {
+        var games = GetManualWorkingGames();
+        games[gameId - 1].ManualWorkingGameIsActive = true;
+        games[gameId - 1].SessionStartTime = DateTime.Now;
+    }
+
+    /// <param name="gameId">1 indexed</param>
+    public void StopManualWorkingGame(int gameId)
+    {
+        var games = GetActiveManualWorkingGames();
+        OnGameStopped(games[gameId - 1]);
+    }
+
+    public void StopSingleManualWorkingActiveGame()
+    {
+        GameEntry? targetGame = null;
+
+        foreach (var game in Games)
+        {
+            if (game is { CurrentWorkingMode: GameEntry.WorkingMode.Manual, ManualWorkingGameIsActive: true })
+            {
+                targetGame = game;
+                break;
+            }
+        }
+
+        if (targetGame is not null)
+            OnGameStopped(targetGame);
+    }
+
     // Constructor
     public GameLibrary(AppContext ctx)
     {
@@ -78,6 +234,7 @@ public sealed class GameLibrary
     }
 
     // Private variables
+    private List<GameEntry> Games { get; set; } = [];
     private readonly Dictionary<FileExistenceOrder, Utils.FilePath> _filePaths;
     private readonly JsonSerializerOptions _fileJsonSerializerOpts = new() { WriteIndented = true };
     private Timer? _monitorTimer;
@@ -185,7 +342,10 @@ public sealed class GameLibrary
     {
         // Take a snapshot to avoid modification during iteration
         List<GameEntry> snapshot;
-        lock (_monitorLock) { snapshot = Games.ToList(); }
+        lock (_monitorLock)
+        {
+            snapshot = Games.ToList();
+        }
 
         foreach (var game in snapshot.Where(game => game is { CurrentWorkingMode: GameEntry.WorkingMode.Automatic, ProcessIsActive: true }))
         {
@@ -258,7 +418,6 @@ public sealed class GameLibrary
                         game.Pid = found.Value.Pid;
                         game.ProcessCreationTime = found.Value.CreationTime;
                         game.SessionStartTime = DateTime.Now;
-                        OnGameStarted(game);
                     }
                 }
             }
@@ -276,23 +435,15 @@ public sealed class GameLibrary
 
     // These will be called when a game starts/stops.
     // They handle playtime calculation and saving.
-    private void OnGameStarted(GameEntry _)
-    {
-        // Optionally later
-        // Additional UI notification can be triggered here
-        // e.g., RaiseEvent(GameEvent.Started, game);
-
-        // No immediate save – we only save on stop, auto‑save timer, or app exit.
-    }
-
     private void OnGameStopped(GameEntry game)
     {
         // 1. Calculate elapsed time since last start
         if (game.SessionStartTime.HasValue)
         {
-            TimeSpan sessionLength = DateTime.Now - game.SessionStartTime.Value;
+            var sessionLength = DateTime.Now - game.SessionStartTime.Value;
             game.AddPlaytime(sessionLength);
             game.SessionStartTime = null;
+            game.ManualWorkingGameIsActive = false;
         }
 
         // 2. Save to disk immediately

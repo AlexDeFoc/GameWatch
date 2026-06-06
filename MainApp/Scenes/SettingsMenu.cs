@@ -60,7 +60,7 @@ public sealed class SettingsMenu : Scene
         _options.Add(new("change_language", strings.ChangeLanguageOption, m => m.NavigateTo(new ChangeLanguage(Ctx))));
         _options.Add(new("reset_all_settings", strings.ResetAllSettingsOption, m => m.NavigateTo(new ConfirmDecisionMenu(Ctx, "reset_all_settings"))));
 
-        if (Ctx.GameLibrary.Games.Count > 0)
+        if (Ctx.GameLibrary.ContainsAnyGames())
         {
             _options.Add(new("reset_all_games", strings.ResetAllGamesOption, m => m.NavigateTo(new ConfirmDecisionMenu(Ctx, "reset_all_games"))));
             _options.Add(new("delete_all_games", strings.DeleteAllGamesOption, m => m.NavigateTo(new ConfirmDecisionMenu(Ctx, "delete_all_games"))));
