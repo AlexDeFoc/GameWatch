@@ -27,14 +27,14 @@ public sealed class SceneManager
     public void NavigateTo(Scene scene) => _stack.Push(scene);
 
     // Pop the current scene and return a result to the previous one
-    public void ReturnFrom(Scene returningScene, object? result = null)
+    public void ReturnToPreviousScene(SceneResult? result = null)
     {
         if (_stack.Count < 2)
             throw new Logger.UnexpectedError(_ctx);
 
-        Scene finished = _stack.Pop();             // remove current
-        Scene previous = _stack.Peek();            // previous scene on top
-        previous.OnReturnedFrom(finished, result); // tell it what happened
+        var finished = _stack.Pop();             // remove current
+        var previous = _stack.Peek();            // previous scene on top
+        previous.OnReturnedFrom(finished, result); // pass result to previous scene
     }
 
     // Replace current scene without keeping it on the stack
@@ -44,4 +44,7 @@ public sealed class SceneManager
         _stack.Pop();
         _stack.Push(newScene);
     }
+
+    // Structures
+    public readonly record struct SceneResult(string purposeId, object? value);
 }

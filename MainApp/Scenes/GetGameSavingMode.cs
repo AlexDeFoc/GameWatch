@@ -5,28 +5,35 @@ namespace MainApp.Scenes;
 
 public sealed class GetGameSavingMode : Scene
 {
-    public GetGameSavingMode(AppContext ctx) : base(ctx)
+    private readonly string _purposeId;
+
+    public GetGameSavingMode(AppContext ctx, string purposeId) : base(ctx)
     {
+        _purposeId = purposeId;
+        _strings = ctx.LanguageManager.Strings.GetGameSavingModeScene;
+        _logger = ctx.Logger;
     }
 
-    public override void Run(SceneManager manager) => manager.ReturnFrom(this, GetUserInput());
+    public override void Run(SceneManager manager)
+    {
+        var gottenWorkingMode = GetUserInput();
+
+        manager.ReturnToPreviousScene(new SceneManager.SceneResult(purposeId: _purposeId, value: gottenWorkingMode));
+    }
 
     private GameEntry.WorkingMode? GetUserInput()
     {
-        var strings = Ctx.LanguageManager.Strings.GetGameSavingModeScene;
-        var logger = Ctx.Logger;
-
         while (true)
         {
             Logger.Clear();
-            logger.WriteCached();
+            _logger.WriteCached();
 
             ListModes();
 
             Console.Write("\n\n");
-            logger.WriteLine(Logger.Label.Tip, strings.CancelTip);
-            logger.WriteLine(Logger.Label.Request, strings.QuestionMsg);
-            logger.Write(Logger.Label.Request, strings.RequestMsg);
+            _logger.WriteLine(Logger.Label.Tip, _strings.CancelTip);
+            _logger.WriteLine(Logger.Label.Request, _strings.QuestionMsg);
+            _logger.Write(Logger.Label.Request, _strings.RequestMsg);
 
             string? input = Console.ReadLine();
             if (input == null)
@@ -40,28 +47,32 @@ public sealed class GetGameSavingMode : Scene
                     throw new Logger.UnexpectedError(Ctx);
             }
 
-            logger.WriteLineToCache(Logger.Label.Error, strings.InvalidInputMsg);
+            _logger.WriteLineToCache(Logger.Label.Error, _strings.InvalidInputMsg);
         }
     }
 
     private void ListModes()
     {
         var opts = new List<string>{
-            Ctx.LanguageManager.Strings.GetGameSavingModeScene.AutomaticModeOption,
-            Ctx.LanguageManager.Strings.GetGameSavingModeScene.ManualModeOption,
+            _strings.AutomaticModeOption,
+            _strings.ManualModeOption,
         };
 
         var optDetails = new List<string>
         {
-            Ctx.LanguageManager.Strings.GetGameSavingModeScene.AutomaticModeDescription,
-            Ctx.LanguageManager.Strings.GetGameSavingModeScene.ManualModeDescription,
+            _strings.AutomaticModeDescription,
+            _strings.ManualModeDescription,
         };
 
         for (int i = 0; i < opts.Count; ++i)
         {
-            Ctx.Logger.WriteLine($"{i + 1}. {opts[i]}");
-            Ctx.Logger.WriteLine(optDetails[i]);
+            _logger.WriteLine($"{i + 1}. {opts[i]}");
+            _logger.WriteLine(optDetails[i]);
             Console.WriteLine();
         }
     }
+
+    // Aliases
+    private readonly LanguageManager.IGetGameSavingModeSceneStrings _strings;
+    private readonly Logger _logger;
 }

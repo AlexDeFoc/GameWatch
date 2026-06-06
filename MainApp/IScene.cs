@@ -10,5 +10,5 @@ public abstract class Scene
     public abstract void Run(SceneManager manager);
 
     // Override to handle data when the scene below you returns
-    public virtual void OnReturnedFrom(Scene from, object? result) {}
+    public virtual void OnReturnedFrom(Scene from, SceneManager.SceneResult? result) {}
 }

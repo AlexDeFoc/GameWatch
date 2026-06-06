@@ -4,27 +4,34 @@ namespace MainApp.Scenes;
 
 public sealed class ChangeLanguage : Scene
 {
-    public ChangeLanguage(AppContext ctx) : base(ctx)
+    private readonly string _purposeId;
+
+    public ChangeLanguage(AppContext ctx, string purposeId) : base(ctx)
     {
+        _purposeId = purposeId;
+        _strings = ctx.LanguageManager.Strings.ChangeLanguageScene;
+        _logger = ctx.Logger;
     }
 
-    public override void Run(SceneManager manager) => manager.ReturnFrom(this, GetUserInput());
+    public override void Run(SceneManager manager)
+    {
+        var newLanguageCode = GetUserInput();
+
+        manager.ReturnToPreviousScene(new SceneManager.SceneResult(purposeId: _purposeId, value: newLanguageCode));
+    }
 
     private LanguageManager.LanguageCode? GetUserInput()
     {
-        var strings = Ctx.LanguageManager.Strings.ChangeLanguageScene;
-        var logger = Ctx.Logger;
-
         while (true)
         {
             Logger.Clear();
-            logger.WriteCached();
+            _logger.WriteCached();
 
             var optsCount = ListOptions();
 
-            logger.WriteLine(Logger.Label.Tip, strings.CancelTip);
+            _logger.WriteLine(Logger.Label.Tip, _strings.CancelTip);
 
-            logger.Write(Logger.Label.Request, strings.RequestMsg);
+            _logger.Write(Logger.Label.Request, _strings.RequestMsg);
             string? input = Console.ReadLine();
 
             if (input == null)
@@ -38,7 +45,7 @@ public sealed class ChangeLanguage : Scene
                     throw new Logger.UnexpectedError(Ctx);
             }
 
-            logger.WriteLineToCache(Logger.Label.Error, strings.InvalidInputMsg);
+            _logger.WriteLineToCache(Logger.Label.Error, _strings.InvalidInputMsg);
         }
     }
 
@@ -47,9 +54,13 @@ public sealed class ChangeLanguage : Scene
         var opts = LanguageManager.GetLanguagesList();
         for (int i = 0; i < opts.Count; ++i)
         {
-            Ctx.Logger.WriteLine($"{i + 1}. {opts[i]}");
+            _logger.WriteLine($"{i + 1}. {opts[i]}");
         }
 
         return opts.Count;
     }
+
+    // Aliases
+    private readonly LanguageManager.IChangeLanguageSceneStrings _strings;
+    private readonly Logger _logger;
 }

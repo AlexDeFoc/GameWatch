@@ -2,47 +2,51 @@
 
 public sealed class ConfirmDecisionMenu : Scene
 {
-    private readonly string _actionId; // identifies what we're confirming
+    private readonly string _purposeId;
 
-    public ConfirmDecisionMenu(AppContext ctx, string actionId) : base(ctx) => _actionId = actionId;
+    public ConfirmDecisionMenu(AppContext ctx, string purposeId) : base(ctx)
+    {
+        _purposeId = purposeId;
+        _strings = ctx.LanguageManager.Strings.ConfirmDecisionMenuScene;
+        _logger = ctx.Logger;
+    }
 
     public override void Run(SceneManager manager)
     {
         bool userSaidYes = GetUserInput();
 
-        // Pop ourselves and send result back to the caller
-        manager.ReturnFrom(this, (actionId: _actionId, confirmed: userSaidYes));
+        manager.ReturnToPreviousScene(new SceneManager.SceneResult(purposeId: _purposeId, value: userSaidYes));
     }
 
     private bool GetUserInput()
     {
-        var strings = Ctx.LanguageManager.Strings.ConfirmDecisionMenuScene;
-        var logger = Ctx.Logger;
-
         while (true)
         {
             Logger.Clear();
-            logger.WriteCached();
+            _logger.WriteCached();
 
-            logger.WriteLine(strings.QuestionMsg);
+            _logger.WriteLine(_strings.QuestionMsg);
 
             ListOptions();
 
-            logger.Write(Logger.Label.Request, strings.RequestMsg);
+            _logger.Write(Logger.Label.Request, _strings.RequestMsg);
 
             string? input = System.Console.ReadLine();
 
             if (int.TryParse(input, out int choice) && choice is 1 or 2)
                 return choice == 1;
 
-            logger.WriteLineToCache(Logger.Label.Error, strings.InvalidInputMsg);
+            _logger.WriteLineToCache(Logger.Label.Error, _strings.InvalidInputMsg);
         }
     }
 
     private void ListOptions()
     {
-        var strings = Ctx.LanguageManager.Strings.ConfirmDecisionMenuScene;
-        Ctx.Logger.WriteLine($"1. {strings.YesOption}");
-        Ctx.Logger.WriteLine($"2. {strings.NoOption}");
+        _logger.WriteLine($"1. {_strings.YesOption}");
+        _logger.WriteLine($"2. {_strings.NoOption}");
     }
+
+    // Aliases
+    private readonly LanguageManager.IConfirmDecisionMenuSceneStrings _strings;
+    private readonly Logger _logger;
 }

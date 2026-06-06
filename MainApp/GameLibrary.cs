@@ -60,6 +60,13 @@ public sealed class GameLibrary
         SaveToDisk();
     }
 
+    /// <param name="gameId">1 indexed</param>
+    public void DeleteGame(int gameId)
+    {
+        Games.RemoveAt(gameId - 1);
+        SaveToDisk();
+    }
+
     public bool ContainsAnyManualWorkingGames()
     {
         bool foundManualWorkingGame = false;
@@ -220,6 +227,7 @@ public sealed class GameLibrary
     public void ChangeGameTitle(int gameId, string newGameTitle)
     {
         Games[gameId - 1].Title = newGameTitle;
+        SaveToDisk();
     }
 
     /// <param name="gameId">1 indexed</param>

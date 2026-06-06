@@ -4,7 +4,13 @@ namespace MainApp.Scenes;
 
 public sealed class MainMenu : Scene
 {
-    public MainMenu(AppContext ctx) : base(ctx) {}
+    public MainMenu(AppContext ctx) : base(ctx)
+    {
+        _strings = ctx.LanguageManager.Strings.MainMenuScene;
+        _logger = ctx.Logger;
+        _gameLib = ctx.GameLibrary;
+        _appState = ctx.AppState;
+    }
 
     public override void Run(SceneManager manager)
     {
@@ -15,43 +21,38 @@ public sealed class MainMenu : Scene
 
     private void BuildOptions()
     {
-        var strings = Ctx.LanguageManager.Strings.MainMenuScene;
-
         _options.Clear();
 
-        if (Ctx.GameLibrary.ContainsAnyManualWorkingGames() && !Ctx.GameLibrary.AreAllManualWorkingGamesActive())
-            _options.Add(new("start_game", strings.StartGameOption, m => m.NavigateTo(new StartManualWorkingGame(Ctx))));
+        if (_gameLib.ContainsAnyManualWorkingGames() && !_gameLib.AreAllManualWorkingGamesActive())
+            _options.Add(new("start_game", _strings.StartGameOption, m => m.NavigateTo(new StartManualWorkingGame(Ctx))));
 
-        if (Ctx.GameLibrary.IsAnyManualWorkingGameActive())
+        if (_gameLib.IsAnyManualWorkingGameActive())
         {
-            if (Ctx.GameLibrary.ContainsMultipleManualWorkingActiveGames())
-                _options.Add(new("stop_game", strings.StopMultipleGamesOption, m => m.NavigateTo(new StopOneOfManyManualWorkingGame(Ctx))));
+            if (_gameLib.ContainsMultipleManualWorkingActiveGames())
+                _options.Add(new("stop_game", _strings.StopMultipleGamesOption, m => m.NavigateTo(new StopOneOfManyManualWorkingGame(Ctx))));
             else
-                _options.Add(new("stop_game", strings.StopActiveGameOption(Ctx), _ => Ctx.GameLibrary.StopSingleManualWorkingActiveGame()));
+                _options.Add(new("stop_game", _strings.StopActiveGameOption(Ctx), _ => _gameLib.StopSingleManualWorkingActiveGame()));
         }
 
-        if (Ctx.GameLibrary.ContainsAnyGames())
-            _options.Add(new("edit_games", strings.EditGamesOption, m => m.NavigateTo(new EditGamesMenu(Ctx))));
+        if (_gameLib.ContainsAnyGames())
+            _options.Add(new("edit_games", _strings.EditGamesOption, m => m.NavigateTo(new EditGamesMenu(Ctx))));
 
-        _options.Add(new("add_new_game", strings.AddNewGameOption, m => m.NavigateTo(new AddNewGame(Ctx))));
-        _options.Add(new("settings", strings.SettingsOption, m => m.NavigateTo(new SettingsMenu(Ctx))));
-        _options.Add(new("exit_app", strings.ExitAppOption, _ => Ctx.AppState.ToggleAppRunningStatus()));
+        _options.Add(new("add_new_game", _strings.AddNewGameOption, m => m.NavigateTo(new AddNewGame(Ctx))));
+        _options.Add(new("settings", _strings.SettingsOption, m => m.NavigateTo(new SettingsMenu(Ctx))));
+        _options.Add(new("exit_app", _strings.ExitAppOption, _ => _appState.ToggleAppRunningStatus()));
     }
 
     // Menu related methods
     private int GetUserInput()
     {
-        var strings = Ctx.LanguageManager.Strings.MainMenuScene;
-        var logger = Ctx.Logger;
-
         while (true)
         {
             Logger.Clear();
-            logger.WriteCached();
+            _logger.WriteCached();
 
             ListOptions();
 
-            logger.Write(Logger.Label.Request, strings.RequestMsg);
+            _logger.Write(Logger.Label.Request, _strings.RequestMsg);
             string? input = System.Console.ReadLine();
 
             if (int.TryParse(input, out int choice) && choice >= 0 && choice < _options.Count)
@@ -62,22 +63,26 @@ public sealed class MainMenu : Scene
                     return choice - 1;
             }
 
-            logger.WriteLineToCache(Logger.Label.Error, strings.InvalidInputMsg);
+            _logger.WriteLineToCache(Logger.Label.Error, _strings.InvalidInputMsg);
         }
     }
 
     private void ListOptions()
     {
-        var logger = Ctx.Logger;
-
         for (int i = 0; i < _options.Count - 1; i++)
         {
-            logger.WriteLine($"{i + 1}. {_options[i].DisplayText}");
+            _logger.WriteLine($"{i + 1}. {_options[i].DisplayText}");
         }
 
-        logger.WriteLine($"0. {_options[^1].DisplayText}");
+        _logger.WriteLine($"0. {_options[^1].DisplayText}");
     }
 
     // Private variables
     private readonly List<MenuOption> _options = [];
+
+    // Aliases
+    private readonly LanguageManager.IMainMenuSceneStrings _strings;
+    private readonly Logger _logger;
+    private readonly GameLibrary _gameLib;
+    private readonly AppState _appState;
 }

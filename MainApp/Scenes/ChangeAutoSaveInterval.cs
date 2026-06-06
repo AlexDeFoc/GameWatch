@@ -2,24 +2,33 @@
 
 public sealed class ChangeAutoSaveInterval : Scene
 {
-    public ChangeAutoSaveInterval(AppContext ctx) : base(ctx) {}
+    private readonly string _purposeId;
 
-    public override void Run(SceneManager manager) => manager.ReturnFrom(this, GetUserInput());
+    public ChangeAutoSaveInterval(AppContext ctx, string purposeId) : base(ctx)
+    {
+        _purposeId = purposeId;
+        _strings = ctx.LanguageManager.Strings.ChangeAutoSaveIntervalScene;
+        _logger = ctx.Logger;
+    }
+
+    public override void Run(SceneManager manager)
+    {
+        var newInterval = GetUserInput();
+
+        manager.ReturnToPreviousScene(new SceneManager.SceneResult(purposeId: _purposeId, value: newInterval));
+    }
 
     private int? GetUserInput()
     {
-        var strings = Ctx.LanguageManager.Strings.ChangeAutoSaveIntervalScene;
-        var logger = Ctx.Logger;
-
         while (true)
         {
             Logger.Clear();
-            logger.WriteCached();
+            _logger.WriteCached();
 
-            logger.WriteLine(Logger.Label.Tip, strings.CancelTip);
-            logger.WriteLine(Logger.Label.Info, strings.CurrentAutoSaveInterval(Ctx));
+            _logger.WriteLine(Logger.Label.Tip, _strings.CancelTip);
+            _logger.WriteLine(Logger.Label.Info, _strings.CurrentAutoSaveInterval(Ctx));
 
-            logger.Write(Logger.Label.Request, strings.RequestMsg);
+            _logger.Write(Logger.Label.Request, _strings.RequestMsg);
             string? input = System.Console.ReadLine();
 
             if (input == null)
@@ -28,7 +37,11 @@ public sealed class ChangeAutoSaveInterval : Scene
             if (int.TryParse(input, out int choice) && choice >= 1)
                 return choice;
 
-            logger.WriteLineToCache(Logger.Label.Error, strings.InvalidInputMsg);
+            _logger.WriteLineToCache(Logger.Label.Error, _strings.InvalidInputMsg);
         }
     }
+
+    // Aliases
+    private readonly LanguageManager.IChangeAutoSaveIntervalSceneStrings _strings;
+    private readonly Logger _logger;
 }

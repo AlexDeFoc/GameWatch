@@ -2,7 +2,12 @@
 
 public sealed class StopOneOfManyManualWorkingGame : Scene
 {
-    public StopOneOfManyManualWorkingGame(AppContext ctx) : base(ctx) {}
+    public StopOneOfManyManualWorkingGame(AppContext ctx) : base(ctx)
+    {
+        _strings = ctx.LanguageManager.Strings.StopOneOfManyManualWorkingGameScene;
+        _logger = ctx.Logger;
+        _gameLib = ctx.GameLibrary;
+    }
 
     public override void Run(SceneManager manager)
     {
@@ -10,32 +15,29 @@ public sealed class StopOneOfManyManualWorkingGame : Scene
 
         if (selectedGameId == null)
         {
-            Ctx.Logger.WriteLine(Logger.Label.Info, Ctx.LanguageManager.Strings.StopOneOfManyManualWorkingGameScene.CancelledActionMsg);
+            _logger.WriteLine(Logger.Label.Info, _strings.CancelledActionMsg);
         }
         else
         {
-            Ctx.Logger.WriteLine(Logger.Label.Info, Ctx.LanguageManager.Strings.StopOneOfManyManualWorkingGameScene.StoppedGameMsg(Ctx, (int)selectedGameId));
-            Ctx.GameLibrary.StopManualWorkingGame(gameId: (int)selectedGameId);
+            _logger.WriteLine(Logger.Label.Success, _strings.StoppedGameMsg(Ctx, (int)selectedGameId));
+            _gameLib.StopManualWorkingGame(gameId: (int)selectedGameId);
         }
 
-        manager.ReturnFrom(this);
+        manager.ReturnToPreviousScene();
     }
 
     // Menu related methods
     private int? GetUserInput()
     {
-        var strings = Ctx.LanguageManager.Strings.StopOneOfManyManualWorkingGameScene;
-        var logger = Ctx.Logger;
-
         while (true)
         {
             Logger.Clear();
-            logger.WriteCached();
+            _logger.WriteCached();
 
             var gamesCount = ListGames();
 
-            logger.WriteLine(Logger.Label.Tip, strings.CancelTip);
-            logger.Write(Logger.Label.Request, strings.RequestMsg);
+            _logger.WriteLine(Logger.Label.Tip, _strings.CancelTip);
+            _logger.Write(Logger.Label.Request, _strings.RequestMsg);
             string? input = System.Console.ReadLine();
             if (input == null)
                 return null;
@@ -43,21 +45,25 @@ public sealed class StopOneOfManyManualWorkingGame : Scene
             if (int.TryParse(input, out int choice) && choice >= 1 && choice <= gamesCount)
                 return choice;
 
-            logger.WriteLineToCache(Logger.Label.Error, strings.InvalidInputMsg);
+            _logger.WriteLineToCache(Logger.Label.Error, _strings.InvalidInputMsg);
         }
     }
 
     private int ListGames()
     {
-        var logger = Ctx.Logger;
-        var manualWorkingGames = Ctx.GameLibrary.GetActiveManualWorkingGames();
+        var manualWorkingGames = _gameLib.GetActiveManualWorkingGames();
 
         for (int i = 0; i < manualWorkingGames.Count; i++)
         {
             var curGame = manualWorkingGames[i];
-            logger.WriteLine($"{i + 1}. {curGame.Title}");
+            _logger.WriteLine($"{i + 1}. {curGame.Title}");
         }
 
         return manualWorkingGames.Count;
     }
+
+    // Aliases
+    private readonly LanguageManager.IStopOneOfManyManualWorkingGameSceneStrings _strings;
+    private readonly Logger _logger;
+    private readonly GameLibrary _gameLib;
 }

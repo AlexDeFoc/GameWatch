@@ -2,7 +2,12 @@
 
 public sealed class ChangeGameTitle : Scene
 {
-    public ChangeGameTitle(AppContext ctx) : base(ctx) {}
+    public ChangeGameTitle(AppContext ctx) : base(ctx)
+    {
+        _strings = ctx.LanguageManager.Strings.ChangeGameTitleScene;
+        _logger = ctx.Logger;
+        _gameLib = ctx.GameLibrary;
+    }
 
     public override void Run(SceneManager manager)
     {
@@ -10,7 +15,7 @@ public sealed class ChangeGameTitle : Scene
 
         if (selectedGameId == null)
         {
-            Ctx.Logger.WriteLine(Logger.Label.Info, Ctx.LanguageManager.Strings.ChangeGameTitleScene.CancelledActionMsg);
+            _logger.WriteLine(Logger.Label.Info, _strings.CancelledActionMsg);
         }
         else
         {
@@ -18,33 +23,30 @@ public sealed class ChangeGameTitle : Scene
 
             if (newGameTitle == null)
             {
-                Ctx.Logger.WriteLine(Logger.Label.Info, Ctx.LanguageManager.Strings.ChangeGameTitleScene.CancelledActionMsg);
+                _logger.WriteLine(Logger.Label.Info, _strings.CancelledActionMsg);
             }
             else
             {
-                Ctx.Logger.WriteLineToCache(Logger.Label.Info, Ctx.LanguageManager.Strings.ChangeGameTitleScene.TitleChangedMsg(Ctx, (int)selectedGameId, newGameTitle));
-                Ctx.GameLibrary.ChangeGameTitle(gameId: (int)selectedGameId, newGameTitle: newGameTitle);
+                _logger.WriteLineToCache(Logger.Label.Success, _strings.TitleChangedMsg(Ctx, (int)selectedGameId, newGameTitle));
+                _gameLib.ChangeGameTitle(gameId: (int)selectedGameId, newGameTitle: newGameTitle);
             }
         }
 
-        manager.ReturnFrom(this);
+        manager.ReturnToPreviousScene();
     }
 
     // Menu related methods
     private int? GetGameIdFromUser()
     {
-        var strings = Ctx.LanguageManager.Strings.ChangeGameTitleScene;
-        var logger = Ctx.Logger;
-
         while (true)
         {
             Logger.Clear();
-            logger.WriteCached();
+            _logger.WriteCached();
 
             var gamesCount = ListGames();
 
-            logger.WriteLine(Logger.Label.Tip, strings.CancelTip);
-            logger.Write(Logger.Label.Request, strings.RequestMsgForGameId);
+            _logger.WriteLine(Logger.Label.Tip, _strings.CancelTip);
+            _logger.Write(Logger.Label.Request, _strings.RequestMsgForGameId);
             string? input = System.Console.ReadLine();
             if (input == null)
                 return null;
@@ -52,36 +54,37 @@ public sealed class ChangeGameTitle : Scene
             if (int.TryParse(input, out int choice) && choice >= 1 && choice <= gamesCount)
                 return choice;
 
-            logger.WriteLineToCache(Logger.Label.Error, strings.InvalidInputMsg);
+            _logger.WriteLineToCache(Logger.Label.Error, _strings.InvalidInputMsg);
         }
     }
 
     private string? GetGameTitleFromUser()
     {
-        var strings = Ctx.LanguageManager.Strings.ChangeGameTitleScene;
-        var logger = Ctx.Logger;
-
         while (true)
         {
             Logger.Clear();
-            logger.WriteCached();
+            _logger.WriteCached();
 
-            logger.WriteLine(Logger.Label.Tip, strings.CancelTip);
+            _logger.WriteLine(Logger.Label.Tip, _strings.CancelTip);
 
-            logger.Write(Logger.Label.Request, strings.RequestMsgForGameTitle);
+            _logger.Write(Logger.Label.Request, _strings.RequestMsgForGameTitle);
             return System.Console.ReadLine();
         }
     }
 
     private int ListGames()
     {
-        var logger = Ctx.Logger;
-        for (int i = 0; i < Ctx.GameLibrary.Games.Count; i++)
+        for (int i = 0; i < _gameLib.Games.Count; i++)
         {
-            var curGame = Ctx.GameLibrary.Games[i];
-            logger.WriteLine($"{i + 1}. {curGame.Title}");
+            var curGame = _gameLib.Games[i];
+            _logger.WriteLine($"{i + 1}. {curGame.Title}");
         }
 
-        return Ctx.GameLibrary.Games.Count;
+        return _gameLib.Games.Count;
     }
+
+    // Aliases
+    private readonly LanguageManager.IChangeGameTitleSceneStrings _strings;
+    private readonly Logger _logger;
+    private readonly GameLibrary _gameLib;
 }
