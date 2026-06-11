@@ -46,7 +46,7 @@ public static class Program
     {
         try
         {
-            Utils.EnsureOurFolderExistsInAppData();
+            Utils.EnsureUserDataDirExists();
             _appCtx = new AppContext();
             _sceneManager = new SceneManager(_appCtx);
             _startupScene = new Scenes.MainMenu(_appCtx);

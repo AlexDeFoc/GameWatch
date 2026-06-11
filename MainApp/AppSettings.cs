@@ -73,10 +73,10 @@ public sealed class AppSettings
     public AppSettings()
     {
         // Note: Order doesn't matter here
-        _filePaths = new Dictionary<FileExistenceOrder, Utils.FilePath>
+        _filePaths = new Dictionary<FileExistenceOrder, FilePath>
         {
-            [FileExistenceOrder.V2] = new(location: Utils.FileLocation.LocalAppDataFolder, fileName: "Settings.json"),
-            [FileExistenceOrder.V1] = new(location: Utils.FileLocation.ExeFolder, fileName: "settings.json")
+            [FileExistenceOrder.V2] = new(scope: FilePath.Scope.UserDataDirectory, fileName: "Settings.json"),
+            [FileExistenceOrder.V1] = new(scope: FilePath.Scope.AppDirectory, fileName: "settings.json")
         };
 
         LoadFromDisk();
@@ -86,7 +86,7 @@ public sealed class AppSettings
     private volatile bool _gameAutoSaveEnabled;
     private volatile int _gameAutoSaveIntervalInMinutes;
     private LanguageManager.LanguageCode _activeActiveAppLanguageCode;
-    private readonly Dictionary<FileExistenceOrder, Utils.FilePath> _filePaths;
+    private readonly Dictionary<FileExistenceOrder, FilePath> _filePaths;
     private readonly JsonSerializerOptions _fileJsonSerializerOpts = new() { WriteIndented = true };
 
     // Private methods
@@ -108,7 +108,7 @@ public sealed class AppSettings
 
         var chosenFilePath = foundFilesPaths.First().Value;
 
-        string fileContents = File.ReadAllText(chosenFilePath.RealPath);
+        string fileContents = File.ReadAllText(chosenFilePath.FullPath);
 
         try
         {
@@ -151,7 +151,7 @@ public sealed class AppSettings
         {
             try
             {
-                File.Delete(filePath.RealPath);
+                File.Delete(filePath.FullPath);
             }
             catch
             {
@@ -173,7 +173,7 @@ public sealed class AppSettings
         };
 
         var jsonString = JsonSerializer.Serialize(fileSchema, _fileJsonSerializerOpts);
-        File.WriteAllText(_filePaths[FileExistenceOrder.V2].RealPath, jsonString);
+        File.WriteAllText(_filePaths[FileExistenceOrder.V2].FullPath, jsonString);
     }
 
     private void LoadDefaults()

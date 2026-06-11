@@ -34,11 +34,11 @@ public sealed class GameLibrary
 
     public void CreateGameLibraryBackup()
     {
-        var backupFilePath = new Utils.FilePath(location: Utils.FileLocation.LocalAppDataFolder, fileName: "GameLibrary.bak.json");
+        var backupFilePath = new FilePath(scope: FilePath.Scope.UserDataDirectory, fileName: "GameLibrary.bak.json");
 
         try
         {
-            File.Copy(_filePaths[FileExistenceOrder.V2].RealPath, backupFilePath.RealPath, true);
+            File.Copy(_filePaths[FileExistenceOrder.V2].FullPath, backupFilePath.FullPath, true);
         }
         catch
         {
@@ -286,10 +286,10 @@ public sealed class GameLibrary
         ctx.AppState.AppRunningStatusChanged += OnAppRunningStatusChanged;
 
         // Note: Order doesn't matter here
-        _filePaths = new Dictionary<FileExistenceOrder, Utils.FilePath>
+        _filePaths = new Dictionary<FileExistenceOrder, FilePath>
         {
-            [FileExistenceOrder.V2] = new(location: Utils.FileLocation.LocalAppDataFolder, fileName: "GameLibrary.json"),
-            [FileExistenceOrder.V1] = new(location: Utils.FileLocation.ExeFolder, fileName: "games_library.json")
+            [FileExistenceOrder.V2] = new(scope: FilePath.Scope.UserDataDirectory, fileName: "GameLibrary.json"),
+            [FileExistenceOrder.V1] = new(scope: FilePath.Scope.AppDirectory, fileName: "games_library.json")
         };
 
         StartMonitoring();
@@ -297,7 +297,7 @@ public sealed class GameLibrary
     }
 
     // Private variables
-    private readonly Dictionary<FileExistenceOrder, Utils.FilePath> _filePaths;
+    private readonly Dictionary<FileExistenceOrder, FilePath> _filePaths;
     private readonly JsonSerializerOptions _fileJsonSerializerOpts = new() { WriteIndented = true };
     private Timer? _monitorTimer;
     private bool _monitorIsWorking;
@@ -316,7 +316,7 @@ public sealed class GameLibrary
 
         var chosenFilePath = foundFilesPaths.First().Value;
 
-        string fileContents = File.ReadAllText(chosenFilePath.RealPath);
+        string fileContents = File.ReadAllText(chosenFilePath.FullPath);
 
         List<GameEntry>? loadedGames = null;
 
@@ -345,7 +345,7 @@ public sealed class GameLibrary
         {
             try
             {
-                File.Delete(filePath.RealPath);
+                File.Delete(filePath.FullPath);
             }
             catch
             {
@@ -373,7 +373,7 @@ public sealed class GameLibrary
         };
 
         var jsonString = JsonSerializer.Serialize(fileSchema, _fileJsonSerializerOpts);
-        File.WriteAllText(_filePaths[FileExistenceOrder.V2].RealPath, jsonString);
+        File.WriteAllText(_filePaths[FileExistenceOrder.V2].FullPath, jsonString);
     }
 
     private static int? LoadFileVersion(JsonElement jsonDocRoot)
