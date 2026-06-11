@@ -42,6 +42,12 @@ public sealed class MainMenu : Scene
 
         _options.Add(new("add_new_game", _strings.AddNewGameOption, m => m.NavigateTo(new AddNewGame(Ctx))));
         _options.Add(new("settings", _strings.SettingsOption, m => m.NavigateTo(new SettingsMenu(Ctx))));
+
+        if (_appState.CanAppBeUpdated())
+            _options.Add(new("update_app", _strings.UpdateAppOption, _ => { }));
+        else
+            _options.Add(new("check_for_updates", _strings.CheckForUpdatesOption, m => m.NavigateTo(new CheckForUpdatesMenu(Ctx))));
+
         _options.Add(new("exit_app", _strings.ExitAppOption, _ => _appState.ToggleAppRunningStatus()));
     }
 

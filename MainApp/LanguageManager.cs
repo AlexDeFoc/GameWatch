@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using Semver;
 
 namespace MainApp;
 
@@ -42,6 +44,7 @@ public sealed class LanguageManager
         IResetGameSceneStrings ResetGameScene { get; }
         IListGamesSceneStrings ListGamesScene { get; }
         IChangeGameWorkingModeSceneStrings ChangeGameWorkingModeScene { get; }
+        ICheckForUpdatesMenuSceneStrings CheckForUpdatesMenuScene { get; }
     }
 
     public interface IConsoleStrings
@@ -76,6 +79,8 @@ public sealed class LanguageManager
         string EditGamesOption { get; }
         string AddNewGameOption { get; }
         string SettingsOption { get; }
+        string CheckForUpdatesOption { get; }
+        string UpdateAppOption { get; }
         string ExitAppOption { get; }
         string RequestMsg { get; }
         string InvalidInputMsg { get; }
@@ -235,6 +240,18 @@ public sealed class LanguageManager
         string ChangedModeTo(AppContext ctx, GameEntry.WorkingMode workingMode);
     }
 
+    public interface ICheckForUpdatesMenuSceneStrings
+    {
+        string NewVersionFoundMsg { get; }
+        string NoticeOnUpdateOptionAvailableMsg { get; }
+        string NoNewVersionFoundMsg { get; }
+        string NoReleasesFoundMsg { get; }
+        string RequestInputMsg { get; }
+        string CurrentVersion(SemVersion currentVersion);
+        string LatestVersionFound(SemVersion latestVersionFound);
+        string RateLimitExceeded(DateTime nextAvailableRetry);
+    }
+
     private sealed class EnUsLanguagePack : ILanguagePack
     {
         public IConsoleStrings Console { get; } = new ConsoleStrings();
@@ -257,6 +274,7 @@ public sealed class LanguageManager
         public IResetGameSceneStrings ResetGameScene { get; } = new ResetGameSceneStrings();
         public IListGamesSceneStrings ListGamesScene { get; } = new ListGamesSceneStrings();
         public IChangeGameWorkingModeSceneStrings ChangeGameWorkingModeScene { get; } = new ChangeGameWorkingModeSceneStrings();
+        public ICheckForUpdatesMenuSceneStrings CheckForUpdatesMenuScene { get; } = new CheckForUpdatesMenuSceneStrings();
 
         private sealed class ConsoleStrings : IConsoleStrings
         {
@@ -290,6 +308,8 @@ public sealed class LanguageManager
             public string EditGamesOption => "Edit games";
             public string AddNewGameOption => "Add new game";
             public string SettingsOption => "Settings";
+            public string CheckForUpdatesOption => "Check for updates";
+            public string UpdateAppOption => "Update app";
             public string ExitAppOption => "Exit app";
             public string RequestMsg => "Enter option id: ";
             public string InvalidInputMsg => "Invalid input. Try again!";
@@ -481,6 +501,30 @@ public sealed class LanguageManager
             public string ModeAlreadyThisValueMsg(AppContext ctx, GameEntry.WorkingMode workingMode) => $"Game was already in '{GameEntry.GetPrintableCurrentWorkingMode(ctx, workingMode)}' mode";
             public string ChangedModeTo(AppContext ctx, GameEntry.WorkingMode workingMode) => $"Game changed to '{GameEntry.GetPrintableCurrentWorkingMode(ctx, workingMode)}' mode";
         }
+
+        private sealed class CheckForUpdatesMenuSceneStrings : ICheckForUpdatesMenuSceneStrings
+        {
+            public string NewVersionFoundMsg => "New version found!";
+            public string NoticeOnUpdateOptionAvailableMsg => "You can now update the app on the previous menu";
+            public string NoNewVersionFoundMsg => "You have the latest app version!";
+            public string NoReleasesFoundMsg => "No app releases found on GitHub!";
+            public string RequestInputMsg => "Press any key to back";
+
+            public string CurrentVersion(SemVersion currentVersion)
+            {
+                return $"Current version: {currentVersion}";
+            }
+
+            public string LatestVersionFound(SemVersion latestVersionFound)
+            {
+                return $"Latest version found online: {latestVersionFound}";
+            }
+
+            public string RateLimitExceeded(DateTime nextAvailableRetry)
+            {
+                return $"You checked for new versions too many times, next time you can check is: {nextAvailableRetry}";
+            }
+        }
     }
 
     private sealed class RoRoLanguagePack : ILanguagePack
@@ -505,6 +549,7 @@ public sealed class LanguageManager
         public IResetGameSceneStrings ResetGameScene { get; } = new ResetGameSceneStrings();
         public IListGamesSceneStrings ListGamesScene { get; } = new ListGamesSceneStrings();
         public IChangeGameWorkingModeSceneStrings ChangeGameWorkingModeScene { get; } = new ChangeGameWorkingModeSceneStrings();
+        public ICheckForUpdatesMenuSceneStrings CheckForUpdatesMenuScene { get; } = new CheckForUpdatesMenuSceneStrings();
 
         // ReSharper disable StringLiteralTypo
         private sealed class ConsoleStrings : IConsoleStrings
@@ -539,6 +584,8 @@ public sealed class LanguageManager
             public string EditGamesOption => "Editează jocurile";
             public string AddNewGameOption => "Adaugă joc";
             public string SettingsOption => "Setări";
+            public string CheckForUpdatesOption => "Verifică disponibilitatea actualizării";
+            public string UpdateAppOption => "Actualizează aplicația";
             public string ExitAppOption => "Ieși din aplicație";
             public string RequestMsg => "Introdu indicele opțiunii: ";
             public string InvalidInputMsg => "Introducere invalidă. Încearcă din nou!";
@@ -729,6 +776,27 @@ public sealed class LanguageManager
             public string CancelledActionMsg => "Acțiune anulată";
             public string ModeAlreadyThisValueMsg(AppContext ctx, GameEntry.WorkingMode workingMode) => $"Jocul era deja in modul '{GameEntry.GetPrintableCurrentWorkingMode(ctx, workingMode)}'";
             public string ChangedModeTo(AppContext ctx, GameEntry.WorkingMode workingMode) => $"Jocul a fost schimbat în modul '{GameEntry.GetPrintableCurrentWorkingMode(ctx, workingMode)}'";
+        }
+
+        private sealed class CheckForUpdatesMenuSceneStrings : ICheckForUpdatesMenuSceneStrings
+        {
+            public string NewVersionFoundMsg => "O versiune nouă a aplicației a fost găsită!";
+            public string NoticeOnUpdateOptionAvailableMsg => "Poți acum să actualizezi aplicația din meniul principal";
+            public string NoNewVersionFoundMsg => "Aveți cea mai nou versiune a aplicației!";
+            public string NoReleasesFoundMsg => "Nu sa găsit nici-o versiune pe GitHub!";
+            public string RequestInputMsg => "Apasă orice tastă pentru a merge înapoi";
+            public string CurrentVersion(SemVersion currentVersion)
+            {
+                return $"Versiunea curentă: {currentVersion}";
+            }
+            public string LatestVersionFound(SemVersion latestVersionFound)
+            {
+                return $"Versiunea nouă găsită pe internet: {latestVersionFound}";
+            }
+            public string RateLimitExceeded(DateTime nextAvailableRetry)
+            {
+                return $"Ai încercat să cauți versiuni noi de prea multe ori. Următoarea dată când poți verifica este: {nextAvailableRetry}";
+            }
         }
         // ReSharper restore StringLiteralTypo
     }

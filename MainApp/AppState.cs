@@ -15,8 +15,19 @@ public sealed class AppState
         OnAppRunningStatusChanged(_continueToRunApp);
     }
 
+    public bool CanAppBeUpdated()
+    {
+        return _appCanBeUpdated;
+    }
+
+    public void ToggleUpdateAvailableStatus()
+    {
+        _appCanBeUpdated = !_appCanBeUpdated;
+    }
+
     // Private variables
     private bool _continueToRunApp = true;
+    private bool _appCanBeUpdated = false;
 
     // Private methods
     private void OnAppRunningStatusChanged(bool newState)

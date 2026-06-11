@@ -6,9 +6,7 @@
         <ImplicitUsings>disable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <AssemblyName>GameWatchCon</AssemblyName>
-        <IsPackable>true</IsPackable>
-        <Company>AlexDeFoc</Company>
-        <Authors>AlexDeFoc</Authors>
+        <IsPackable>false</IsPackable>
     </PropertyGroup>
     
     <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
@@ -36,7 +34,7 @@
 
     <ItemGroup>
       <PackageReference Include="Octokit" Version="14.0.0" />
-      <PackageReference Include="Octokit.Caching" Version="1.0.6" />
+      <PackageReference Include="Semver" Version="3.0.0" />
     </ItemGroup>
 
 </Project>
