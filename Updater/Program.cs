@@ -1,4 +1,6 @@
-﻿namespace Updater;
+﻿using System;
+
+namespace Updater;
 
 class Program
 {

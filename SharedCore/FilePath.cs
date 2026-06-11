@@ -2,7 +2,7 @@
 using System.IO;
 using System.Runtime.InteropServices;
 
-namespace MainApp;
+namespace SharedCore;
 
 public sealed class FilePath
 {
@@ -18,7 +18,7 @@ public sealed class FilePath
         {
             Scope.AppDirectory => AppDomain.CurrentDomain.BaseDirectory,
             Scope.UserDataDirectory => GetUserDataDir(),
-            _ => throw new Logger.UnexpectedFatalError()
+            _ => throw new UnexpectedFatalError()
         };
     }
 

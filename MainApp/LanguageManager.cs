@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Semver;
+using SharedCore;
 
 namespace MainApp;
 
@@ -810,7 +811,7 @@ public sealed class LanguageManager
     {
         LanguageCode.en_US => new EnUsLanguagePack(),
         LanguageCode.ro_RO => new RoRoLanguagePack(),
-        _ => throw new Logger.UnexpectedFatalError()
+        _ => throw new UnexpectedFatalError()
     };
 
     // LanguageCode codes docs: https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-lcid/a9eac961-e77d-41a6-90a5-ce1a8b0cdb9c

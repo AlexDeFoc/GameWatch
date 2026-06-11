@@ -1,4 +1,6 @@
-﻿namespace MainApp;
+﻿using SharedCore;
+
+namespace MainApp;
 
 public interface IConsoleColors
 {
@@ -35,7 +37,7 @@ public sealed class DefaultColorScheme : IColorScheme
     public IConsoleColors Console { get; } = new ConsoleColors();
     public ISettingsMenuSceneColors SettingsMenuScene { get; } = new SettingsMenuSceneColors();
 
-    public sealed class ConsoleColors : IConsoleColors
+    private sealed class ConsoleColors : IConsoleColors
     {
         public ColorCode GeneralText => new("#FFFFFFFF");
         public ColorCode InfoLabel => new("#FF00FFFF");
@@ -46,7 +48,7 @@ public sealed class DefaultColorScheme : IColorScheme
         public ColorCode FatalErrorLabel => new("#FF8B0000");
     }
 
-    public sealed class SettingsMenuSceneColors : ISettingsMenuSceneColors
+    private sealed class SettingsMenuSceneColors : ISettingsMenuSceneColors
     {
         public ColorCode AutoSaveIntervalSegment => new("#FF00FFFF");
         public ColorCode AutoSaveIsEnabledSegment => new("#FF008000");
@@ -60,13 +62,13 @@ public sealed class ColorManager
 
     public ColorManager() : this(new DefaultColorScheme()) {}
 
-    public ColorManager(IColorScheme scheme)
+    private ColorManager(IColorScheme scheme)
     {
-        Colors = scheme ?? throw new Logger.UnexpectedFatalError();
+        Colors = scheme ?? throw new UnexpectedFatalError();
     }
 
     public void LoadScheme(IColorScheme newScheme)
     {
-        Colors = newScheme ?? throw new Logger.UnexpectedFatalError();
+        Colors = newScheme ?? throw new UnexpectedFatalError();
     }
 }

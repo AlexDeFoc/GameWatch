@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using SharedCore;
 
 namespace MainApp;
 
@@ -134,7 +135,7 @@ public static class Program
 
     private static void ProcessExceptionOccuredInProgram(Exception e)
     {
-        if (e is not Logger.UnexpectedError and not Logger.UnexpectedFatalError)
+        if (e is not Logger.UnexpectedError and not UnexpectedFatalError)
         {
             Console.WriteLine("[Fatal error]: An unexpected exception has occured.");
             Console.WriteLine($"[Info]: Exception msg: '{e.Message}");

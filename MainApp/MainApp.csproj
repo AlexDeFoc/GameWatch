@@ -37,4 +37,8 @@
       <PackageReference Include="Semver" Version="3.0.0" />
     </ItemGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\SharedCore\SharedCore.csproj" />
+    </ItemGroup>
+
 </Project>
