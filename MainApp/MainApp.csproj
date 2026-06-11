@@ -6,6 +6,37 @@
         <ImplicitUsings>disable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <AssemblyName>GameWatchCon</AssemblyName>
+        <IsPackable>true</IsPackable>
+        <Company>AlexDeFoc</Company>
+        <Authors>AlexDeFoc</Authors>
     </PropertyGroup>
+    
+    <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+      <OutputPath>Build\Debug</OutputPath>
+    </PropertyGroup>
+
+    <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+      <OutputPath>Build\Release\</OutputPath>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <Compile Remove="Build\**" />
+      <Compile Remove="Output\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <EmbeddedResource Remove="Build\**" />
+      <EmbeddedResource Remove="Output\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Remove="Build\**" />
+      <None Remove="Output\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Octokit" Version="14.0.0" />
+      <PackageReference Include="Octokit.Caching" Version="1.0.6" />
+    </ItemGroup>
 
 </Project>
