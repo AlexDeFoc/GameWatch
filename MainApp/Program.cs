@@ -32,6 +32,7 @@ public static class Program
     {
         AppInit();
         WritePreloadedMsgsIntoLogger(_appCtx);
+        LoadPreloadedCtxIntoInitializedCtx(_appCtx);
 
         try
         {
@@ -47,7 +48,7 @@ public static class Program
     {
         try
         {
-            Utils.EnsureUserDataDirExists();
+            FilePath.EnsureUserDataDirExists();
             _appCtx = new AppContext();
             _sceneManager = new SceneManager(_appCtx);
             _startupScene = new Scenes.MainMenu(_appCtx);
@@ -83,6 +84,10 @@ public static class Program
                         PrintInvalidArgsMsg();
                         break;
                     }
+                }
+                else if (args[i] == "--finished-updating-app")
+                {
+                    _justFinishedUpdatingApp = true;
                 }
             }
         }
@@ -159,6 +164,11 @@ public static class Program
         PreloadedMsgsForLogger.Clear();
     }
 
+    private static void LoadPreloadedCtxIntoInitializedCtx(AppContext ctx)
+    {
+        ctx.AppState.JustFinishedUpdatingApp = _justFinishedUpdatingApp;
+    }
+
     private enum RunningMode
     {
         Normal,
@@ -171,6 +181,7 @@ public static class Program
     }
 
     // Private variables
+    private static bool _justFinishedUpdatingApp = false;
     private static AppContext _appCtx = null!;
     private static SceneManager _sceneManager = null!;
     private static Scene _startupScene = null!;

@@ -4,6 +4,9 @@ namespace MainApp;
 
 public sealed class AppState
 {
+    // Public properties
+    public bool JustFinishedUpdatingApp { get; set; }
+
     // Public variables
     public event EventHandler<bool>? AppRunningStatusChanged;
 

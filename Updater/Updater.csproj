@@ -21,4 +21,22 @@
       <ProjectReference Include="..\SharedCore\SharedCore.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Compile Remove="Build\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <EmbeddedResource Remove="Build\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Remove="Build\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Octokit" Version="14.0.0" />
+      <PackageReference Include="Semver" Version="3.0.0" />
+      <PackageReference Include="SharpCompress" Version="0.49.1" />
+    </ItemGroup>
+
 </Project>

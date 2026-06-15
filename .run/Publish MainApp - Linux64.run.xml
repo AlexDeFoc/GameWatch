@@ -1,6 +1,6 @@
 ﻿<component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Publish MainApp - Linux64" type="DotNetFolderPublish" factoryName="Publish to folder">
-    <riderPublish configuration="Release" platform="Any CPU" self_contained="true" target_folder="$PROJECT_DIR$/MainApp/Output/Release/MainApp/Linux64" target_framework="net10.0" uuid_high="6623976798774524505" uuid_low="8182344972053425557">
+    <riderPublish configuration="Release" platform="Any CPU" self_contained="true" target_folder="$PROJECT_DIR$/Output/Release/Linux64" target_framework="net10.0" uuid_high="6623976798774524505" uuid_low="8182344972053425557">
       <runtimes>
         <item value="linux-x64" />
       </runtimes>

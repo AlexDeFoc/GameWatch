@@ -44,7 +44,7 @@ public sealed class MainMenu : Scene
         _options.Add(new("settings", _strings.SettingsOption, m => m.NavigateTo(new SettingsMenu(Ctx))));
 
         if (_appState.CanAppBeUpdated())
-            _options.Add(new("update_app", _strings.UpdateAppOption, _ => { }));
+            _options.Add(new("update_app", _strings.UpdateAppOption, m => m.NavigateTo(new StartUpdater(Ctx))));
         else
             _options.Add(new("check_for_updates", _strings.CheckForUpdatesOption, m => m.NavigateTo(new CheckForUpdatesMenu(Ctx))));
 
@@ -58,6 +58,12 @@ public sealed class MainMenu : Scene
         {
             Logger.Clear();
             _logger.WriteCached();
+
+            if (_appState.JustFinishedUpdatingApp)
+            {
+                _logger.WriteLine(Logger.Label.Success, _strings.FinishedGettingUpdatedMsg);
+                _appState.JustFinishedUpdatingApp = false;
+            }
 
             ListOptions();
 

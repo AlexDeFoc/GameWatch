@@ -85,6 +85,7 @@ public sealed class LanguageManager
         string ExitAppOption { get; }
         string RequestMsg { get; }
         string InvalidInputMsg { get; }
+        string FinishedGettingUpdatedMsg { get; }
 
         string StopActiveGameOption(AppContext ctx);
     }
@@ -248,9 +249,12 @@ public sealed class LanguageManager
         string NoNewVersionFoundMsg { get; }
         string NoReleasesFoundMsg { get; }
         string RequestInputMsg { get; }
+        string NoInternetMsg { get; }
+        string RequestTimeoutMsg { get; }
         string CurrentVersion(SemVersion currentVersion);
         string LatestVersionFound(SemVersion latestVersionFound);
         string RateLimitExceeded(DateTime nextAvailableRetry);
+        string NetworkErrorMsg(string errMsg);
     }
 
     private sealed class EnUsLanguagePack : ILanguagePack
@@ -314,6 +318,7 @@ public sealed class LanguageManager
             public string ExitAppOption => "Exit app";
             public string RequestMsg => "Enter option id: ";
             public string InvalidInputMsg => "Invalid input. Try again!";
+            public string FinishedGettingUpdatedMsg => "Finished updating app!";
 
             public string StopActiveGameOption(AppContext ctx) => $"Stop game: {ctx.GameLibrary.GetSingleActiveManualWorkingGameTitle()}";
         }
@@ -510,6 +515,8 @@ public sealed class LanguageManager
             public string NoNewVersionFoundMsg => "You have the latest app version!";
             public string NoReleasesFoundMsg => "No app releases found on GitHub!";
             public string RequestInputMsg => "Press any key to back";
+            public string NoInternetMsg => "No internet connection available!";
+            public string RequestTimeoutMsg => "Update check timed out. Please check your internet connection.";
 
             public string CurrentVersion(SemVersion currentVersion)
             {
@@ -524,6 +531,11 @@ public sealed class LanguageManager
             public string RateLimitExceeded(DateTime nextAvailableRetry)
             {
                 return $"You checked for new versions too many times, next time you can check is: {nextAvailableRetry}";
+            }
+
+            public string NetworkErrorMsg(string errMsg)
+            {
+                return $"Network error: {errMsg}";
             }
         }
     }
@@ -590,6 +602,7 @@ public sealed class LanguageManager
             public string ExitAppOption => "Ieși din aplicație";
             public string RequestMsg => "Introdu indicele opțiunii: ";
             public string InvalidInputMsg => "Introducere invalidă. Încearcă din nou!";
+            public string FinishedGettingUpdatedMsg => "S-a terminat de actualizat aplicația!";
 
             public string StopActiveGameOption(AppContext ctx) => $"Oprește joc: {ctx.GameLibrary.GetSingleActiveManualWorkingGameTitle()}";
         }
@@ -786,6 +799,9 @@ public sealed class LanguageManager
             public string NoNewVersionFoundMsg => "Aveți cea mai nou versiune a aplicației!";
             public string NoReleasesFoundMsg => "Nu sa găsit nici-o versiune pe GitHub!";
             public string RequestInputMsg => "Apasă orice tastă pentru a merge înapoi";
+            public string NoInternetMsg => "Nu există nici-o conexiune la internet!";
+            public string RequestTimeoutMsg => "Verificarea unei versiuni pe internet a durat prea mult. Verifică-ți conexiunea la internet.";
+
             public string CurrentVersion(SemVersion currentVersion)
             {
                 return $"Versiunea curentă: {currentVersion}";
@@ -797,6 +813,11 @@ public sealed class LanguageManager
             public string RateLimitExceeded(DateTime nextAvailableRetry)
             {
                 return $"Ai încercat să cauți versiuni noi de prea multe ori. Următoarea dată când poți verifica este: {nextAvailableRetry}";
+            }
+
+            public string NetworkErrorMsg(string errMsg)
+            {
+                return $"Eroare legată de internet: {errMsg}";
             }
         }
         // ReSharper restore StringLiteralTypo

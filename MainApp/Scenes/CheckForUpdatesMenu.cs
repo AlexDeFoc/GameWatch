@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http.Headers;
+using System.Net.Sockets;
 using System.Threading;
 
 namespace MainApp.Scenes;
@@ -44,10 +45,11 @@ public sealed class CheckForUpdatesMenu : Scene
 
     private void CheckForUpdates()
     {
+        var latestTag = GetLatestReleaseTagAsync().GetAwaiter().GetResult();
+
         Console.Clear();
         _logger.WriteCached();
 
-        var latestTag = GetLatestReleaseTagAsync().GetAwaiter().GetResult();
         if (latestTag is null)
         {
             _logger.WriteLine(Logger.Label.Info, _strings.CurrentVersion(_currentVersion));
@@ -88,6 +90,20 @@ public sealed class CheckForUpdatesMenu : Scene
         catch (RateLimitExceededException e)
         {
             _logger.WriteLineToCache(Logger.Label.Error, _strings.RateLimitExceeded(e.Reset.UtcDateTime));
+            return null;
+        }
+        catch (HttpRequestException e)
+        {
+            if (e.InnerException is SocketException se && se.SocketErrorCode == SocketError.HostNotFound)
+                _logger.WriteLineToCache(Logger.Label.Error, _strings.NoInternetMsg);
+            else
+                _logger.WriteLineToCache(Logger.Label.Error, _strings.NetworkErrorMsg(e.Message));
+
+            return null;
+        }
+        catch (TaskCanceledException)
+        {
+            _logger.WriteLineToCache(Logger.Label.Error, _strings.RequestTimeoutMsg);
             return null;
         }
     }

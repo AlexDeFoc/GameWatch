@@ -35,7 +35,7 @@ public sealed class GameLibrary
 
     public void CreateGameLibraryBackup()
     {
-        var backupFilePath = new FilePath(scope: FilePath.Scope.UserDataDirectory, fileName: "GameLibrary.bak.json");
+        var backupFilePath = new FilePath(scope: FilePath.Scope.UserDataDirectory, stem: "GameLibrary", extension: "bak.json");
 
         try
         {
@@ -289,8 +289,8 @@ public sealed class GameLibrary
         // Note: Order doesn't matter here
         _filePaths = new Dictionary<FileExistenceOrder, FilePath>
         {
-            [FileExistenceOrder.V2] = new(scope: FilePath.Scope.UserDataDirectory, fileName: "GameLibrary.json"),
-            [FileExistenceOrder.V1] = new(scope: FilePath.Scope.AppDirectory, fileName: "games_library.json")
+            [FileExistenceOrder.V2] = new(scope: FilePath.Scope.UserDataDirectory, stem: "GameLibrary", extension: "json"),
+            [FileExistenceOrder.V1] = new(scope: FilePath.Scope.AppDirectory, stem: "games_library", extension: "json")
         };
 
         StartMonitoring();

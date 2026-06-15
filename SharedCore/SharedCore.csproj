@@ -16,4 +16,16 @@
       <OutputPath>Build\Release\</OutputPath>
     </PropertyGroup>
 
+    <ItemGroup>
+      <Compile Remove="Build\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <EmbeddedResource Remove="Build\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Remove="Build\**" />
+    </ItemGroup>
+
 </Project>

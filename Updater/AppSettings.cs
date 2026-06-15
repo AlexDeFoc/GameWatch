@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text.Json;
 using SharedCore;
 
-namespace MainApp;
+namespace Updater;
 
 public sealed class AppSettings
 {

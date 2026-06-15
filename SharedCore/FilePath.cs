@@ -7,27 +7,106 @@ namespace SharedCore;
 public sealed class FilePath
 {
     // Public properties
-    public string FileName { get; private set; }
-    public string FullPath { get; private set; }
-    public bool Exists { get; private set; }
+    private string Stem { get; }
+    private string? Extension { get; }
+
+    public string ParentPath => Directory.GetParent(FullPath)!.FullName;
+
+    private string FileName
+    {
+        get
+        {
+            if (Extension is not null)
+                return Stem + "." + Extension;
+            else
+                return Stem;
+        }
+    }
+
+    public string FullPath => Path.Combine(GetBaseDir(_scope), FileName);
+
+    public bool Exists => Path.Exists(FullPath);
 
     // Public static methods
     public static string GetBaseDir(Scope scope)
     {
         return scope switch
         {
+            Scope.TempDirectory => GetTempDir(),
             Scope.AppDirectory => AppDomain.CurrentDomain.BaseDirectory,
             Scope.UserDataDirectory => GetUserDataDir(),
             _ => throw new UnexpectedFatalError()
         };
     }
 
-    // Constructors
-    public FilePath(Scope scope, string fileName)
+    public static string GetFileNameFromFullPath(string fullPath)
     {
-        FileName = fileName;
-        FullPath = Path.Combine(GetBaseDir(scope), fileName);
-        Exists = Path.Exists(FullPath);
+        int pointOfSplit = -1;
+        for (int i = fullPath.Length - 1; i >= 0; --i)
+        {
+            if (fullPath[i] is '\\' or '/')
+            {
+                pointOfSplit = i;
+                break;
+            }
+        }
+
+        string fileName;
+
+        if (pointOfSplit == -1)
+            fileName = fullPath;
+        else
+            fileName = fullPath[(pointOfSplit + 1)..];
+
+        return fileName;
+    }
+
+    public static string GetStemFromFileName(string fileName, string extension)
+    {
+        if (fileName.EndsWith(extension))
+            return fileName.Remove(fileName.Length - extension.Length - 1);
+        return fileName;
+    }
+
+    public static string GetStemFromFileName(string fileName)
+    {
+        return Path.ChangeExtension(fileName, null);
+    }
+
+    public static string GetStemFromFileName(FilePath filePath, string extension)
+    {
+        if (filePath.FileName.EndsWith(extension))
+            return filePath.FileName.Remove(filePath.FileName.Length - extension.Length - 1);
+        return filePath.FileName;
+    }
+
+    public static string GetStemFromFileName(FilePath filePath)
+    {
+        return Path.ChangeExtension(filePath.FileName, null);
+    }
+
+    public static void EnsureUserDataDirExists()
+    {
+        Directory.CreateDirectory(GetUserDataDir());
+    }
+
+    public static void EnsureTempDirExists()
+    {
+        Directory.CreateDirectory(GetTempDir());
+    }
+
+    // Constructors
+    public FilePath(Scope scope, string stem)
+    {
+        _scope = scope;
+        Stem = stem;
+    }
+
+    public FilePath(Scope scope, string stem, string extension)
+    {
+        _scope = scope;
+        Stem = stem;
+        Extension = extension;
     }
 
     // Private methods
@@ -60,9 +139,20 @@ public sealed class FilePath
         }
     }
 
+    private static string GetTempDir()
+    {
+        string systemTemp = Path.GetTempPath();
+        string appTemp = Path.Combine(systemTemp, "GameWatchCon");
+        return appTemp;
+    }
+
+    // Private variables
+    private readonly Scope _scope;
+
     // Public structures
     public enum Scope
     {
+        TempDirectory,
         AppDirectory,
         UserDataDirectory
     }

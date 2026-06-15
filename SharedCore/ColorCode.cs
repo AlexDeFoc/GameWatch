@@ -1,6 +1,6 @@
 ﻿using System.Drawing;
 
-namespace MainApp;
+namespace SharedCore;
 
 public readonly record struct ColorCode
 {

@@ -4,7 +4,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using SharedCore;
 
-namespace MainApp;
+namespace Updater;
 
 public sealed class Logger
 {
