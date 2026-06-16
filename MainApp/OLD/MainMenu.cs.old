@@ -2,7 +2,7 @@
 
 namespace MainApp.Scenes;
 
-public sealed class MainMenu : Scene
+public sealed class MainMenuOld : Scene
 {
     public MainMenu(AppContext ctx) : base(ctx)
     {

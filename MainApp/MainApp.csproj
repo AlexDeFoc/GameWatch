@@ -35,6 +35,7 @@
     <ItemGroup>
       <PackageReference Include="Octokit" Version="14.0.0" />
       <PackageReference Include="Semver" Version="3.0.0" />
+      <PackageReference Include="Terminal.Gui" Version="2.4.6" />
     </ItemGroup>
 
     <ItemGroup>

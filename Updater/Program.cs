@@ -402,10 +402,12 @@ public static class Program
 
     private static void StartNewMainAppInstance()
     {
+        var mainAppDir = Path.GetFullPath(Path.Combine(CurrentAppDir, ".."));
+
         var startInfo = new ProcessStartInfo
         {
-            FileName = Path.GetFullPath(Path.Combine(CurrentAppDir, "..")),
-            WorkingDirectory = CurrentAppDir,
+            FileName = Path.Combine(mainAppDir, "GameWatchCon"),
+            WorkingDirectory = mainAppDir,
             Arguments = "--finished-updating-app",
             UseShellExecute = true,
             CreateNoWindow = false,
