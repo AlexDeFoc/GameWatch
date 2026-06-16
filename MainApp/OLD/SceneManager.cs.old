@@ -2,12 +2,12 @@
 
 namespace MainApp;
 
-public sealed class SceneManager
+public sealed class SceneManagerOld
 {
     private readonly Stack<Scene> _stack = new();
     private readonly AppContext _ctx;
 
-    public SceneManager(AppContext ctx) => _ctx = ctx;
+    public SceneManagerOld(AppContext ctx) => _ctx = ctx;
 
     // Start the app with an initial scene
     public void Run(Scene firstScene)

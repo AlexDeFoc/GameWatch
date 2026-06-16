@@ -1,6 +1,6 @@
 ﻿namespace MainApp;
 
-public abstract class Scene
+public abstract class SceneOld
 {
     protected AppContext Ctx { get; }
 

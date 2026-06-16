@@ -18,7 +18,7 @@ public sealed class CheckForUpdatesMenu : Scene
 {
     public CheckForUpdatesMenu(AppContext ctx) : base(ctx)
     {
-        _currentVersion = SemVersion.Parse("2.0.0", SemVersionStyles.Strict);
+        _currentVersion = SemVersion.Parse("1.0.0", SemVersionStyles.Strict);
         _strings = ctx.LanguageManager.Strings.CheckForUpdatesMenuScene;
         _logger = ctx.Logger;
         _appState = ctx.AppState;
