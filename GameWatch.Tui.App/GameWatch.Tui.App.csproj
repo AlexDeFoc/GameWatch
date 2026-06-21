@@ -9,6 +9,7 @@
         <AssemblyTitle>GameWatch Terminal UI</AssemblyTitle>
         <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
         <DebugType>embedded</DebugType>
+        <IsPackable>false</IsPackable>
     </PropertyGroup>
 
     <ItemGroup>

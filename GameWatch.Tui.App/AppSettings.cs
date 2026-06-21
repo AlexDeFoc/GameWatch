@@ -4,7 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Text.Json;
 
 namespace GameWatch.Tui.App;
@@ -12,11 +11,11 @@ namespace GameWatch.Tui.App;
 public sealed class AppSettings
 {
     private readonly JsonSerializerOptions _fileJsonStyle = new() { WriteIndented = true };
-    private FilePath _currentFilePath = null!;
+    private FilePath _currentFilePath;
 
     public AppSettings()
     {
-        _currentFilePath = new(FolderPath.LocationCode.OurUserDataDirectory) { BaseName = "AppSettings", Extension = "json" };
+        _currentFilePath = new FilePath(FolderPath.LocationCode.OurUserDataDirectory) { BaseName = "AppSettings", Extension = "json" };
 
         // order doesn't matter
         var filePaths = new Dictionary<FileExistenceOrder, FilePath>
@@ -37,42 +36,63 @@ public sealed class AppSettings
         get;
         set
         {
-            if (field != value)
-            {
-                field = value;
-                LanguageChanged?.Invoke(value);
-            }
+            if (field == value) return;
+            field = value;
+            LanguageChanged?.Invoke(value);
         }
     }
 
     public event Action<LanguageManager.LanguageTag>? LanguageChanged;
 
-    private static int? GetFileVersion(JsonElement root)
-    {
-        if (root.TryGetProperty(FileVersionPropertyName.Type1, out var verType1Elem))
-        {
-            if (verType1Elem.ValueKind is not JsonValueKind.Number && !verType1Elem.TryGetInt32(out var verFound))
-            {
-                if (verFound is FileSchemaV1.FileVersion or FileSchemaV2.FileVersion)
-                    return verFound;
-            }
-        }
-        else if (root.TryGetProperty(FileVersionPropertyName.Type2, out var verType2Elem))
-        {
-            if (verType2Elem.ValueKind is not JsonValueKind.Number && !verType2Elem.TryGetInt32(out var verFound))
-            {
-                if (verFound is FileSchemaV1.FileVersion or FileSchemaV2.FileVersion)
-                    return verFound;
-            }
-        }
+    // Note: Single-threaded writer, Multi-threaded reader
+    public bool IsGameAutoSaveEnabled() => AutoSaveGamesStatus == EnabledStatus.Enabled;
 
-        return null;
+    // Note: Single-threaded writer, Multi-threaded reader
+    public void ToggleGameAutoSave()
+    {
+        AutoSaveGamesStatus = AutoSaveGamesStatus == EnabledStatus.Enabled ? EnabledStatus.Disabled : EnabledStatus.Enabled;
+        SaveToDisk();
     }
 
     public void ResetAllToDefault()
     {
         LoadDefaults();
         SaveToDisk();
+    }
+
+    public string GetPrintableGameAutoSaveInterval()
+    {
+        var parts = new List<string>();
+        var playTime = TimeSpan.FromMinutes(AutoSaveGamesIntervalInMinutes);
+
+        if (playTime.Days > 0)
+            parts.Add($"{playTime.Days} day{(playTime.Days > 1 ? "s" : "")}");
+
+        if (playTime.Hours > 0)
+            parts.Add($"{playTime.Hours} h");
+
+        if (playTime.Minutes > 0)
+            parts.Add($"{playTime.Minutes} min");
+
+        return string.Join(" : ", parts);
+    }
+
+    private static int? GetFileVersion(JsonElement root)
+    {
+        var properties = new[] { FileVersionPropertyName.Type1, FileVersionPropertyName.Type2 };
+
+        foreach (var prop in properties)
+        {
+            if (root.TryGetProperty(prop, out var elem)
+                && elem.ValueKind == JsonValueKind.Number
+                && elem.TryGetInt32(out var ver)
+                && ver is FileSchemaV1.FileVersion or FileSchemaV2.FileVersion)
+            {
+                return ver;
+            }
+        }
+
+        return null;
     }
 
     private void LoadFromDisk(Dictionary<FileExistenceOrder, FilePath> filePaths)
@@ -166,16 +186,13 @@ public sealed class AppSettings
         public const string ActiveAppLanguageTagPropertyName = "activeAppLanguageTag";
 
         public const int FileVersion = 2;
-        public const EnabledStatus AutoSaveGamesStatus = EnabledStatus.Enabled;
-        public const int AutoSaveGamesIntervalInMinutes = 1;
-        public const LanguageManager.LanguageTag ActiveAppLanguageTag = LanguageManager.LanguageTag.en_US;
 
         public static EnabledStatus? GetAutoSaveGamesStatus(JsonElement root)
         {
             if (!root.TryGetProperty(AutoSaveGamesStatusPropertyName, out var autoSaveGamesStatusElem))
                 return null;
 
-            if (autoSaveGamesStatusElem.ValueKind is not JsonValueKind.String)
+            if (autoSaveGamesStatusElem.ValueKind != JsonValueKind.String)
                 return null;
 
             if (Enum.TryParse(autoSaveGamesStatusElem.GetString()?.ToLower(), out EnabledStatus parsedStatus))
@@ -189,7 +206,7 @@ public sealed class AppSettings
             if (!root.TryGetProperty(AutoSaveGamesIntervalInMinutesPropertyName, out var autoSaveIntervalInMinutesElem))
                 return null;
 
-            if (autoSaveIntervalInMinutesElem.ValueKind is JsonValueKind.Number && autoSaveIntervalInMinutesElem.TryGetInt32(out var autoSaveIntervalInMinutesFound))
+            if (autoSaveIntervalInMinutesElem.ValueKind == JsonValueKind.Number && autoSaveIntervalInMinutesElem.TryGetInt32(out var autoSaveIntervalInMinutesFound))
                 return autoSaveIntervalInMinutesFound;
 
             return null;
@@ -200,7 +217,7 @@ public sealed class AppSettings
             if (!root.TryGetProperty(ActiveAppLanguageTagPropertyName, out var activeLanguageCodeElem))
                 return null;
 
-            if (activeLanguageCodeElem.ValueKind is not JsonValueKind.String)
+            if (activeLanguageCodeElem.ValueKind != JsonValueKind.String)
                 return null;
 
             if (Enum.TryParse(activeLanguageCodeElem.GetString(), out LanguageManager.LanguageTag parsedCode))

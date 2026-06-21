@@ -8,7 +8,8 @@ public sealed class AppContext
 {
     public AppContext(IApplication appUi, Window rootUiWindow)
     {
-        LanguageManager = new(AppSettings);
+        LanguageManager = new LanguageManager(AppSettings);
+        GameLibrary = new GameLibrary(this);
         AppUi = appUi;
         RootUiWindow = rootUiWindow;
     }
@@ -21,4 +22,5 @@ public sealed class AppContext
     public LanguageManager LanguageManager { get; init; }
     public AppSettings AppSettings { get; init; } = new();
     public AppState AppState { get; init; } = new();
+    public GameLibrary GameLibrary { get; init; }
 }

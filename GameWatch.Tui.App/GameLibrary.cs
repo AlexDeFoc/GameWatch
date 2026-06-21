@@ -17,12 +17,14 @@ public sealed class GameLibrary
     private bool _monitorIsWorking;
     private readonly JsonSerializerOptions _fileJsonStyle = new() { WriteIndented = true };
     private readonly Lock _monitorLock = new();
+    private int _saveSkipCounter;
+    private DateTime _lastTickTime = DateTime.Now;
 
     public GameLibrary(AppContext appCtx)
     {
         appCtx.AppState.AppRunningStatusChanged += OnAppRunningStatusChanged;
 
-        _currentFilePath = new(FolderPath.LocationCode.OurUserDataDirectory) { BaseName = "GameLibrary", Extension = "json" };
+        _currentFilePath = new FilePath(FolderPath.LocationCode.OurUserDataDirectory) { BaseName = "GameLibrary", Extension = "json" };
 
         // order doesn't matter
         var filePaths = new Dictionary<FileExistenceOrder, FilePath>
@@ -98,53 +100,13 @@ public sealed class GameLibrary
 
     public bool ContainsAnyManualWorkingGames() => Games.Any(game => game.WorkingMode == Game.WorkingModeType.Manual);
 
-    public bool AreAllManualWorkingGamesActive()
-    {
-        var statement = true;
+    public bool AreAllManualWorkingGamesActive() => Games.Where(game => game.WorkingMode == Game.WorkingModeType.Manual).All(game => game.ManualWorkingGameIsActive);
 
-        foreach (var game in Games)
-        {
-            if (game is not { WorkingMode: Game.WorkingModeType.Manual, ManualWorkingGameIsActive: false }) continue;
-            statement = false;
-            break;
-        }
+    public bool IsAnyManualWorkingGameActive() => Games.Where(game => game.WorkingMode == Game.WorkingModeType.Manual).Any(game => game.ManualWorkingGameIsActive);
 
-        return statement;
-    }
+    public bool ContainsMultipleManualWorkingActiveGames() => Games.Where(game => game.WorkingMode == Game.WorkingModeType.Manual).Count(game => game.ManualWorkingGameIsActive) > 1;
 
-    public bool IsAnyManualWorkingGameActive()
-    {
-        var statement = false;
-
-        foreach (var game in Games)
-        {
-            if (game is not { WorkingMode: Game.WorkingModeType.Manual, ManualWorkingGameIsActive: true }) continue;
-            statement = true;
-            break;
-        }
-
-        return statement;
-    }
-
-    public bool ContainsMultipleManualWorkingActiveGames()
-    {
-        var statement = false;
-        var count = 0;
-
-        foreach (var game in Games)
-        {
-            if (game is not { WorkingMode: Game.WorkingModeType.Manual, ManualWorkingGameIsActive: true }) continue;
-            ++count;
-
-            if (count <= 1) continue;
-            statement = true;
-            break;
-        }
-
-        return statement;
-    }
-
-    public string GetSingleActiveManualWorkingGameTitle()
+    public string GetTitleFromOnlyActiveManualGame()
     {
         var gameIndex = Games.TakeWhile(game => game is not { WorkingMode: Game.WorkingModeType.Manual, ManualWorkingGameIsActive: true }).Count();
 
@@ -165,26 +127,9 @@ public sealed class GameLibrary
         return games[gameId - 1].Title;
     }
 
-    public List<Game> GetManualWorkingGames()
-    {
-        List<Game> games = [];
-        games.AddRange(Games.Where(game => game.WorkingMode == Game.WorkingModeType.Manual));
+    public List<Game> GetManualWorkingGames() => Games.Where(game => game.WorkingMode == Game.WorkingModeType.Manual).ToList();
 
-        return games;
-    }
-
-    public List<Game> GetActiveManualWorkingGames()
-    {
-        List<Game> games = [];
-
-        foreach (var game in Games)
-        {
-            if (game is {WorkingMode: Game.WorkingModeType.Manual, ManualWorkingGameIsActive: true})
-                games.Add(game);
-        }
-
-        return games;
-    }
+    public List<Game> GetActiveManualWorkingGames() => Games.Where(game => game is { WorkingMode: Game.WorkingModeType.Manual, ManualWorkingGameIsActive: true }).ToList();
 
     /// <param name="gameId">1 indexed</param>
     public void StartManualWorkingGame(int gameId)
@@ -201,16 +146,9 @@ public sealed class GameLibrary
         OnGameStopped(games[gameId - 1]);
     }
 
-    public void StopSingleManualWorkingActiveGame()
+    public void StopOnlyActiveManualGame()
     {
-        Game? targetGame = null;
-
-        foreach (var game in Games)
-        {
-            if (game is not { WorkingMode: Game.WorkingModeType.Manual, ManualWorkingGameIsActive: true }) continue;
-            targetGame = game;
-            break;
-        }
+        var targetGame = Games.FirstOrDefault(game => game is { WorkingMode: Game.WorkingModeType.Manual, ManualWorkingGameIsActive: true });
 
         if (targetGame is not null)
             OnGameStopped(targetGame);
@@ -224,16 +162,10 @@ public sealed class GameLibrary
     }
 
     /// <param name="gameId">1 indexed</param>
-    public string GetGameTitle(int gameId)
-    {
-        return Games[gameId - 1].Title;
-    }
+    public string GetGameTitle(int gameId) => Games[gameId - 1].Title;
 
     /// <param name="gameId">1 indexed</param>
-    public Game.WorkingModeType GetGameWorkingMode(int gameId)
-    {
-        return Games[gameId - 1].WorkingMode;
-    }
+    public Game.WorkingModeType GetGameWorkingMode(int gameId) => Games[gameId - 1].WorkingMode;
 
     /// <param name="gameId">1 indexed</param>
     public void SetGameWorkingMode(int gameId, Game.WorkingModeType workingMode, string? exePath = null)
@@ -269,17 +201,17 @@ public sealed class GameLibrary
 
     private static int? GetFileVersion(JsonElement root)
     {
-        if (root.TryGetProperty(FileVersionPropertyName.Type1, out var verType1Elem))
+        var properties = new[] { FileVersionPropertyName.Type1, FileVersionPropertyName.Type2 };
+
+        foreach (var prop in properties)
         {
-            if (verType1Elem.ValueKind is JsonValueKind.Number || verType1Elem.TryGetInt32(out var verFound)) return null;
-            if (verFound is FileSchemaV1.FileVersion or FileSchemaV2.FileVersion)
-                return verFound;
-        }
-        else if (root.TryGetProperty(FileVersionPropertyName.Type2, out var verType2Elem))
-        {
-            if (verType2Elem.ValueKind is JsonValueKind.Number || verType2Elem.TryGetInt32(out var verFound)) return null;
-            if (verFound is FileSchemaV1.FileVersion or FileSchemaV2.FileVersion)
-                return verFound;
+            if (root.TryGetProperty(prop, out var elem)
+                && elem.ValueKind == JsonValueKind.Number
+                && elem.TryGetInt32(out var ver)
+                && ver is FileSchemaV1.FileVersion or FileSchemaV2.FileVersion)
+            {
+                return ver;
+            }
         }
 
         return null;
@@ -374,6 +306,7 @@ public sealed class GameLibrary
         if (_monitorTimer != null)
             return; // already running
 
+        _lastTickTime = DateTime.Now;
         _monitorTimer = new Timer(MonitorTick, null, 0, MonitorIntervalMs);
     }
 
@@ -392,6 +325,10 @@ public sealed class GameLibrary
 
         try
         {
+            var now = DateTime.Now;
+            var elapsedSinceLastTick = now - _lastTickTime;
+            _lastTickTime = now;
+
             // Snapshot list to safely iterate while UI may modify it
             List<Game> snapshot;
             lock(_monitorLock)
@@ -399,17 +336,19 @@ public sealed class GameLibrary
                 snapshot = Games.ToList();
             }
 
+            // --- 1. FIRST: Update OS Process States for Automatic Games ---
             foreach(var game in snapshot.Where(game => game.WorkingMode == Game.WorkingModeType.Automatic))
             {
                 if(game.ProcessIsActive)
                 {
                     if (ProcessHelper.IsProcessMatching(game.FilePath, game.Pid, game.ProcessCreationTime)) continue;
 
-                    // Game stopped
+                    // Process died
                     game.ProcessIsActive = false;
                     game.Pid = 0;
                     game.ProcessCreationTime = default;
-                    OnGameStopped(game);
+                    game.ManualWorkingGameIsActive = false;
+                    game.SessionStartTime = null;
                 }
                 else
                 {
@@ -419,9 +358,23 @@ public sealed class GameLibrary
                     game.ProcessIsActive = true;
                     game.Pid = found.Value.Pid;
                     game.ProcessCreationTime = found.Value.CreationTime;
-                    game.SessionStartTime = DateTime.Now;
+                    game.SessionStartTime = now;
                 }
             }
+
+            // --- 2. SECOND: Tally up elapsed time in memory for ALL active games ---
+            var anyGameWasActive = false;
+            foreach (var game in snapshot.Where(game => game.ProcessIsActive || game.ManualWorkingGameIsActive))
+            {
+                game.AddPlaytime(elapsedSinceLastTick);
+                anyGameWasActive = true;
+            }
+
+            // --- 3. THIRD: Throttled save to disk ---
+            if (!anyGameWasActive) return;
+            if (++_saveSkipCounter < 5) return;
+            _saveSkipCounter = 0;
+            SaveToDisk();
         }
         catch
         {
@@ -439,16 +392,12 @@ public sealed class GameLibrary
     /// </summary>
     private void OnGameStopped(Game game)
     {
-        // 1. Calculate elapsed time since last start
-        if (game.SessionStartTime.HasValue)
-        {
-            var sessionLength = DateTime.Now - game.SessionStartTime.Value;
-            game.AddPlaytime(sessionLength);
-            game.SessionStartTime = null;
-            game.ManualWorkingGameIsActive = false;
-        }
+        // Playtime is already up-to-date in memory. Just reset flags.
+        game.SessionStartTime = null;
+        game.ManualWorkingGameIsActive = false;
+        game.ProcessIsActive = false;
 
-        // 2. Save to disk immediately
+        _saveSkipCounter = 0;
         SaveToDisk();
     }
 
@@ -461,20 +410,17 @@ public sealed class GameLibrary
             snapshot = Games.ToList();
         }
 
-        foreach (var game in snapshot.Where(game => game is { ProcessIsActive: true }))
+        foreach (var game in snapshot)
         {
+            // Simply kill flags. Time is already accurately saved in memory.
             game.ProcessIsActive = false;
             game.Pid = 0;
             game.ProcessCreationTime = default;
             game.ManualWorkingGameIsActive = false;
-
-            if (!game.SessionStartTime.HasValue) continue;
-            var sessionLength = DateTime.Now - game.SessionStartTime.Value;
-            game.AddPlaytime(sessionLength);
             game.SessionStartTime = null;
         }
 
-        // 3. Persist to disk
+        // Persist the up-to-date memory to disk
         SaveToDisk();
     }
 

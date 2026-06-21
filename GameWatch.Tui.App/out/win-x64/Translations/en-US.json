@@ -1,0 +1,7 @@
+{
+    "MainMenuScene": {
+        "AppVersionLabelFormat": "Version {0}.{1}.{2}",
+        "ListGamesOption": "List games",
+        "ExitAppOption": "Exit"
+    }
+}
