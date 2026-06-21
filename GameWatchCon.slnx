@@ -1,5 +1,0 @@
-<Solution>
-  <Project Path="MainApp/MainApp.csproj" />
-  <Project Path="SharedCore/SharedCore.csproj" />
-  <Project Path="Updater/Updater.csproj" />
-</Solution>
