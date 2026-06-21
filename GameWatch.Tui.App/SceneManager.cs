@@ -18,7 +18,7 @@ public sealed class SceneManager
     // Use this for a clean, top-level swap (e.g., Main Menu to Edit Games Menu)
     public void ChangeRootScene(Scene newScene)
     {
-        while(_sceneStack.Count > 0)
+        while (_sceneStack.Count > 0)
         {
             var oldScene = _sceneStack.Pop();
             oldScene.OnEnd();
@@ -62,9 +62,5 @@ public sealed class SceneManager
         previousScene.OnStart();
     }
 
-    private void OnAppRunningStatusChanged(AffirmationStatus isAppStillRunning)
-    {
-        if (isAppStillRunning == AffirmationStatus.No)
-            _appCtx.AppUi.RequestStop();
-    }
+    private void OnAppRunningStatusChanged() => _appCtx.AppUi.RequestStop();
 }

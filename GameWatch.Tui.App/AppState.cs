@@ -15,12 +15,12 @@ public sealed class AppState
             if (field != value)
             {
                 field = value;
-                AppRunningStatusChanged?.Invoke(value);
+                AppRunningStatusChanged?.Invoke();
             }
         }
     }
 
-    public event Action<AffirmationStatus>? AppRunningStatusChanged;
+    public event Action? AppRunningStatusChanged;
 
     public void StopApp() => AppIsRunningStatus = AffirmationStatus.No;
 }
