@@ -27,6 +27,15 @@
 
     <ItemGroup>
         <EmbeddedResource Include="Localization\Locales\en-US.json" />
+        <EmbeddedResource Remove="out\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Compile Remove="out\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Remove="out\**" />
     </ItemGroup>
 
 </Project>
