@@ -7,4 +7,10 @@ public class LanguagePack
 {
     [JsonPropertyName("MainMenuScene")]
     public MainMenuScene MainMenuScene { get; set; } = new();
+
+    [JsonPropertyName("ListGamesScene")]
+    public ListGamesScene ListGamesScene { get; set; } = new();
+
+    [JsonPropertyName("GameClass")]
+    public GameClass GameClass { get; set; } = new();
 }

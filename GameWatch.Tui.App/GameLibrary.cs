@@ -37,7 +37,8 @@ public sealed class GameLibrary
         StartMonitoring();
     }
 
-    private List<Game> Games { get; set; } = [];
+    public event Action? LibraryTicked;
+    public List<Game> Games { get; private set; } = [];
 
     public void AddGame(string title, string gameFilePath)
     {
@@ -136,7 +137,6 @@ public sealed class GameLibrary
     {
         var games = GetManualWorkingGames();
         games[gameId - 1].ManualWorkingGameIsActive = true;
-        games[gameId - 1].SessionStartTime = DateTime.Now;
     }
 
     /// <param name="gameId">1 indexed</param>
@@ -286,7 +286,7 @@ public sealed class GameLibrary
             [FileSchemaV2.GameTitlePropertyName] = game.Title,
             [FileSchemaV2.GamePlayTimePropertyName] = game.PlayTime.ToString(FileSchemaV2.GamePlayTimePropertyValueFormat),
             [FileSchemaV2.GameWorkingModePropertyName] = game.WorkingMode.ToString(),
-            [FileSchemaV2.GameFilePathModePropertyName] = game.Title
+            [FileSchemaV2.GameFilePathModePropertyName] = game.FilePath
         }).ToList();
 
         var fileSchema = new Dictionary<string, object>
@@ -348,7 +348,6 @@ public sealed class GameLibrary
                     game.Pid = 0;
                     game.ProcessCreationTime = default;
                     game.ManualWorkingGameIsActive = false;
-                    game.SessionStartTime = null;
                 }
                 else
                 {
@@ -358,7 +357,6 @@ public sealed class GameLibrary
                     game.ProcessIsActive = true;
                     game.Pid = found.Value.Pid;
                     game.ProcessCreationTime = found.Value.CreationTime;
-                    game.SessionStartTime = now;
                 }
             }
 
@@ -371,7 +369,11 @@ public sealed class GameLibrary
             }
 
             // --- 3. THIRD: Throttled save to disk ---
+
+            // If time advanced, notify the scene views to refresh their content frames
             if (!anyGameWasActive) return;
+            LibraryTicked?.Invoke();
+
             if (++_saveSkipCounter < 5) return;
             _saveSkipCounter = 0;
             SaveToDisk();
@@ -393,7 +395,6 @@ public sealed class GameLibrary
     private void OnGameStopped(Game game)
     {
         // Playtime is already up-to-date in memory. Just reset flags.
-        game.SessionStartTime = null;
         game.ManualWorkingGameIsActive = false;
         game.ProcessIsActive = false;
 
@@ -417,7 +418,6 @@ public sealed class GameLibrary
             game.Pid = 0;
             game.ProcessCreationTime = default;
             game.ManualWorkingGameIsActive = false;
-            game.SessionStartTime = null;
         }
 
         // Persist the up-to-date memory to disk
