@@ -16,11 +16,11 @@ public sealed class AppContext
 
     public void InitSceneManager(SceneManager mng) => SceneManager = mng;
 
-    public IApplication AppUi { get; init; }
-    public Window RootUiWindow { get; init; }
-    public SceneManager SceneManager { get; set; } = null!;
-    public LanguageManager LanguageManager { get; init; }
-    public AppSettings AppSettings { get; init; } = new();
-    public AppState AppState { get; init; } = new();
-    public GameLibrary GameLibrary { get; init; }
+    public IApplication AppUi { get; }
+    public Window RootUiWindow { get; }
+    public SceneManager SceneManager { get; private set; } = null!;
+    public LanguageManager LanguageManager { get; }
+    public AppSettings AppSettings { get; } = new();
+    public AppState AppState { get; } = new();
+    public GameLibrary GameLibrary { get; }
 }

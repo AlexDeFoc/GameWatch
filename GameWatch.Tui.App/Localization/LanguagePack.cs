@@ -5,12 +5,15 @@ namespace GameWatch.Tui.App.Localization;
 
 public class LanguagePack
 {
-    [JsonPropertyName("MainMenuScene")]
-    public MainMenuScene MainMenuScene { get; set; } = new();
+    [JsonPropertyName("GeneralStrings")]
+    public GeneralStrings GeneralStrings { get; init; } = new();
 
-    [JsonPropertyName("ListGamesScene")]
-    public ListGamesScene ListGamesScene { get; set; } = new();
+    [JsonPropertyName("MainMenuScene")]
+    public MainMenuScene MainMenuScene { get; init; } = new();
+
+    [JsonPropertyName("AddGameScene")]
+    public AddGameScene AddGameScene { get; init; } = new();
 
     [JsonPropertyName("GameClass")]
-    public GameClass GameClass { get; set; } = new();
+    public GameClass GameClass { get; init; } = new();
 }

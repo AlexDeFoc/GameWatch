@@ -199,6 +199,20 @@ public sealed class GameLibrary
         }
     }
 
+    private static bool CheckIfFileSupported(JsonElement root)
+    {
+        var statement = false;
+
+        if (!root.TryGetProperty("appSupported", out var elem)
+            || elem.ValueKind != JsonValueKind.String)
+            return statement;
+
+        if (elem.GetString() is "gw.tui.app")
+            statement = true;
+
+        return statement;
+    }
+
     private static int? GetFileVersion(JsonElement root)
     {
         var properties = new[] { FileVersionPropertyName.Type1, FileVersionPropertyName.Type2 };
@@ -243,17 +257,18 @@ public sealed class GameLibrary
         {
             using var doc = JsonDocument.Parse(fileContents);
             var jsonDocRoot = doc.RootElement;
-            var fileVer = GetFileVersion(doc.RootElement);
+            var isFileSupported = CheckIfFileSupported(doc.RootElement);
 
-            switch (fileVer)
+            if (isFileSupported)
             {
-                case FileSchemaV1.FileVersion:
-                    loadedGames = FileSchemaV1.LoadGames(jsonDocRoot);
-                    break;
+                var fileVer = GetFileVersion(doc.RootElement);
 
-                case FileSchemaV2.FileVersion:
-                    loadedGames = FileSchemaV2.LoadGames(jsonDocRoot);
-                    break;
+                loadedGames = fileVer switch
+                {
+                    FileSchemaV1.FileVersion => FileSchemaV1.LoadGames(jsonDocRoot),
+                    FileSchemaV2.FileVersion => FileSchemaV2.LoadGames(jsonDocRoot),
+                    _ => loadedGames
+                };
             }
         }
         catch
@@ -291,6 +306,7 @@ public sealed class GameLibrary
 
         var fileSchema = new Dictionary<string, object>
         {
+            ["appSupported"] = "gw.tui.app",
             [FileVersionPropertyName.Type2] = FileSchemaV2.FileVersion,
             [FileSchemaV2.GamesArrayPropertyName] = gamesArray
         };

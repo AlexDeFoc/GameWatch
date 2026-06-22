@@ -5,18 +5,16 @@ namespace GameWatch.Tui.App;
 
 public sealed class AppState
 {
-    public SemVersion AppVersion { get; init; } = SemVersion.Parse("2.0.0", SemVersionStyles.Strict);
+    public SemVersion AppVersion { get; } = SemVersion.Parse("2.0.0", SemVersionStyles.Strict);
 
     public AffirmationStatus AppIsRunningStatus
     {
         get;
         private set
         {
-            if (field != value)
-            {
-                field = value;
-                AppRunningStatusChanged?.Invoke();
-            }
+            if (field == value) return;
+            field = value;
+            AppRunningStatusChanged?.Invoke();
         }
     }
 

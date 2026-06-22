@@ -14,4 +14,11 @@ public abstract class Scene
     public abstract void OnStart();
 
     public virtual void OnEnd() { }
+
+    protected static void ShowView(View v)
+    {
+        v.Height = Dim.Auto();
+        v.Width = Dim.Auto();
+        v.Visible = true;
+    }
 }

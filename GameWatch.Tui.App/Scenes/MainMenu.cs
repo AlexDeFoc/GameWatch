@@ -1,4 +1,3 @@
-using System.Linq;
 using Terminal.Gui.ViewBase;
 using Terminal.Gui.Views;
 
@@ -6,9 +5,9 @@ namespace GameWatch.Tui.App.Scenes;
 
 public sealed class MainMenu(AppContext appCtx) : Scene(appCtx)
 {
-    private Localization.Sections.MainMenuScene Strings { get; init; } = appCtx.LanguageManager.Strings.MainMenuScene;
-    private AppState AppState { get; init; } = appCtx.AppState;
-    private GameLibrary GameLibrary { get; init; } = appCtx.GameLibrary;
+    private Localization.Sections.MainMenuScene Strings { get; } = appCtx.LanguageManager.Strings.MainMenuScene;
+    private AppState AppState { get; } = appCtx.AppState;
+    private GameLibrary GameLibrary { get; } = appCtx.GameLibrary;
 
     public override void OnStart()
     {
@@ -18,32 +17,57 @@ public sealed class MainMenu(AppContext appCtx) : Scene(appCtx)
 
     private void AddButtons()
     {
-        var listGamesBtn = new Button
+        var listGamesBtn = new Controls.Button(
+            rootWindow: appCtx.RootUiWindow,
+            btnContent: Strings.ListGamesOption,
+            btnPosX: Pos.Center(),
+            btnPosY: Pos.Center(),
+            onBtnClicked: () => appCtx.SceneManager.ChangeRootScene(new ListGames(appCtx))
+        )
         {
-            Title = Strings.ListGamesOption,
-            X = Pos.Center(),
-            Y = Pos.Center(),
-            Visible = false,
-            ShadowStyle = ShadowStyles.None
+            AsView =
+            {
+                ShadowStyle = ShadowStyles.None
+            }
         };
 
-        var exitAppBtn = new Button
+        var addGameBtn = new Controls.Button(
+            rootWindow: appCtx.RootUiWindow,
+            btnContent: Strings.AddGameOption,
+            btnPosX: Pos.Center(),
+            btnPosY: Pos.Bottom(listGamesBtn.AsView),
+            onBtnClicked: () => appCtx.SceneManager.ChangeRootScene(new AddGame(appCtx))
+        )
         {
-            Title = Strings.ExitAppOption,
-            X = Pos.Center(),
-            Y = Pos.Center(),
-            ShadowStyle = ShadowStyles.None
+            AsView =
+            {
+                ShadowStyle = ShadowStyles.None
+            }
         };
 
-        if (GameLibrary.Games.Count > 0)
+        // ReSharper disable once UnusedVariable
+        var exitAppBtn = new Controls.Button(
+            rootWindow: appCtx.RootUiWindow,
+            btnContent: Strings.ExitAppOption,
+            btnPosX: Pos.Center(),
+            btnPosY: Pos.Bottom(addGameBtn.AsView),
+            onBtnClicked: () => appCtx.AppState.StopApp()
+        )
         {
-            listGamesBtn.Visible = true;
-            exitAppBtn.Y = Pos.Bottom(listGamesBtn);
+            AsView =
+            {
+                ShadowStyle = ShadowStyles.None
+            }
+        };
+
+        if (GameLibrary.Games.Count == 0)
+        {
+            listGamesBtn.Hide();
         }
-
-        listGamesBtn.Accepted += (_, _) => appCtx.SceneManager.ChangeRootScene(new ListGames(appCtx));
-        exitAppBtn.Accepted += (_, _) => appCtx.AppState.StopApp();
-        appCtx.RootUiWindow.Add(listGamesBtn, exitAppBtn);
+        else
+        {
+            listGamesBtn.UnHide();
+        }
     }
 
     private void AddExtraStuffToUi()

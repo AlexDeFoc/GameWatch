@@ -1,31 +1,21 @@
-using System;
-using System.Collections.Generic;
-//using System.IO;
-using System.Text;
-
 namespace GameWatch.Tui.App.FileSystem;
 
-public sealed class FilePath
+public sealed class FilePath(FolderPath.LocationCode baseDirectory)
 {
-    private FolderPath _folderPath;
-
-    public FilePath(FolderPath.LocationCode baseDirectory)
-    {
-        _folderPath = new(baseDirectory);
-    }
+    private FolderPath _folderPath = new(baseDirectory);
 
     public string BaseName { get; set; } = string.Empty;
-    public string Extension { get; set; } = string.Empty;
+    public string Extension { get; init; } = string.Empty;
 
     public string ParentPath => _folderPath.Path;
 
     public string Path => System.IO.Path.Combine(_folderPath.Path, FileName);
 
-    public string FileName
+    private string FileName
     {
         get
         {
-            string name = string.Empty;
+            var name = string.Empty;
 
             if (BaseName != string.Empty && Extension != string.Empty)
                 name = BaseName + "." + Extension;

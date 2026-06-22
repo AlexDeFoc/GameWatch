@@ -11,7 +11,7 @@ public class LanguageManager
 {
     public LanguagePack Strings = new();
 
-    private static readonly JsonSerializerOptions _options = new()
+    private static readonly JsonSerializerOptions Options = new()
     {
         PropertyNameCaseInsensitive = true,
     };
@@ -52,17 +52,19 @@ public class LanguageManager
     {
         try
         {
-            Strings = JsonSerializer.Deserialize<LanguagePack>(LoadLocaleFile(newTag), _options)!;
+            Strings = JsonSerializer.Deserialize<LanguagePack>(LoadLocaleFile(newTag), Options)!;
         }
         catch
         {
-            Strings = JsonSerializer.Deserialize<LanguagePack>(LoadLocaleFile(LanguageTag.fallback), _options)!;
+            Strings = JsonSerializer.Deserialize<LanguagePack>(LoadLocaleFile(LanguageTag.fallback), Options)!;
         }
     }
 
     public enum LanguageTag
     {
+        // ReSharper disable InconsistentNaming
         fallback,
         en_US
+        // ReSharper restore InconsistentNaming
     }
 }

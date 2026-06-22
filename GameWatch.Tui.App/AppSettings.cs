@@ -77,6 +77,20 @@ public sealed class AppSettings
         return string.Join(" : ", parts);
     }
 
+    private static bool CheckIfFileSupported(JsonElement root)
+    {
+        var statement = false;
+
+        if (!root.TryGetProperty("appSupported", out var elem)
+            || elem.ValueKind != JsonValueKind.String)
+            return statement;
+
+        if (elem.GetString() is "gw.tui.app")
+            statement = true;
+
+        return statement;
+    }
+
     private static int? GetFileVersion(JsonElement root)
     {
         var properties = new[] { FileVersionPropertyName.Type1, FileVersionPropertyName.Type2 };
@@ -84,7 +98,7 @@ public sealed class AppSettings
         foreach (var prop in properties)
         {
             if (root.TryGetProperty(prop, out var elem)
-                && elem.ValueKind == JsonValueKind.Number
+                && elem.ValueKind == JsonValueKind.String
                 && elem.TryGetInt32(out var ver)
                 && ver is FileSchemaV1.FileVersion or FileSchemaV2.FileVersion)
             {
@@ -113,19 +127,24 @@ public sealed class AppSettings
         {
             using var doc = JsonDocument.Parse(fileContents);
             var jsonDocRoot = doc.RootElement;
-            var fileVer = GetFileVersion(doc.RootElement);
+            var isFileSupported = CheckIfFileSupported(doc.RootElement);
 
-            switch (fileVer)
+            if (isFileSupported)
             {
-                case FileSchemaV1.FileVersion:
-                    LoadDefaults();
-                    break;
+                var fileVer = GetFileVersion(doc.RootElement);
 
-                case FileSchemaV2.FileVersion:
-                    AutoSaveGamesStatus = FileSchemaV2.GetAutoSaveGamesStatus(jsonDocRoot) ?? AutoSaveGamesStatus;
-                    AutoSaveGamesIntervalInMinutes = FileSchemaV2.GetAutoSaveGamesIntervalInMinutes(jsonDocRoot) ?? AutoSaveGamesIntervalInMinutes;
-                    ActiveAppLanguageTag = FileSchemaV2.GetActiveAppLanguageTag(jsonDocRoot) ?? ActiveAppLanguageTag;
-                    break;
+                switch (fileVer)
+                {
+                    case FileSchemaV1.FileVersion:
+                        LoadDefaults();
+                        break;
+
+                    case FileSchemaV2.FileVersion:
+                        AutoSaveGamesStatus = FileSchemaV2.GetAutoSaveGamesStatus(jsonDocRoot) ?? AutoSaveGamesStatus;
+                        AutoSaveGamesIntervalInMinutes = FileSchemaV2.GetAutoSaveGamesIntervalInMinutes(jsonDocRoot) ?? AutoSaveGamesIntervalInMinutes;
+                        ActiveAppLanguageTag = FileSchemaV2.GetActiveAppLanguageTag(jsonDocRoot) ?? ActiveAppLanguageTag;
+                        break;
+                }
             }
         }
         catch
@@ -152,6 +171,7 @@ public sealed class AppSettings
     {
         var fileSchema = new Dictionary<string, object>
         {
+            ["appSupported"] = "gw.tui.app",
             [FileVersionPropertyName.Type2] = FileSchemaV2.FileVersion,
             [FileSchemaV2.AutoSaveGamesStatusPropertyName] = AutoSaveGamesStatus.ToString(),
             [FileSchemaV2.AutoSaveGamesIntervalInMinutesPropertyName] = AutoSaveGamesIntervalInMinutes,
@@ -171,7 +191,11 @@ public sealed class AppSettings
         ActiveAppLanguageTag = LanguageManager.LanguageTag.en_US;
     }
 
-    private enum FileExistenceOrder { V2, V1 }
+    private enum FileExistenceOrder
+    {
+        V2,
+        V1
+    }
 
     private static class FileVersionPropertyName
     {

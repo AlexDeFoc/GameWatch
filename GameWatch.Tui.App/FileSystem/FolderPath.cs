@@ -32,31 +32,16 @@ public sealed class FolderPath
     public FolderPath Parent()
     {
         var parent = Directory.GetParent(Path);
-        if (parent == null)
-            throw new UnauthorizedAccessException();
-
-        return new(_baseLocation, parent.FullName);
+        return parent == null ? throw new UnauthorizedAccessException() : new FolderPath(_baseLocation, parent.FullName);
     }
 
-    private static string GetLocationPath(LocationCode locationCode)
+    private static string GetLocationPath(LocationCode locationCode) => locationCode switch
     {
-        if (locationCode == LocationCode.BinaryDirectory)
-        {
-            return AppDomain.CurrentDomain.BaseDirectory.TrimEnd(System.IO.Path.DirectorySeparatorChar);
-        }
-        else if (locationCode == LocationCode.OurUserDataDirectory)
-        {
-            return System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "UserData").TrimEnd(System.IO.Path.DirectorySeparatorChar);
-        }
-        else if (locationCode == LocationCode.OurTranslationsDirectory)
-        {
-            return System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Translations").TrimEnd(System.IO.Path.DirectorySeparatorChar);
-        }
-        else
-        {
-            throw new ArgumentException();
-        }
-    }
+        LocationCode.BinaryDirectory => AppDomain.CurrentDomain.BaseDirectory.TrimEnd(System.IO.Path.DirectorySeparatorChar),
+        LocationCode.OurUserDataDirectory => System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "UserData").TrimEnd(System.IO.Path.DirectorySeparatorChar),
+        LocationCode.OurTranslationsDirectory => System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Translations").TrimEnd(System.IO.Path.DirectorySeparatorChar),
+        _ => throw new ArgumentException()
+    };
 
     public enum LocationCode
     {
