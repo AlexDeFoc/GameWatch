@@ -1,4 +1,6 @@
-﻿using Terminal.Gui.App;
+﻿using GameWatch.Tui.App.Localization;
+using Terminal.Gui.App;
+using Terminal.Gui.ViewBase;
 using Terminal.Gui.Views;
 
 namespace GameWatch.Tui.App;
@@ -7,19 +9,29 @@ public static class Program
 {
     public static void Main()
     {
-        using var appUi = Application.Create().Init();
-        CustomizeAppUi(appUi);
-        using var rootUiWindow = new Window();
+        using var uiApp = Application.Create().Init();
+        var rootWindow = new Window()
+        {
+            Width = Dim.Fill(),
+            Height = Dim.Fill()
+        };
 
-        var appCtx = new AppContext(appUi, rootUiWindow);
-        var sceneManager = new SceneManager(appCtx);
-        appCtx.InitSceneManager(sceneManager);
+        AppContext appCtx = new();
+        AppState appState = new();
+        AppSettings appSettings = new();
+        LanguageManager languageManager = new(appSettings);
+        GameLibrary gameLibrary = new(appState);
+        SceneManager sceneManager = new(appState, appCtx, rootWindow, uiApp);
 
-        appUi.Run(rootUiWindow);
-    }
+        appCtx.RootWindow = rootWindow;
+        appCtx.AppState = appState;
+        appCtx.AppSettings = appSettings;
+        appCtx.LanguageManager = languageManager;
+        appCtx.GameLibrary = gameLibrary;
+        appCtx.SceneManager = sceneManager;
 
-    public static void CustomizeAppUi(IApplication appUi)
-    {
-        appUi.Keyboard.KeyBindings.Clear(Terminal.Gui.Input.Command.Quit);
+        sceneManager.ChangeRootScene(new Scenes.MainMenu(appCtx));
+
+        uiApp.Run(rootWindow);
     }
 }

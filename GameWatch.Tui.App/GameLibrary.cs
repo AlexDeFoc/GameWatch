@@ -20,9 +20,9 @@ public sealed class GameLibrary
     private int _saveSkipCounter;
     private DateTime _lastTickTime = DateTime.Now;
 
-    public GameLibrary(AppContext appCtx)
+    public GameLibrary(AppState appState)
     {
-        appCtx.AppState.AppRunningStatusChanged += OnAppRunningStatusChanged;
+        appState.AppRunningStatusChanged += OnAppRunningStatusChanged;
 
         _currentFilePath = new FilePath(FolderPath.LocationCode.OurUserDataDirectory) { BaseName = "GameLibrary", Extension = "json" };
 

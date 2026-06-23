@@ -1,22 +1,26 @@
 using GameWatch.Tui.App.Scenes;
 using System.Collections.Generic;
+using GameWatch.Tui.App.Localization;
+using Terminal.Gui.App;
+using Terminal.Gui.Views;
 
 namespace GameWatch.Tui.App;
 
 public sealed class SceneManager
 {
-    private readonly AppContext _appCtx;
-    private readonly Stack<Scene> _sceneStack = new();
+    private readonly Window _rootWindow;
+    private readonly Stack<IScene> _sceneStack = new();
+    private readonly IApplication _uiApp;
 
-    public SceneManager(AppContext appCtx)
+    public SceneManager(AppState appState, AppContext appCtx, Window rootWindow, IApplication uiApp)
     {
-        _appCtx = appCtx;
-        _appCtx.AppState.AppRunningStatusChanged += OnAppRunningStatusChanged;
-        ChangeRootScene(new MainMenu(_appCtx));
+        _rootWindow = rootWindow;
+        _uiApp = uiApp;
+        appState.AppRunningStatusChanged += OnAppRunningStatusChanged;
     }
 
     // Use this for a clean, top-level swap (e.g., Main Menu to Edit Games Menu)
-    public void ChangeRootScene(Scene newScene)
+    public void ChangeRootScene(IScene newScene)
     {
         while (_sceneStack.Count > 0)
         {
@@ -24,19 +28,19 @@ public sealed class SceneManager
             oldScene.OnEnd();
         }
 
-        _appCtx.RootUiWindow.RemoveAll();
+        _rootWindow.RemoveAll();
         _sceneStack.Push(newScene);
         newScene.OnStart();
     }
 
     /// <summary>Use this to go into a sub-scene for a result</summary>
-    public void PushScene(Scene subScene)
+    public void PushScene(IScene subScene)
     {
         if (_sceneStack.Count > 0)
         {
             // Suspend the current scene (clears its UI, but keeps its state/instance alive)
             _sceneStack.Peek().OnEnd();
-            _appCtx.RootUiWindow.RemoveAll();
+            _rootWindow.RemoveAll();
         }
 
         _sceneStack.Push(subScene);
@@ -55,12 +59,12 @@ public sealed class SceneManager
         // Kill the sub-scene
         var topScene = _sceneStack.Pop();
         topScene.OnEnd();
-        _appCtx.RootUiWindow.RemoveAll();
+        _rootWindow.RemoveAll();
 
         // Resume the previous scene
         var previousScene = _sceneStack.Peek();
         previousScene.OnStart();
     }
 
-    private void OnAppRunningStatusChanged() => _appCtx.AppUi.RequestStop();
+    private void OnAppRunningStatusChanged() => _uiApp.RequestStop();
 }
