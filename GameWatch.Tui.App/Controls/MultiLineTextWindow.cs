@@ -6,28 +6,29 @@ namespace GameWatch.Tui.App.Controls;
 
 public sealed class MultiLineTextWindow
 {
-    public Pos WindowPosX { get; set; }
-    public Dim WindowWidth { get; private set; } = null!;
-    public Dim WindowHeight { get; private set; } = null!;
-    public event Action? OnWindowWidthChanged;
-    public event Action? OnWindowHeightChanged;
-
-    private Window RootWindow { get; }
-    private string WindowTitle { get; }
-    private string WindowContent { get; }
-    private Pos WindowPosY { get; }
-    private Window TextWindow { get; set; } = null!;
-
-    public MultiLineTextWindow(Window rootWindow, string windowTitle, string windowContent, Pos windowPosX, Pos windowPosY)
+    public MultiLineTextWindow(View rootWindow, string windowTitle, string windowContent, Pos windowPosX, Pos windowPosY, Dim windowWidth, Dim windowHeight)
     {
         WindowTitle = windowTitle;
         RootWindow = rootWindow;
         WindowPosX = windowPosX;
         WindowPosY = windowPosY;
         WindowContent = windowContent;
+        WindowWidth = windowWidth;
+        WindowHeight = windowHeight;
 
         SetupWindow();
     }
+
+    public Pos WindowPosX { get; set; }
+    public Window AsView => TextWindow;
+
+    private View RootWindow { get; }
+    private string WindowTitle { get; }
+    private string WindowContent { get; }
+    private Pos WindowPosY { get; }
+    private Dim WindowWidth { get; set; }
+    private Dim WindowHeight { get; set; }
+    private Window TextWindow { get; set; } = null!;
 
     public void ChangeWindowContent(string newText)
     {
@@ -43,24 +44,9 @@ public sealed class MultiLineTextWindow
             Text = WindowContent,
             X = WindowPosX,
             Y = WindowPosY,
-            Width = Dim.Auto(),
-            Height = Dim.Auto(),
+            Width = WindowWidth,
+            Height = WindowHeight,
             CanFocus = false
-        };
-
-        WindowWidth = TextWindow.Frame.Width;
-        WindowHeight = TextWindow.Frame.Height;
-
-        TextWindow.WidthChanged += (_, _) =>
-        {
-            WindowWidth = TextWindow.Frame.Width;
-            OnWindowWidthChanged?.Invoke();
-        };
-
-        TextWindow.HeightChanged += (_, _) =>
-        {
-            WindowHeight = TextWindow.Frame.Height;
-            OnWindowHeightChanged?.Invoke();
         };
 
         RootWindow.Add(TextWindow);

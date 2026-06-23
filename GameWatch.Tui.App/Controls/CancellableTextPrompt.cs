@@ -69,8 +69,9 @@ public sealed class CancellableTextPrompt
             Title = PromptTitle,
             X = Pos.Center(),
             Y = Pos.Center(),
-            Height = Dim.Percent(40),
-            Width = Dim.Percent(60)
+            Width = Dim.Percent(60),
+            // Width = Dim.Fill(),
+            Height = Dim.Percent(40)
         };
 
         RootWindow.Add(PromptWindow);
@@ -91,25 +92,26 @@ public sealed class CancellableTextPrompt
 
     private void SetupControlButtons()
     {
+        // ReSharper disable once UnusedVariable
+        var cancelBtn = new Button(
+            rootWindow: PromptWindow,
+            btnContent: GeneralStrings.CancelBtn,
+            btnPosX: Pos.Align(Alignment.Center),
+            btnPosY: Pos.AnchorEnd(1),
+            onBtnClicked: OnCancelBtnClicked
+        );
+
+        // ReSharper disable once UnusedVariable
         var okBtn = new Button(
             rootWindow: PromptWindow,
             btnContent: GeneralStrings.OkBtn,
-            btnPosX: Pos.Center(),
-            btnPosY: Pos.AnchorEnd(4),
+            btnPosX: Pos.Align(Alignment.Center),
+            btnPosY: Pos.AnchorEnd(1),
             onBtnClicked: () =>
             {
                 Result = InputField.Value;
                 OnOkBtnClicked?.Invoke();
             });
-
-        // ReSharper disable once UnusedVariable
-        var cancelBtn = new Button(
-            rootWindow: PromptWindow,
-            btnContent: GeneralStrings.CancelBtn,
-            btnPosX: Pos.Center(),
-            btnPosY: Pos.Bottom(okBtn.AsView),
-            onBtnClicked: OnCancelBtnClicked
-        );
     }
 
     private void BackupMainWindowDimensions()

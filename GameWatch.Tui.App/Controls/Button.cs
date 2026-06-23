@@ -9,7 +9,7 @@ public sealed class Button
     private Dim _btnWidthBackup = null!;
     private Dim _btnHeightBackup = null!;
 
-    public Button(Window rootWindow, string btnContent, Pos btnPosX, Pos btnPosY, Action onBtnClicked)
+    public Button(View rootWindow, string btnContent, Pos btnPosX, Pos btnPosY, Action onBtnClicked)
     {
         RootWindow = rootWindow;
         BtnContent = btnContent;
@@ -24,10 +24,10 @@ public sealed class Button
 
     public View AsView => InternalBtn;
 
-    private Window RootWindow { get; }
-    private string BtnContent { get; }
     private Pos BtnPosX { get; }
     private Pos BtnPosY { get; }
+    private View RootWindow { get; }
+    private string BtnContent { get; }
     private Action OnBtnClicked { get; }
     private Terminal.Gui.Views.Button InternalBtn { get; set; } = null!;
 

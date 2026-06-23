@@ -8,8 +8,12 @@ namespace GameWatch.Tui.App.Controls;
 
 public sealed class OptionSelectorWithHelpWindow<TOptsType> where TOptsType : struct, Enum
 {
+    private const int controlButtonGroupHeightInRows = 2;
+
     private Dim _optionsAndHelpWindowsGroupWindowWidthBackup = null!;
     private Dim _optionsAndHelpWindowsGroupWindowHeightBackup = null!;
+    private Dim _controlButtonsGroupWindowWidthBackup = null!;
+    private Dim _controlButtonsGroupWindowHeightBackup = null!;
 
     public OptionSelectorWithHelpWindow(Localization.Sections.GeneralStrings generalStrings, Window rootWindow, string optionsWindowTitle, string helpWindowTitle, string helpWindowContent, IReadOnlyList<string> optionLabels,
         Action onCancelBtnClicked, Action onOkBtnClicked, bool mainWindowVisible = true)
@@ -25,15 +29,18 @@ public sealed class OptionSelectorWithHelpWindow<TOptsType> where TOptsType : st
 
         ValidateLabelsCount();
 
-        SetupGroupWindow();
-        SetupHelpWindow();
+        SetupControlButtonGroup();
+        SetupOptAndHelpWindowGroup();
         SetupOptionsWindow();
-        SyncOptionsAndHelpWindows();
         SetupFillOptionsWindow();
+        SetupHelpWindow();
         SetupControlButtons();
         BackupMainWindowDimensions();
 
-        OptionsAndHelpWindowsGroupWindow.Visible = mainWindowVisible;
+        if (!mainWindowVisible)
+        {
+            Hide();
+        }
     }
 
     public TOptsType? Result { get; private set; }
@@ -47,22 +54,28 @@ public sealed class OptionSelectorWithHelpWindow<TOptsType> where TOptsType : st
     private Action OnCancelBtnClicked { get; }
     private Action OnOkBtnClicked { get; }
     private Window OptionsAndHelpWindowsGroupWindow { get; set; } = null!;
+    private Window ControlButtonsGroupWindow { get; set; } = null!;
     private Window OptionsWindow { get; set; } = null!;
     private OptionSelector<TOptsType> OptionsSelector { get; set; } = null!;
     private MultiLineTextWindow HelpWindow { get; set; } = null!;
 
     public void Hide()
     {
-        if (!OptionsAndHelpWindowsGroupWindow.Visible)
+        if (!OptionsAndHelpWindowsGroupWindow.Visible || !ControlButtonsGroupWindow.Visible)
             return;
 
         _optionsAndHelpWindowsGroupWindowWidthBackup = OptionsAndHelpWindowsGroupWindow.Width;
         _optionsAndHelpWindowsGroupWindowHeightBackup = OptionsAndHelpWindowsGroupWindow.Height;
+        _controlButtonsGroupWindowWidthBackup = ControlButtonsGroupWindow.Width;
+        _controlButtonsGroupWindowHeightBackup = ControlButtonsGroupWindow.Height;
 
         OptionsAndHelpWindowsGroupWindow.Width = 0;
         OptionsAndHelpWindowsGroupWindow.Height = 0;
+        ControlButtonsGroupWindow.Width = 0;
+        ControlButtonsGroupWindow.Height = 0;
 
         OptionsAndHelpWindowsGroupWindow.Visible = false;
+        ControlButtonsGroupWindow.Visible = false;
 
         RootWindow.SetNeedsLayout();
         RootWindow.SetNeedsDraw();
@@ -70,13 +83,16 @@ public sealed class OptionSelectorWithHelpWindow<TOptsType> where TOptsType : st
 
     public void UnHide()
     {
-        if (OptionsAndHelpWindowsGroupWindow.Visible)
+        if (OptionsAndHelpWindowsGroupWindow.Visible || ControlButtonsGroupWindow.Visible)
             return;
 
         OptionsAndHelpWindowsGroupWindow.Width = _optionsAndHelpWindowsGroupWindowWidthBackup;
         OptionsAndHelpWindowsGroupWindow.Height = _optionsAndHelpWindowsGroupWindowHeightBackup;
+        ControlButtonsGroupWindow.Width = _controlButtonsGroupWindowWidthBackup;
+        ControlButtonsGroupWindow.Height = _controlButtonsGroupWindowHeightBackup;
 
         OptionsAndHelpWindowsGroupWindow.Visible = true;
+        ControlButtonsGroupWindow.Visible = true;
 
         RootWindow.SetNeedsLayout();
         RootWindow.SetNeedsDraw();
@@ -95,14 +111,32 @@ public sealed class OptionSelectorWithHelpWindow<TOptsType> where TOptsType : st
         }
     }
 
-    private void SetupGroupWindow()
+    private void SetupControlButtonGroup()
+    {
+        ControlButtonsGroupWindow = new Window
+        {
+            X = 0,
+            Y = Pos.AnchorEnd(controlButtonGroupHeightInRows),
+            Width = Dim.Fill(),
+            Height = controlButtonGroupHeightInRows,
+            Border =
+            {
+                LineStyle = LineStyle.None,
+                Thickness = new Thickness()
+            }
+        };
+
+        RootWindow.Add(ControlButtonsGroupWindow);
+    }
+
+    private void SetupOptAndHelpWindowGroup()
     {
         OptionsAndHelpWindowsGroupWindow = new Window
         {
-            X = Pos.Center(),
-            Y = Pos.Center(),
-            Width = Dim.Auto(),
-            Height = Dim.Auto(),
+            X = 0,
+            Y = 0,
+            Width = Dim.Fill(),
+            Height = Dim.Fill() - controlButtonGroupHeightInRows,
             Border =
             {
                 LineStyle = LineStyle.None,
@@ -113,47 +147,31 @@ public sealed class OptionSelectorWithHelpWindow<TOptsType> where TOptsType : st
         RootWindow.Add(OptionsAndHelpWindowsGroupWindow);
     }
 
-    private void SetupHelpWindow()
-    {
-        // ReSharper disable once ConvertToConstant.Local
-        var unknownValue = 0;
-
-        HelpWindow = new MultiLineTextWindow(
-            rootWindow: OptionsAndHelpWindowsGroupWindow,
-            windowTitle: HelpWindowTitle,
-            windowContent: HelpWindowContent,
-            windowPosX: unknownValue,
-            windowPosY: 0
-        );
-    }
-
     private void SetupOptionsWindow()
     {
-        // ReSharper disable once ConvertToConstant.Local
-        var unknownValue = 0;
-
         OptionsWindow = new Window
         {
             Title = OptionsWindowTitle,
-            X = 0,
+            X = Pos.Align(Alignment.Center),
             Y = 0,
-            Width = unknownValue,
-            Height = unknownValue
+            Width = Dim.Percent(30),
+            Height = Dim.Fill(),
+            Arrangement = ViewArrangement.Fixed,
+            Border =
+            {
+                Diagnostics = ViewDiagnosticFlags.Off,
+                LineStyle = LineStyle.Single,
+                Thickness = new Thickness()
+                {
+                    Top = 1,
+                    Bottom = 1,
+                    Left = 1,
+                    Right = 1
+                }
+            }
         };
 
-        HelpWindow.OnWindowWidthChanged += () => OptionsWindow.Width = HelpWindow.WindowWidth;
-        HelpWindow.OnWindowHeightChanged += () => OptionsWindow.Height = HelpWindow.WindowHeight;
-
         OptionsAndHelpWindowsGroupWindow.Add(OptionsWindow);
-    }
-
-    private void SyncOptionsAndHelpWindows()
-    {
-        OptionsWindow.Width = HelpWindow.WindowWidth;
-        OptionsWindow.Height = HelpWindow.WindowHeight;
-        HelpWindow.WindowPosX = Pos.Right(OptionsWindow);
-        RootWindow.SetNeedsLayout();
-        RootWindow.SetNeedsDraw();
     }
 
     private void SetupFillOptionsWindow()
@@ -174,27 +192,59 @@ public sealed class OptionSelectorWithHelpWindow<TOptsType> where TOptsType : st
         OptionsWindow.Add(OptionsSelector);
     }
 
+    private void SetupHelpWindow()
+    {
+        HelpWindow = new MultiLineTextWindow(
+            rootWindow: OptionsAndHelpWindowsGroupWindow,
+            windowTitle: HelpWindowTitle,
+            windowContent: HelpWindowContent,
+            windowPosX: Pos.Align(Alignment.Center),
+            windowPosY: 0,
+            windowWidth: OptionsWindow.Width,
+            windowHeight: OptionsWindow.Height
+        )
+        {
+            AsView =
+            {
+                Border =
+                {
+                    Diagnostics = ViewDiagnosticFlags.Off,
+                    LineStyle = LineStyle.Single,
+                    Thickness = new Thickness()
+                    {
+                        Top = 1,
+                        Bottom = 1,
+                        Left = 1,
+                        Right = 1
+                    }
+                }
+            }
+        };
+    }
+
     private void SetupControlButtons()
     {
-        var okBtn = new Button(
-            rootWindow: OptionsAndHelpWindowsGroupWindow,
-            btnContent: GeneralStrings.OkBtn,
-            btnPosX: Pos.Center(),
-            btnPosY: Pos.AnchorEnd(5),
+        // ReSharper disable once UnusedVariable
+        var cancelBtn = new Button(
+            rootWindow: ControlButtonsGroupWindow,
+            btnContent: GeneralStrings.CancelBtn,
+            btnPosX: Pos.Align(Alignment.Center),
+            btnPosY: Pos.Center(),
             onBtnClicked: OnCancelBtnClicked
         );
 
         // ReSharper disable once UnusedVariable
-        var cancelBtn = new Button(
-            rootWindow: OptionsAndHelpWindowsGroupWindow,
-            btnContent: GeneralStrings.CancelBtn,
-            btnPosX: Pos.Center(),
-            btnPosY: Pos.Bottom(okBtn.AsView),
+        var okBtn = new Button(
+            rootWindow: ControlButtonsGroupWindow,
+            btnContent: GeneralStrings.OkBtn,
+            btnPosX: Pos.Align(Alignment.Center),
+            btnPosY: Pos.Center(),
             onBtnClicked: () =>
             {
                 Result = OptionsSelector.Value;
                 OnOkBtnClicked.Invoke();
-            });
+            }
+        );
     }
 
     private void BackupMainWindowDimensions()
