@@ -35,5 +35,12 @@ public static class Program
             Normal = new Attribute(Color.White, Color.None),
             Focus = new Attribute(Color.White, Color.None)
         });
+
+        // USED for testing
+        // SchemeManager.AddScheme("Controls.Menu", new Scheme
+        // {
+        //     Normal = new Attribute(Color.White, Color.Red),
+        //     Focus = new Attribute(Color.White, Color.Red)
+        // });
     }
 }

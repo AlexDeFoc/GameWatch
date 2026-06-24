@@ -14,6 +14,7 @@ public sealed class Button
     private readonly Pos _x = 0;
     private readonly Pos _y = 0;
     private readonly Action _action = () => { };
+    private readonly Func<bool> _visibilityPredicate = () => true;
     private readonly Border _border = new()
     {
         LineStyle = LineStyle.Rounded,
@@ -26,12 +27,13 @@ public sealed class Button
         }
     };
 
-    public Button(string? text = null, Pos? x = null, Pos? y = null, Action? action = null)
+    public Button(string? text = null, Pos? x = null, Pos? y = null, Action? action = null, Func<bool>? visibilityPredicate = null)
     {
         _text = text ?? _text;
         _x = x ?? _x;
         _y = y ?? _y;
         _action = action ?? _action;
+        _visibilityPredicate = visibilityPredicate ?? _visibilityPredicate;
 
         Init();
     }
@@ -59,11 +61,15 @@ public sealed class Button
                 LineStyle = _border.LineStyle,
                 Thickness = _border.Thickness
             },
-            ShadowStyle = ShadowStyles,
+            Visible = _visibilityPredicate.Invoke(),
             NoDecorations = true,
             SchemeName = "Controls.Button",
             MouseHighlightStates = MouseState.In
         };
+
+        _internal.ShadowStyle = null; // null instead of none to remove the forcefully added margin.
+        _internal.Margin.Thickness = new Thickness(0);
+        _internal.Padding.Thickness = new Thickness(0);
 
         // Target the actual AdornmentView
         if (_internal.Border.View is View borderView)

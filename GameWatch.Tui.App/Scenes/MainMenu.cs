@@ -34,11 +34,11 @@ public sealed class MainMenu(AppContext appCtx) : IScene
 
     private void SetupMenu()
     {
-        var listGamesOption = new Controls.Button(text: _ownStrings.ListGamesOption);
+        var listGamesOption = new Controls.Button(text: _ownStrings.ListGamesOption, visibilityPredicate: () => _gameLibrary.Games.Count > 0);
+        var addGameOption = new Controls.Button(text: _ownStrings.AddGameOption, action: () => _sceneMng.ChangeRootScene(new AddGame(appCtx)));
         var exitAppOption = new Controls.Button(text: _ownStrings.ExitAppOption, action: _appState.StopApp);
 
-        _navigationMenu = new(Pos.Center(), Pos.Center(), [listGamesOption, exitAppOption]);
-        // _mainWindow.Add(listGamesOption, exitAppOption);
+        _navigationMenu = new(Pos.Center(), Pos.Center(), [listGamesOption, addGameOption, exitAppOption]);
     }
 
     private void RouteUiElements()

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using Terminal.Gui.Drawing;
 using Terminal.Gui.ViewBase;
 
 namespace GameWatch.Tui.App.Controls;
@@ -38,7 +39,7 @@ public sealed class Menu
             Width = Dim.Auto(DimAutoStyle.Content),
             Height = Dim.Auto(DimAutoStyle.Content),
             CanFocus = true,
-            SchemeName = "Controls.Menu"
+            SchemeName = "Controls.Menu" // Used for debugging
         };
     }
 
@@ -47,7 +48,7 @@ public sealed class Menu
         _buttons.FirstOrDefault()?.SetFocus();
 
         Terminal.Gui.Views.Button? prevBtn = null;
-        foreach (var btn in _buttons)
+        foreach (var btn in _buttons.Where(btn => btn.Visible))
         {
             btn.X = Pos.Center();
 
