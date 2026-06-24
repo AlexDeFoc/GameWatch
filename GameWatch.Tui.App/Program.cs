@@ -1,7 +1,7 @@
-﻿using GameWatch.Tui.App.Localization;
+﻿using GameWatch.Tui.App.Scenes;
 using Terminal.Gui.App;
-using Terminal.Gui.ViewBase;
-using Terminal.Gui.Views;
+using Terminal.Gui.Configuration;
+using Terminal.Gui.Drawing;
 
 namespace GameWatch.Tui.App;
 
@@ -9,29 +9,31 @@ public static class Program
 {
     public static void Main()
     {
-        using var uiApp = Application.Create().Init();
-        var rootWindow = new Window()
+
+        using var appUi = Application.Create().Init();
+
+        SetupColorScheme();
+
+        var appCtx = new AppContext
         {
-            Width = Dim.Fill(),
-            Height = Dim.Fill()
+            AppSettings = new(),
+            AppState = new(),
+            AppUi = appUi
         };
 
-        AppContext appCtx = new();
-        AppState appState = new();
-        AppSettings appSettings = new();
-        LanguageManager languageManager = new(appSettings);
-        GameLibrary gameLibrary = new(appState);
-        SceneManager sceneManager = new(appState, appCtx, rootWindow, uiApp);
+        appCtx.LanguageManager = new(appCtx.AppSettings);
+        appCtx.GameLibrary = new(appCtx.AppState);
+        appCtx.SceneManager = new(appCtx);
 
-        appCtx.RootWindow = rootWindow;
-        appCtx.AppState = appState;
-        appCtx.AppSettings = appSettings;
-        appCtx.LanguageManager = languageManager;
-        appCtx.GameLibrary = gameLibrary;
-        appCtx.SceneManager = sceneManager;
+        appCtx.SceneManager.ChangeRootScene(new MainMenu(appCtx));
+    }
 
-        sceneManager.ChangeRootScene(new Scenes.MainMenu(appCtx));
-
-        uiApp.Run(rootWindow);
+    private static void SetupColorScheme()
+    {
+        SchemeManager.AddScheme("Controls.Button", new Scheme
+        {
+            Normal = new Attribute(Color.White, Color.None),
+            Focus = new Attribute(Color.White, Color.None)
+        });
     }
 }

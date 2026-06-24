@@ -1,4 +1,4 @@
-using System.Threading.Tasks;
+using Terminal.Gui.App;
 using Terminal.Gui.ViewBase;
 using Terminal.Gui.Views;
 
@@ -6,53 +6,43 @@ namespace GameWatch.Tui.App.Scenes;
 
 public sealed class MainMenu(AppContext appCtx) : IScene
 {
-    private readonly Localization.Sections.MainMenuScene _strings = appCtx.LanguageManager.Strings.MainMenuScene;
-    private readonly AppState _appState = appCtx.AppState;
+    private readonly IApplication _appUi = appCtx.AppUi;
+    private readonly Localization.Sections.MainMenuScene _ownStrings = appCtx.LanguageManager.Strings.MainMenuScene;
     private readonly SceneManager _sceneMng = appCtx.SceneManager;
-    private readonly GameLibrary _gameLib = appCtx.GameLibrary;
-    private readonly Window _ui = appCtx.RootWindow;
+    private readonly GameLibrary _gameLibrary = appCtx.GameLibrary;
+    private readonly AppState _appState = appCtx.AppState;
+    private Window _mainWindow = null!;
+    private Controls.Menu _navigationMenu = null!;
 
     public void OnStart()
     {
-        var listGamesOpt = new MenuItem()
+        InitMainWindow();
+        SetupMenu();
+        RouteUiElements();
+
+        _appUi.Run(_mainWindow);
+    }
+
+    private void InitMainWindow()
+    {
+        _mainWindow = new Window
         {
-            Title = _strings.ListGamesOption,
-            Action = () => { }
+            Width = Dim.Fill(),
+            Height = Dim.Fill()
         };
+    }
 
-        listGamesOpt.Accepting += (_, e) => e.Handled = true;
+    private void SetupMenu()
+    {
+        var listGamesOption = new Controls.Button(text: _ownStrings.ListGamesOption);
+        var exitAppOption = new Controls.Button(text: _ownStrings.ExitAppOption, action: _appState.StopApp);
 
-        var addGameOpt = new MenuItem()
-        {
-            Title = _strings.AddGameOption,
-            Action = () => _sceneMng.ChangeRootScene(new AddGame(appCtx))
-        };
+        _navigationMenu = new(Pos.Center(), Pos.Center(), [listGamesOption, exitAppOption]);
+        // _mainWindow.Add(listGamesOption, exitAppOption);
+    }
 
-        addGameOpt.Accepting += (_, e) => e.Handled = true;
-
-        var exitAppOpt = new MenuItem()
-        {
-            Title = _strings.ExitAppOption,
-            Action = _appState.StopApp
-        };
-
-        exitAppOpt.Accepting += (_, e) => e.Handled = true;
-
-        var optMenu = new Menu(
-            [
-                listGamesOpt, addGameOpt, exitAppOpt
-            ]
-        )
-        {
-            X = Pos.Center(),
-            Y = Pos.Center(),
-            Height = Dim.Auto(),
-            Width = Dim.Auto()
-        };
-
-        if (_gameLib.Games.Count == 0)
-            listGamesOpt.Visible = false;
-
-        _ui.Add(optMenu);
+    private void RouteUiElements()
+    {
+        _mainWindow.Add(_navigationMenu);
     }
 }

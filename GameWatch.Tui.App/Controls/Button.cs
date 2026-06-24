@@ -1,88 +1,92 @@
 using System;
+using Terminal.Gui.Drawing;
 using Terminal.Gui.ViewBase;
-using Terminal.Gui.Views;
+using Attribute = Terminal.Gui.Drawing.Attribute;
 
 namespace GameWatch.Tui.App.Controls;
 
 public sealed class Button
 {
-    private Dim _btnWidthBackup = null!;
-    private Dim _btnHeightBackup = null!;
+    private const ShadowStyles ShadowStyles = Terminal.Gui.ViewBase.ShadowStyles.None;
 
-    public Button(View rootWindow, string btnContent, Pos btnPosX, Pos btnPosY, Action onBtnClicked)
+    private Terminal.Gui.Views.Button _internal = null!;
+    private readonly string _text = string.Empty;
+    private readonly Pos _x = 0;
+    private readonly Pos _y = 0;
+    private readonly Action _action = () => { };
+    private readonly Border _border = new()
     {
-        RootWindow = rootWindow;
-        BtnContent = btnContent;
-        BtnPosX = btnPosX;
-        BtnPosY = btnPosY;
-        OnBtnClicked = onBtnClicked;
-
-        SetupInternalBtn();
-        RouteEvents();
-        BackupBtnDimensions();
-    }
-
-    public View AsView => InternalBtn;
-
-    private Pos BtnPosX { get; }
-    private Pos BtnPosY { get; }
-    private View RootWindow { get; }
-    private string BtnContent { get; }
-    private Action OnBtnClicked { get; }
-    private Terminal.Gui.Views.Button InternalBtn { get; set; } = null!;
-
-    public void Hide()
-    {
-        if (!InternalBtn.Visible)
-            return;
-
-        _btnWidthBackup = InternalBtn.Width;
-        _btnHeightBackup = InternalBtn.Height;
-        InternalBtn.Width = 0;
-        InternalBtn.Height = 0;
-
-        InternalBtn.Visible = false;
-
-        RootWindow.SetNeedsLayout();
-        RootWindow.SetNeedsDraw();
-    }
-
-    public void UnHide()
-    {
-        if (InternalBtn.Visible)
-            return;
-
-        InternalBtn.Width = _btnWidthBackup;
-        InternalBtn.Height = _btnHeightBackup;
-
-        InternalBtn.Visible = true;
-
-        RootWindow.SetNeedsLayout();
-        RootWindow.SetNeedsDraw();
-    }
-
-    private void SetupInternalBtn()
-    {
-        InternalBtn = new Terminal.Gui.Views.Button
+        LineStyle = LineStyle.Rounded,
+        Thickness = new Thickness
         {
-            Text = BtnContent,
-            X = BtnPosX,
-            Y = BtnPosY,
+            Bottom = 1,
+            Top = 1,
+            Right = 1,
+            Left = 1
+        }
+    };
+
+    public Button(string? text = null, Pos? x = null, Pos? y = null, Action? action = null)
+    {
+        _text = text ?? _text;
+        _x = x ?? _x;
+        _y = y ?? _y;
+        _action = action ?? _action;
+
+        Init();
+    }
+
+    public static implicit operator Terminal.Gui.Views.Button(Button btn) => btn._internal;
+
+    private void Init()
+    {
+        Create();
+        RouteAction();
+    }
+
+    private void Create()
+    {
+        _internal = new()
+        {
+            Text = _text,
+            X = _x,
+            Y = _y,
+            Width = Dim.Auto(),
             Height = Dim.Auto(),
-            Width = Dim.Auto()
+            Border =
+            {
+                Settings = BorderSettings.Default,
+                LineStyle = _border.LineStyle,
+                Thickness = _border.Thickness
+            },
+            ShadowStyle = ShadowStyles,
+            NoDecorations = true,
+            SchemeName = "Controls.Button",
+            MouseHighlightStates = MouseState.In
         };
 
-        RootWindow.Add(InternalBtn);
+        // Target the actual AdornmentView
+        if (_internal.Border.View is View borderView)
+        {
+            borderView.GettingAttributeForRole += (_, e) =>
+            {
+                var isHovering = (_internal.MouseState & MouseState.In) != MouseState.None;
+
+                // If the parent button has focus, force the border view
+                // to render as solid red, regardless of which role it's evaluating
+                if (_internal.HasFocus)
+                {
+                    e.Result = new Attribute(Color.Red, Color.None);
+                    e.Handled = true; // Mark as handled so the layout engine uses our Result
+                }
+                else if (isHovering)
+                {
+                    e.Result = new Attribute(Color.BrightRed, Color.None);
+                    e.Handled = true; // Mark as handled so the layout engine uses our Result
+                }
+            };
+        }
     }
 
-    private void RouteEvents()
-    {
-        InternalBtn.Accepted += (_, _) => OnBtnClicked.Invoke();
-    }
-
-    private void BackupBtnDimensions()
-    {
-        _btnWidthBackup = InternalBtn.Width;
-        _btnHeightBackup = InternalBtn.Height;
-    }
+    private void RouteAction() => _internal.Accepted += (_, _) => _action.Invoke();
 }
