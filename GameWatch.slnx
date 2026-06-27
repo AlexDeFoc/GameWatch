@@ -1,3 +1,7 @@
 <Solution>
+  <Project Path="GameWatch.DataTypes/GameWatch.DataTypes.csproj" />
+  <Project Path="GameWatch.FileManager/GameWatch.FileManager.csproj" />
+  <Project Path="GameWatch.ProcessManager/GameWatch.ProcessManager.csproj" />
+  <Project Path="GameWatch.Setup/GameWatch.Setup.csproj" />
   <Project Path="GameWatch.Tui.App/GameWatch.Tui.App.csproj" />
 </Solution>

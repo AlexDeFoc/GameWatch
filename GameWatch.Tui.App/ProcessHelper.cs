@@ -54,18 +54,41 @@ public static class ProcessHelper
     // Does NOT apply any filtering – suitable for the monitor.
     public static (int Pid, DateTime CreationTime)? FindProcessByExePath(string exePath)
     {
-        foreach (var proc in Process.GetProcesses())
+
+
+        var targetExeName = Path.GetFileNameWithoutExtension(exePath);
+
+        var matchingProcs = Process.GetProcessesByName(targetExeName);
+
+        try
         {
-            try
+            foreach (var proc in matchingProcs)
             {
-                string? path = GetProcessExePath(proc);
-                if (string.Equals(path, exePath, StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(GetProcessExePath(proc), exePath, StringComparison.OrdinalIgnoreCase))
                     return (proc.Id, proc.StartTime);
             }
-            catch { }
-            finally { proc.Dispose(); }
+
+            return null;
         }
-        return null;
+        finally
+        {
+            foreach (var p in matchingProcs)
+                p.Dispose();
+        }
+
+
+        // foreach (var proc in Process.GetProcesses())
+        // {
+        //     try
+        //     {
+        //         string? path = GetProcessExePath(proc);
+        //         if (string.Equals(path, exePath, StringComparison.OrdinalIgnoreCase))
+        //             return (proc.Id, proc.StartTime);
+        //     }
+        //     catch { }
+        //     finally { proc.Dispose(); }
+        // }
+        // return null;
     }
 
     // Checks if a process with the given PID and creation time still exists and matches the exe path.
