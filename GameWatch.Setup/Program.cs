@@ -13,10 +13,17 @@ public static class Program
             // Currently unsupported - Graphical interface
             return;
         }
+        else
+        {
+            RunInCliMode(args);
+        }
+    }
 
+    private static void RunInCliMode(string[] args)
+    {
         var rootCmd = new RootCommand("Installer/Updater/File migrator for GameWatch");
 
-        var fileMigratorRunMode = new Command("file-migrator-run-mode", "Migrate a file from a certain version to another");
+        var fileMigratorRunMode = new Command("file-migrator-run-mode", "Migrate a file from a certain version to another [Source file doesn't get deleted, but Destination file doesn't get overriden if the case]");
         fileMigratorRunMode.Aliases.Add("fm-mode");
 
         var fileMigratorFilePurposeOpt = new Option<string?>("--file-purpose", "-fp")
@@ -109,18 +116,49 @@ public static class Program
 
     private static void RunFileMigrator(FileMigrationFilePurpose filePurpose, string srcFilePath, string destFilePath, int srcFileVer, int destFileVer)
     {
-        // ReSharper disable once InvertIf
-        if (filePurpose is FileMigrationFilePurpose.GameLibrary)
+        switch (filePurpose)
         {
-            if (srcFileVer is 1 && destFileVer is 2)
+            case FileMigrationFilePurpose.GameLibrary:
             {
-                FileManager.Migrators.GameLibrary.V1_To_V2.Migrator.Run(srcFilePath, destFilePath);
+                switch (srcFileVer)
+                {
+                    case 1 when destFileVer is 2:
+                        FileManager.Migrators.V1_To_V2.GameLibrary.Run(srcFilePath, destFilePath);
+                        break;
+
+                    case 2 when destFileVer is 1:
+                        FileManager.Migrators.V2_To_V1.GameLibrary.Run(srcFilePath, destFilePath);
+                        break;
+                }
+
+                break;
             }
+
+            case FileMigrationFilePurpose.AppSettings:
+            {
+
+                switch (srcFileVer)
+                {
+                    case 1 when destFileVer is 2:
+                        FileManager.Migrators.V1_To_V2.AppSettings.Run(srcFilePath, destFilePath);
+                        break;
+
+                    case 2 when destFileVer is 1:
+                        FileManager.Migrators.V2_To_V1.AppSettings.Run(srcFilePath, destFilePath);
+                        break;
+                }
+
+                break;
+            }
+
+            default:
+                throw new ArgumentOutOfRangeException(nameof(filePurpose), filePurpose, null);
         }
     }
 
     private enum FileMigrationFilePurpose
     {
-        GameLibrary
+        GameLibrary,
+        AppSettings
     }
 }

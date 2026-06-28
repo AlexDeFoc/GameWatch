@@ -1,6 +1,6 @@
 using System;
 
-namespace GameWatch.DataTypes.GameLibrary.V2;
+namespace GameWatch.DataTypes;
 
 public class GameEntry
 {

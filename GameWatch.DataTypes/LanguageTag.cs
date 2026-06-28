@@ -1,6 +1,6 @@
 namespace GameWatch.DataTypes;
 
-public enum LanguageCode
+public enum LanguageTag
 {
     // ReSharper disable InconsistentNaming
     fallback,

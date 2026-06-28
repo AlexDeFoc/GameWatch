@@ -1,12 +1,12 @@
-using Dapper;
-using Microsoft.Data.Sqlite;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using Dapper;
+using Microsoft.Data.Sqlite;
 
-namespace GameWatch.FileManager.Migrators.GameLibrary.V2_To_V1;
+namespace GameWatch.FileManager.Migrators.V2_To_V1;
 
-public static class Migrator
+public static class GameLibrary
 {
     private static readonly JsonSerializerOptions JsonSerializerOptions = new()
     {
@@ -42,13 +42,12 @@ public static class Migrator
                                      ORDER BY Title;
                                      """;
 
-            var v2Games = connection.Query<FileSchemas.GameLibrary.V2.GameEntry>(selectSql);
+            var v2Games = connection.Query<FileSchemas.V2.GameLibrary.GameEntry>(selectSql);
 
-            var v1Games = v2Games.Select(dbGame => new FileSchemas.GameLibrary.V1.GameEntry { Title = dbGame.Title, PlayTime = dbGame.PlayTime }).ToList();
+            var v1Games = v2Games.Select(dbGame => new FileSchemas.V1.GameLibrary.GameEntry { Title = dbGame.Title, PlayTime = dbGame.PlayTime }).ToList();
 
-            var v1Data = new FileSchemas.GameLibrary.V1.GameCollection
+            var v1Data = new FileSchemas.V1.GameLibrary.MetadataAndGameCollection
             {
-                FileVersion = 1,
                 Games = v1Games
             };
 
