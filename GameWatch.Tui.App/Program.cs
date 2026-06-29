@@ -9,7 +9,6 @@ public static class Program
 {
     public static void Main()
     {
-
         using var appUi = Application.Create().Init();
 
         SetupColorScheme();
@@ -25,7 +24,11 @@ public static class Program
         appCtx.GameLibrary = new(appCtx.AppState);
         appCtx.SceneManager = new(appCtx);
 
+        // 1. Prepare the initial scene
         appCtx.SceneManager.ChangeRootScene(new MainMenu(appCtx));
+
+        // 2. Start the game loop orchestrator
+        appCtx.SceneManager.StartEngine();
     }
 
     private static void SetupColorScheme()

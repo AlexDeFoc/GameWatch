@@ -17,6 +17,7 @@ public sealed class MainMenu(AppContext appCtx) : IScene
     public void OnStart()
     {
         InitMainWindow();
+        SetupAddGameTestingUiElems();
         SetupMenu();
         RouteUiElements();
 
@@ -39,6 +40,28 @@ public sealed class MainMenu(AppContext appCtx) : IScene
         var exitAppOption = new Controls.Button(text: _ownStrings.ExitAppOption, action: _appState.StopApp);
 
         _navigationMenu = new(Pos.Center(), Pos.Center(), [listGamesOption, addGameOption, exitAppOption]);
+    }
+
+    private void SetupAddGameTestingUiElems()
+    {
+        var testLabel = new Label()
+        {
+            X = 0,
+            Y = 0,
+            Width = Dim.Auto(DimAutoStyle.Text),
+            Height = Dim.Auto(DimAutoStyle.Text)
+        };
+
+        if (_sceneMng.PrevSceneResult is (string gameTitle, Game.WorkingModeType workingMode))
+        {
+            testLabel.Text = $"Title: '{gameTitle}' - Working mode: {(workingMode == Game.WorkingModeType.Automatic ? "Automatic" : "Manual")}";
+        }
+        else
+        {
+            testLabel.Text = "Status: 'Haven't entered add game scene yet'";
+        }
+
+        _mainWindow.Add(testLabel);
     }
 
     private void RouteUiElements()
