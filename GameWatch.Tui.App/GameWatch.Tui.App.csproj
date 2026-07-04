@@ -38,4 +38,8 @@
       <None Remove="out\**" />
     </ItemGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\GameWatch.DataTypes\GameWatch.DataTypes.csproj" />
+    </ItemGroup>
+
 </Project>

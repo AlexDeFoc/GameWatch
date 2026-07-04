@@ -2,6 +2,7 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using Dapper;
+using GameWatch.DataTypes;
 using Microsoft.Data.Sqlite;
 
 namespace GameWatch.FileManager.Migrators.V1_To_V2;
@@ -39,25 +40,9 @@ public static class GameLibrary
             using var connection = new SqliteConnection(connectionString);
             connection.Open();
 
-            const string insertIntoMetadataTableCmd = """
-                                                      INSERT INTO Metadata (FileVersion)
-                                                      VALUES (@FileVersion);
-                                                      """;
+            var insertIntoMetadataTableCmd = Generators.V2.GameLibrary.GetStringToUpdateMetadata();
 
-            const string insertIntoGameCollectionTableCmd = """
-                                                            INSERT INTO Games (Title,
-                                                                               PlayTime,
-                                                                               FingerprintFullPath,
-                                                                               FingerprintProcessName,
-                                                                               FingerprintCommandLine,
-                                                                               FingerprintProductName)
-                                                            VALUES (@Title,
-                                                                    @PlayTime,
-                                                                    @FingerprintFullPath,
-                                                                    @FingerprintProcessName,
-                                                                    @FingerprintCommandLine,
-                                                                    @FingerprintProductName);
-                                                            """;
+            var insertIntoGameCollectionTableCmd = Generators.V2.GameLibrary.GetStringToUpdateGameEntry();
 
             var metadataData = new FileSchemas.V2.GameLibrary.Metadata();
 
@@ -85,22 +70,9 @@ public static class GameLibrary
         using var connection = new SqliteConnection(connectionString);
         connection.Open();
 
-        const string createMetadataTableCmd = """
-                                              CREATE TABLE Metadata (Id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                                                                FileVersion INTEGER NOT NULL
-                                                                                );
-                                              """;
+        var createMetadataTableCmd = Generators.V2.GameLibrary.GetStringToCreateMetadataTable();
 
-        const string createGameCollectionTableCmd = """
-                                                    CREATE TABLE Games (Id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                                                        Title TEXT NOT NULL DEFAULT '',
-                                                                        PlayTime INTEGER NOT NULL,
-                                                                        FingerprintFullPath TEXT NOT NULL DEFAULT '',
-                                                                        FingerprintProcessName TEXT NOT NULL DEFAULT '',
-                                                                        FingerprintCommandLine TEXT NOT NULL DEFAULT '',
-                                                                        FingerprintProductName TEXT NOT NULL DEFAULT ''
-                                                                        );
-                                                    """;
+        var createGameCollectionTableCmd = Generators.V2.GameLibrary.GetStringToCreateGameCollectionTable();
 
         connection.Execute(createMetadataTableCmd);
         connection.Execute(createGameCollectionTableCmd);

@@ -1,3 +1,4 @@
+using GameWatch.DataTypes;
 using Terminal.Gui.App;
 using Terminal.Gui.ViewBase;
 using Terminal.Gui.Views;
@@ -52,9 +53,9 @@ public sealed class MainMenu(AppContext appCtx) : IScene
             Height = Dim.Auto(DimAutoStyle.Text)
         };
 
-        if (_sceneMng.PrevSceneResult is (string gameTitle, Game.WorkingModeType workingMode))
+        if (_sceneMng.PrevSceneResult is (string gameTitle, GameMode workingMode))
         {
-            testLabel.Text = $"Title: '{gameTitle}' - Working mode: {(workingMode == Game.WorkingModeType.Automatic ? "Automatic" : "Manual")}";
+            testLabel.Text = $"Title: '{gameTitle}' - Working mode: {(workingMode == GameMode.Automatic ? "Automatic" : "Manual")}";
         }
         else
         {

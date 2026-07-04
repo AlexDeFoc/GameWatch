@@ -36,11 +36,7 @@ public static class GameLibrary
             using var connection = new SqliteConnection(connectionString);
             connection.Open();
 
-            const string selectSql = """
-                                     SELECT Id, Title, PlayTime, FingerprintFullPath, FingerprintProcessName, FingerprintCommandLine, FingerprintProductName
-                                     FROM Games
-                                     ORDER BY Title;
-                                     """;
+            var selectSql = Generators.V2.GameLibrary.GetStringToQueryGameCollection();
 
             var v2Games = connection.Query<FileSchemas.V2.GameLibrary.GameEntry>(selectSql);
 

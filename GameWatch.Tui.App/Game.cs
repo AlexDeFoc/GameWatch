@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using GameWatch.DataTypes;
 
 namespace GameWatch.Tui.App;
 
@@ -10,7 +11,7 @@ public sealed class Game
         Title = title;
         PlayTime = TimeSpan.Zero;
         FilePath = "";
-        WorkingMode = WorkingModeType.Manual;
+        Mode = GameMode.Manual;
     }
 
     public Game(string title, TimeSpan playTime)
@@ -18,7 +19,7 @@ public sealed class Game
         Title = title;
         PlayTime = playTime;
         FilePath = "";
-        WorkingMode = WorkingModeType.Manual;
+        Mode = GameMode.Manual;
     }
 
     public Game(string title, string gameFilePath)
@@ -26,20 +27,20 @@ public sealed class Game
         Title = title;
         PlayTime = TimeSpan.Zero;
         FilePath = gameFilePath;
-        WorkingMode = WorkingModeType.Automatic;
+        Mode = GameMode.Automatic;
     }
 
-    public Game(string title, TimeSpan playtime, WorkingModeType workingMode, string exePath = "")
+    public Game(string title, TimeSpan playtime, GameMode mode, string exePath = "")
     {
         Title = title;
         PlayTime = playtime;
         FilePath = exePath;
-        WorkingMode = workingMode;
+        Mode = mode;
     }
 
     public string Title { get; set; }
     public TimeSpan PlayTime { get; private set; }
-    public WorkingModeType WorkingMode { get; set; }
+    public GameMode Mode { get; set; }
     public string FilePath { get; set; }
     public bool ProcessIsActive { get; set; }
     public int Pid { get; set; }
@@ -69,19 +70,13 @@ public sealed class Game
         return string.Join(" : ", parts);
     }
 
-    public static string GetPrintableCurrentWorkingMode(AppContext ctx, WorkingModeType workingMode)
+    public static string GetPrintableCurrentWorkingMode(AppContext ctx, GameMode workingMode)
     {
         return workingMode switch
         {
-            WorkingModeType.Manual => ctx.LanguageManager.Strings.GameClass.ManualWorkingModeType,
-            WorkingModeType.Automatic => ctx.LanguageManager.Strings.GameClass.AutomaticWorkingModeType,
+            GameMode.Manual => ctx.LanguageManager.Strings.GameClass.ManualWorkingModeType,
+            GameMode.Automatic => ctx.LanguageManager.Strings.GameClass.AutomaticWorkingModeType,
             _ => throw new ArgumentOutOfRangeException()
         };
-    }
-
-    public enum WorkingModeType
-    {
-        Automatic,
-        Manual
     }
 }
