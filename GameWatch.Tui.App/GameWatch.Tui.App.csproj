@@ -1,0 +1,45 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>disable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <AssemblyName>GameWatch.Tui</AssemblyName>
+        <AssemblyTitle>GameWatch Terminal UI</AssemblyTitle>
+        <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+        <DebugType>embedded</DebugType>
+        <IsPackable>false</IsPackable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Semver" Version="3.0.0"/>
+        <PackageReference Include="Terminal.Gui" Version="2.4.10" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Content Include="Localization\Locales\*.json">
+            <Link>Translations\%(Filename)%(Extension)</Link>
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+            <Visible>false</Visible>
+        </Content>
+    </ItemGroup>
+
+    <ItemGroup>
+        <EmbeddedResource Include="Localization\Locales\en-US.json" />
+        <EmbeddedResource Remove="out\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Compile Remove="out\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Remove="out\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\GameWatch.DataTypes\GameWatch.DataTypes.csproj" />
+    </ItemGroup>
+
+</Project>

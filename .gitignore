@@ -1,5 +1,5 @@
+.idea/
 bin/
 obj/
-/packages/
-riderModule.iml
-/_ReSharper.Caches/
+out/
+GameWatch.sln.DotSettings.user

@@ -1,0 +1,22 @@
+{
+    "MainMenuScene": {
+        "AppVersionLabelFormat": "Version {0}.{1}.{2}",
+        "ListGamesOption": "List games",
+        "AddGameOption": "Add game",
+        "ExitAppOption": "Exit"
+    },
+    "AddGameScene": {
+      "PromptTitle": "Insert game title",
+      "OptionsWindowTitle": "Choose how should the game work",
+      "HelpWindowTitle": "Working mode description"
+    },
+    "GameClass": {
+        "AutomaticWorkingModeType": "Automatic",
+        "ManualWorkingModeType": "Manual"
+    },
+    "GeneralStrings": {
+        "CancelBtn": "Cancel",
+        "OkBtn": "Ok",
+        "GoBackOption": "Go back"
+    }
+}
