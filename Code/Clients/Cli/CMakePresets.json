@@ -1,0 +1,132 @@
+{
+    "version": 10,
+    "configurePresets": [
+        {
+            "name": "vcpkg-base",
+            "hidden": true,
+            "description": "Base configuration with vcpkg integration",
+            "cacheVariables": {
+                "CMAKE_TOOLCHAIN_FILE": {
+                    "type": "FILEPATH",
+                    "value": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
+                },
+                "VCPKG_TARGET_TRIPLET": "x64-windows"
+            }
+        },
+        {
+            "name": "base-visual-studio",
+            "hidden": true,
+            "description": "Base configuration with visual studio (windows only)",
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
+            },
+            "generator": "Visual Studio 18 2026",
+            "architecture": {
+                "value": "x64",
+                "strategy": "external"
+            }
+        },
+        {
+            "name": "base-windows-msvc",
+            "hidden": true,
+            "description": "Base configuration for windows msvc",
+            "inherits": ["vcpkg-base", "base-visual-studio"],
+            "binaryDir": "${sourceDir}/build"
+        },
+        {
+            "name": "windows-msvc-debug",
+            "displayName": "Config Windows MSVC (Debug)",
+            "description": "Target Windows with MSVC (Debug)",
+            "inherits": "base-windows-msvc",
+            "binaryDir": "${sourceDir}/build/msvc/win-x64-debug"
+        },
+        {
+            "name": "windows-msvc-release",
+            "displayName": "Config Windows MSVC (Release)",
+            "description": "Target Windows with MSVC (Release)",
+            "inherits": "base-windows-msvc",
+            "binaryDir": "${sourceDir}/build/msvc/win-x64-rel"
+        },
+        {
+            "name": "base-windows-ninja-clang",
+            "hidden": true,
+            "description": "Base configuration for Ninja with clang-cl (windows only)",
+            "inherits": "vcpkg-base",
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
+            },
+            "generator": "Ninja",
+            "architecture": {
+                "value": "x64",
+                "strategy": "external"
+            },
+            "cacheVariables": {
+                "CMAKE_CXX_COMPILER": "clang-cl.exe"
+            }
+        },
+        {
+            "name": "windows-ninja-clang-debug",
+            "displayName": "Config Ninja Clang (Debug)",
+            "description": "Target Windows with Ninja and clang-cl (Debug)",
+            "inherits": "base-windows-ninja-clang",
+            "binaryDir": "${sourceDir}/build/ninja-clang/win-x64-debug",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug"
+            }
+        },
+        {
+            "name": "windows-ninja-clang-release",
+            "displayName": "Config Ninja Clang (Release)",
+            "description": "Target Windows with Ninja and clang-cl (Release)",
+            "inherits": "base-windows-ninja-clang",
+            "binaryDir": "${sourceDir}/build/ninja-clang/win-x64-rel",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release"
+            }
+        },
+        {
+            "name": "windows-ninja-clang-coverage",
+            "displayName": "Config Ninja Clang (Coverage)",
+            "description": "Target Windows with Ninja and clang-cl with Coverage Instrumentation",
+            "inherits": "base-windows-ninja-clang",
+            "binaryDir": "${sourceDir}/build/ninja-clang/win-x64-coverage",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_CXX_FLAGS": "-fprofile-instr-generate -fcoverage-mapping"
+            }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "windows-msvc-debug",
+            "displayName": "Build Windows MSVC (Debug)",
+            "configurePreset": "windows-msvc-debug",
+            "configuration": "Debug"
+        },
+        {
+            "name": "windows-msvc-release",
+            "displayName": "Build Windows MSVC (Release)",
+            "configurePreset": "windows-msvc-release",
+            "configuration": "Release"
+        },
+        {
+            "name": "windows-ninja-clang-debug",
+            "displayName": "Build Ninja Clang (Debug)",
+            "configurePreset": "windows-ninja-clang-debug"
+        },
+        {
+            "name": "windows-ninja-clang-release",
+            "displayName": "Build Ninja Clang (Release)",
+            "configurePreset": "windows-ninja-clang-release"
+        },
+        {
+            "name": "windows-ninja-clang-coverage",
+            "displayName": "Build Ninja Clang (Coverage)",
+            "configurePreset": "windows-ninja-clang-coverage"
+        }
+    ]
+}
