@@ -54,8 +54,9 @@ if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
         target_link_options(${TARGET_NAME} PRIVATE
                 /LTCG
         )
-    endif()
-endif()
+        target_link_options(${LIB_TARGET} PUBLIC -flto)
+    endif ()
+endif ()
 
 find_program(CLANG_TIDY_EXE NAMES "clang-tidy")
 if(CLANG_TIDY_EXE)
