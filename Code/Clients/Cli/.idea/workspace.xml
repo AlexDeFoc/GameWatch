@@ -4,18 +4,14 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="BackendCodeEditorMiscSettings">
+    <option name="/Default/Environment/Hierarchy/GeneratedFilesCacheKey/Timestamp/@EntryValue" value="4" type="long" />
     <option name="/Default/Housekeeping/FeatureSuggestion/FeatureSuggestionManager/DisabledSuggesters/=SwitchToGoToActionSuggester/@EntryIndexedValue" value="true" type="bool" />
+    <option name="/Default/Housekeeping/OptionsDialog/SelectedPageId/@EntryValue" value="CppFormatterOtherPage" type="string" />
     <option name="/Default/RiderDebugger/RiderRestoreDecompile/RestoreDecompileSetting/@EntryValue" value="false" type="bool" />
   </component>
-  <component name="CMakePresetLoader">{
-  &quot;useNewFormat&quot;: true
-}</component>
-  <component name="CMakeProjectFlavorService">
-    <option name="flavorId" value="CMakePlainProjectFlavor" />
-  </component>
-  <component name="CMakeReloadState">
-    <option name="reloaded" value="true" />
-  </component>
+  <component name="CMakePresetLoader"><![CDATA[{
+  "useNewFormat": true
+}]]></component>
   <component name="CMakeRunConfigurationManager">
     <generated>
       <config projectName="GameWatch.Client.Cli" targetName="GameWatch.Client.Cli" />
@@ -25,34 +21,25 @@
   </component>
   <component name="CMakeSettings">
     <configurations>
-      <configuration PROFILE_NAME="linux_code_coverage - linux_code_coverage" PROFILE_DISPLAY_NAME="linux_coverage [linux_code_coverage - linux_code_coverage]" ENABLED="true" FROM_PRESET="true" GENERATION_DIR="$PROJECT_DIR$/build/code_coverage" />
-      <configuration PROFILE_NAME="linux_ninja_clang_debug" PROFILE_DISPLAY_NAME="linux_ninja_clang_dbg [linux_ninja_clang_debug]" ENABLED="false" FROM_PRESET="true" GENERATION_DIR="$PROJECT_DIR$/build/ninja_clang_dbg" />
-      <configuration PROFILE_NAME="linux_ninja_clang_release" PROFILE_DISPLAY_NAME="linux_ninja_clang_rel [linux_ninja_clang_release]" ENABLED="false" FROM_PRESET="true" GENERATION_DIR="$PROJECT_DIR$/build/ninja_clang_rel" />
-      <configuration PROFILE_NAME="linux_ninja_gcc_debug" PROFILE_DISPLAY_NAME="linux_ninja_gcc_dbg [linux_ninja_gcc_debug]" ENABLED="false" FROM_PRESET="true" GENERATION_DIR="$PROJECT_DIR$/build/ninja_gcc_dbg" />
-      <configuration PROFILE_NAME="linux_ninja_gcc_release" PROFILE_DISPLAY_NAME="linux_ninja_gcc_rel [linux_ninja_gcc_release]" ENABLED="false" FROM_PRESET="true" GENERATION_DIR="$PROJECT_DIR$/build/ninja_gcc_rel" />
-      <configuration PROFILE_NAME="linux_code_coverage" PROFILE_DISPLAY_NAME="linux_coverage [linux_code_coverage]" ENABLED="false" FROM_PRESET="true" GENERATION_DIR="$PROJECT_DIR$/build/code_coverage" />
-      <configuration PROFILE_NAME="linux_ninja_clang_debug - linux_ninja_clang_debug" PROFILE_DISPLAY_NAME="linux_ninja_clang_dbg [linux_ninja_clang_debug - linux_ninja_clang_debug]" ENABLED="false" FROM_PRESET="true" GENERATION_DIR="$PROJECT_DIR$/build/ninja_clang_dbg" />
-      <configuration PROFILE_NAME="linux_ninja_clang_release - linux_ninja_clang_release" PROFILE_DISPLAY_NAME="linux_ninja_clang_rel [linux_ninja_clang_release - linux_ninja_clang_release]" ENABLED="false" FROM_PRESET="true" GENERATION_DIR="$PROJECT_DIR$/build/ninja_clang_rel" />
-      <configuration PROFILE_NAME="linux_ninja_gcc_debug - linux_ninja_gcc_debug" PROFILE_DISPLAY_NAME="linux_ninja_gcc_dbg [linux_ninja_gcc_debug - linux_ninja_gcc_debug]" ENABLED="false" FROM_PRESET="true" GENERATION_DIR="$PROJECT_DIR$/build/ninja_gcc_dbg" />
-      <configuration PROFILE_NAME="linux_ninja_gcc_release - linux_ninja_gcc_release" PROFILE_DISPLAY_NAME="linux_ninja_gcc_rel [linux_ninja_gcc_release - linux_ninja_gcc_release]" ENABLED="false" FROM_PRESET="true" GENERATION_DIR="$PROJECT_DIR$/build/ninja_gcc_rel" />
+      <configuration PROFILE_NAME="windows_code_coverage - windows_code_coverage" PROFILE_DISPLAY_NAME="windows_coverage" ENABLED="true" FROM_PRESET="true" GENERATION_DIR="$PROJECT_DIR$/build/code_coverage" />
+      <configuration PROFILE_NAME="windows_vs2026_msvc_debug" PROFILE_DISPLAY_NAME="win_vs2026_msvc_dbg [windows_vs2026_msvc_debug]" ENABLED="false" FROM_PRESET="true" GENERATION_DIR="$PROJECT_DIR$/build/vs2026_dbg" />
+      <configuration PROFILE_NAME="windows_vs2026_msvc_release" PROFILE_DISPLAY_NAME="win_vs2026_msvc_rel [windows_vs2026_msvc_release]" ENABLED="false" FROM_PRESET="true" GENERATION_DIR="$PROJECT_DIR$/build/vs2026_rel" />
+      <configuration PROFILE_NAME="windows_ninja_clangCL_debug" PROFILE_DISPLAY_NAME="win_ninja_clangCL_dbg [windows_ninja_clangCL_debug]" ENABLED="false" FROM_PRESET="true" GENERATION_DIR="$PROJECT_DIR$/build/ninja_clangCL_dbg" />
+      <configuration PROFILE_NAME="windows_ninja_clangCL_release" PROFILE_DISPLAY_NAME="win_ninja_clangCL_rel [windows_ninja_clangCL_release]" ENABLED="false" FROM_PRESET="true" GENERATION_DIR="$PROJECT_DIR$/build/ninja_clangCL_rel" />
+      <configuration PROFILE_NAME="windows_code_coverage" PROFILE_DISPLAY_NAME="win_coverage" ENABLED="false" FROM_PRESET="true" GENERATION_DIR="$PROJECT_DIR$/build/code_coverage" />
+      <configuration PROFILE_NAME="windows_vs2026_msvc_debug - windows_vs2026_msvc_debug" PROFILE_DISPLAY_NAME="win_vs2026_msvc_dbg [windows_vs2026_msvc_debug - windows_vs2026_msvc_debug]" ENABLED="false" FROM_PRESET="true" GENERATION_DIR="$PROJECT_DIR$/build/vs2026_dbg" />
+      <configuration PROFILE_NAME="windows_vs2026_msvc_release - windows_vs2026_msvc_release" PROFILE_DISPLAY_NAME="win_vs2026_msvc_rel [windows_vs2026_msvc_release - windows_vs2026_msvc_release]" ENABLED="false" FROM_PRESET="true" GENERATION_DIR="$PROJECT_DIR$/build/vs2026_rel" />
+      <configuration PROFILE_NAME="windows_ninja_clangCL_debug - windows_ninja_clangCL_debug" PROFILE_DISPLAY_NAME="win_ninja_clangCL_dbg [windows_ninja_clangCL_debug - windows_ninja_clangCL_debug]" ENABLED="false" FROM_PRESET="true" GENERATION_DIR="$PROJECT_DIR$/build/ninja_clangCL_dbg" />
+      <configuration PROFILE_NAME="windows_ninja_clangCL_release - windows_ninja_clangCL_release" PROFILE_DISPLAY_NAME="win_ninja_clangCL_rel [windows_ninja_clangCL_release - windows_ninja_clangCL_release]" ENABLED="false" FROM_PRESET="true" GENERATION_DIR="$PROJECT_DIR$/build/ninja_clangCL_rel" />
     </configurations>
   </component>
   <component name="ChangeListManager">
     <list default="true" id="7a49aeb4-be3f-4139-9a16-13cd7a47a4e5" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/../../../.idea/.name" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../../.idea/misc.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../../.idea/runConfigurations/GameWatch_Client_Cli.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../../.idea/runConfigurations/GameWatch_Client_Cli_Tests.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../../.idea/vcs.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../../.idea/workspace.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/CMakeLists.txt" beforeDir="false" afterPath="$PROJECT_DIR$/CMakeLists.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/CMakePresets.json" beforeDir="false" afterPath="$PROJECT_DIR$/CMakePresets.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Dev Notes/Code-Coverage-Guide.md" beforeDir="false" afterPath="$PROJECT_DIR$/Dev/Notes/Code-Coverage-Guide.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Sources/AppEntry/main.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Sources/AppEntry/main.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Tests/CMakeLists.txt" beforeDir="false" afterPath="$PROJECT_DIR$/Tests/CMakeLists.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Tests/Sources/FirstTest.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Tests/Sources/FirstTest.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.clang-tidy" beforeDir="false" afterPath="$PROJECT_DIR$/.clang-tidy" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Dev/Notes/Code-Coverage-Guide.md" beforeDir="false" afterPath="$PROJECT_DIR$/Dev/Notes/Code-Coverage-Guide.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Dev/my_clion_wsl_setup_env_file.env" beforeDir="false" afterPath="$PROJECT_DIR$/Dev/my_clion_for_cmake_toolchain_wsl_setup_env_file.env" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Includes/ExampleLogic/a.hpp" beforeDir="false" afterPath="$PROJECT_DIR$/Includes/ExampleLogic/a.hpp" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -62,115 +49,16 @@
   <component name="ClangdSettings">
     <option name="formatViaClangd" value="false" />
   </component>
-  <component name="CoverageOptionsProvider">
-    <option name="myAddOrReplace" value="0" />
-  </component>
-  <component name="ExecutionTargetManager" SELECTED_TARGET="CMakeBuildProfile:linux_code_coverage - linux_code_coverage" />
-  <component name="Git.Settings">
-    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/../../.." />
-  </component>
-  <component name="HighlightingSettingsPerFile">
-    <setting file="file://$PROJECT_DIR$/Sources/ExampleLogic/a.cpp" root0="FORCE_HIGHLIGHTING" />
-  </component>
+  <component name="ExecutionTargetManager" SELECTED_TARGET="CMakeBuildProfile:windows_code_coverage - windows_code_coverage" />
   <component name="MacroExpansionManager">
     <option name="directoryName" value="RIHnJPvb" />
   </component>
-  <component name="ProblemsViewState">
-    <option name="selectedTabId" value="ProjectErrors" />
-  </component>
-  <component name="ProjectApplicationVersion">
-    <option name="ide" value="CLion" />
-    <option name="majorVersion" value="2026" />
-    <option name="minorVersion" value="1.4" />
-    <option name="productBranch" value="Classic" />
-  </component>
-  <component name="ProjectColorInfo">{
-  &quot;associatedIndex&quot;: 5,
-  &quot;fromUser&quot;: false
-}</component>
-  <component name="ProjectId" id="3GKESnQS58jvMWoir37E70UGesJ" />
   <component name="ProjectLevelVcsManager">
     <ConfirmationsSetting value="1" id="Add" />
   </component>
-  <component name="ProjectStatusUIService">{
-  &quot;uiKindId&quot;: &quot;Widget&quot;
-}</component>
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
-  </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ASKED_SHARE_PROJECT_CONFIGURATION_FILES": "true",
-    "CMake Application.GameWatch.Client.Cli.executor": "Coverage",
-    "CTest Application.All CTest.executor": "Coverage",
-    "Google Test.GameWatch.Client.Cli.Tests.executor": "Coverage",
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "RunOnceActivity.RadMigrateCodeStyle": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.cidr.known.project.marker": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "RunOnceActivity.readMode.enableVisualFormatting": "true",
-    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
-    "RunOnceActivity.west.config.association.type.startup.service": "true",
-    "cf.first.check.clang-format": "false",
-    "cidr.known.project.marker": "true",
-    "codeWithMe.voiceChat.enabledByDefault": "false",
-    "ctest.advertisement.all.test.configuration.is.created": "true",
-    "git-widget-placeholder": "refactor",
-    "last_opened_file_path": "//wsl.localhost/Ubuntu/home/alex/documents/dev/projects/GameWatch/Code/Clients/Cli",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "org.rust.first.attach.projects": "true",
-    "settings.editor.selected.configurable": "editor.preferences.completion.popup",
-    "vue.rearranger.settings.migration": "true"
-  }
-}]]></component>
-  <component name="RecentsManager">
-    <key name="MoveFile.RECENT_KEYS">
-      <recent name="\\wsl.localhost\Ubuntu\home\alex\documents\dev\projects\GameWatch\Code\Clients\Cli\Sources" />
-      <recent name="\\wsl.localhost\Ubuntu\home\alex\documents\dev\projects\GameWatch\Code\Clients\Cli\Includes\ExampleLogic" />
-      <recent name="\\wsl.localhost\Ubuntu\home\alex\documents\dev\projects\GameWatch\Code\Clients\Cli\Dev" />
-      <recent name="\\wsl.localhost\Ubuntu\home\alex\documents\dev\projects\GameWatch\Code\Clients\Cli" />
-    </key>
-  </component>
-  <component name="RunManager" selected="CMake Application.GameWatch.Client.Cli">
-    <configuration default="true" type="CLionExternalRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true">
-      <method v="2">
-        <option name="CLION.EXTERNAL.BUILD" enabled="true" />
-      </method>
-    </configuration>
-    <configuration name="GameWatch.Client.Cli.Tests" type="CMakeGoogleTestRunConfigurationType" factoryName="Google Test" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="GameWatch.Client.Cli" TARGET_NAME="GameWatch.Client.Cli.Tests" CONFIG_NAME="linux_code_coverage - linux_code_coverage" RUN_TARGET_PROJECT_NAME="GameWatch.Client.Cli" RUN_TARGET_NAME="GameWatch.Client.Cli.Tests" TEST_MODE="SUITE_TEST">
-      <method v="2">
-        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
-        <option name="BeforeTestRunTask" enabled="true" />
-      </method>
-    </configuration>
-    <configuration name="GameWatch.Client.Cli" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="GameWatch.Client.Cli" TARGET_NAME="GameWatch.Client.Cli" CONFIG_NAME="linux_code_coverage - linux_code_coverage" RUN_TARGET_PROJECT_NAME="GameWatch.Client.Cli" RUN_TARGET_NAME="GameWatch.Client.Cli">
-      <method v="2">
-        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
-      </method>
-    </configuration>
-    <configuration name="GameWatch.Client.Cli.Core" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="GameWatch.Client.Cli" TARGET_NAME="GameWatch.Client.Cli.Core" CONFIG_NAME="linux_code_coverage - linux_code_coverage">
-      <method v="2">
-        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
-      </method>
-    </configuration>
-    <configuration name="All CTest" type="CTestRunConfiguration" factoryName="CTestRun" PROGRAM_PARAMS="--extra-verbose" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" WORKING_DIR="file://$CMakeCurrentLocalGenerationDir$" PASS_PARENT_ENVS_2="true" CONFIG_NAME="linux_code_coverage - linux_code_coverage" RUN_PATH="$CTestCurrentExecutableName$" EXPLICIT_BUILD_TARGET_NAME="all" TEST_MODE="SUITE_TEST">
-      <method v="2">
-        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
-        <option name="BeforeTestRunTask" enabled="true" />
-      </method>
-    </configuration>
-    <list>
-      <item itemvalue="CMake Application.GameWatch.Client.Cli" />
-      <item itemvalue="CMake Application.GameWatch.Client.Cli.Core" />
-      <item itemvalue="CTest Application.All CTest" />
-      <item itemvalue="Google Test.GameWatch.Client.Cli.Tests" />
-    </list>
   </component>
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
@@ -188,6 +76,7 @@
       <workItem from="1783803043729" duration="4332000" />
       <workItem from="1783811220975" duration="1108000" />
       <workItem from="1783847659452" duration="6018000" />
+      <workItem from="1783854197082" duration="1197000" />
     </task>
     <task id="LOCAL-00001" summary="# Change PRIVATE to PUBLIC so the Executable inherits the LTO instruction">
       <option name="closed" value="true" />
@@ -229,6 +118,7 @@
     <option name="LAST_COMMIT_MESSAGE" value="# Change PRIVATE to PUBLIC so the Executable inherits the LTO instruction" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
+    <SUITE FILE_PATH="../../../../Documents/Dev/Projects/GameWatch/Code/Clients/Cli/build/code_coverage" NAME="Code coverage through tests Coverage Results" MODIFIED="1783855041679" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="gcov/llvm" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
     <SUITE FILE_PATH="\\wsl.localhost\Ubuntu\home\alex\documents\dev\projects\GameWatch\Code\Clients\Cli\build\code_coverage" NAME="GameWatch.Client.Cli.Tests Coverage Results" MODIFIED="1783853834362" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="gcov/llvm" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
   </component>
 </project>

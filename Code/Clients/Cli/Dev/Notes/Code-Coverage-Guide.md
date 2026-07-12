@@ -69,7 +69,14 @@ llvm-cov show ./GameWatch.Client.Cli -instr-profile=coverage.profdata
 
 ## Code coverage through IDE (CLion)
 
+### Note:
+If you are coding in Windows and using WSL for Linux, you probably have different cmake toolchains, one for your
+windows setup and one for your wsl setup. Do not forget to change which is the default, depending on what OS are you
+building/coding/doing the coverage!
+
 ### Code coverage showing what code which is tested (steps)
+
+#### Linux
 
 1. Press CTRL+SHIFT+A and select the option called 'Load CMake Presets' to load all cmake presets, but then stop it from
 starting to configure all the presets.
@@ -78,10 +85,38 @@ starting to configure all the presets.
 4. Load CMakeLists.txt file from within the Cli folder (which is the root folder of the current folder)
 and start to configure it (i usually just select it and hit 'Reload CMake Project'). DO NOT load the CMakeLists.txt file
 from the Tests folder!
-5. From the 'Run/Debug configurations' zone at the top right usually of the IDE, select the GameWatch.Client.Cli.Test
+5. From the 'Run/Debug configurations' zone at the top right usually of the IDE, select the 'GameWatch.Client.Cli.Test'
 option which has the Google icon.
 6. Click the dropdown arrow, then select the hit the 'More Actions' option (the 3 dots) to the right of the target
 7. Select the option called 'Run GameWatch.Client.Cli.Tests with Coverage'
+
+#### Linux (Alternative [similar to Windows way])
+
+1. Press CTRL+SHIFT+A and select the option called 'Load CMake Presets' to load all cmake presets, but then stop it from
+   starting to configure all the presets.
+2. In the CMake tab of the IDE, click the cog and select option 'CMake Settings'
+3. Disable all presets but keep the 'linux_coverage' preset enabled
+4. Load CMakeLists.txt file from within the Cli folder (which is the root folder of the current folder)
+   and start to configure it (i usually just select it and hit 'Reload CMake Project'). DO NOT load the CMakeLists.txt file
+   from the Tests folder!
+5. From the 'Run/Debug configurations' zone at the top right usually of the IDE, select the 'CodeCoverageFromTests'
+   option which has the Google icon.
+6. Click the dropdown arrow, then select the hit the 'More Actions' option (the 3 dots) to the right of the target
+7. Select the option called 'Run CodeCoverageFromTests with Coverage'
+
+#### Windows
+
+1. Press CTRL+SHIFT+A and select the option called 'Load CMake Presets' to load all cmake presets, but then stop it from
+   starting to configure all the presets.
+2. In the CMake tab of the IDE, click the cog and select option 'CMake Settings'
+3. Disable all presets but keep the 'linux_coverage' preset enabled
+4. Load CMakeLists.txt file from within the Cli folder (which is the root folder of the current folder)
+   and start to configure it (i usually just select it and hit 'Reload CMake Project'). DO NOT load the CMakeLists.txt file
+   from the Tests folder!
+5. From the 'Run/Debug configurations' zone at the top right usually of the IDE, select the 'CodeCoverageFromTests'
+   option which has the Google icon.
+6. Click the dropdown arrow, then select the hit the 'More Actions' option (the 3 dots) to the right of the target
+7. Select the option called 'Run CodeCoverageFromTests with Coverage'
 
 ### Code coverage showing what code which is used in the main app (steps)
 

@@ -2,11 +2,11 @@
 #define GAMEWATCH_CLIENT_CLI_A_HPP
 
 namespace gw::example_logic {
-    auto get_num1() noexcept -> int;
+auto get_num1() noexcept -> int;
 
-    auto news_tuff() noexcept -> void;
+auto news_tuff() noexcept -> void;
 
-    auto about_done() noexcept -> void;
-}
+auto about_done() noexcept -> void;
+} // namespace gw::example_logic
 
 #endif //GAMEWATCH_CLIENT_CLI_A_HPP
