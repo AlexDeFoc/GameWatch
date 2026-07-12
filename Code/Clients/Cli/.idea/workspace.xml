@@ -14,14 +14,12 @@
 }]]></component>
   <component name="CMakeRunConfigurationManager">
     <generated>
-      <config projectName="GameWatch.Client.Cli" targetName="GameWatch.Client.Cli" />
-      <config projectName="GameWatch.Client.Cli" targetName="GameWatch.Client.Cli.Core" />
-      <config projectName="GameWatch.Client.Cli" targetName="GameWatch.Client.Cli.Tests" />
+      <config projectName="Project" targetName="GameWatch.Client.Cli.Core" />
+      <config projectName="Project" targetName="GameWatch.Client.Cli" />
     </generated>
   </component>
   <component name="CMakeSettings">
     <configurations>
-      <configuration PROFILE_NAME="windows_code_coverage - windows_code_coverage" PROFILE_DISPLAY_NAME="windows_coverage" ENABLED="true" FROM_PRESET="true" GENERATION_DIR="$PROJECT_DIR$/build/code_coverage" />
       <configuration PROFILE_NAME="windows_vs2026_msvc_debug" PROFILE_DISPLAY_NAME="win_vs2026_msvc_dbg [windows_vs2026_msvc_debug]" ENABLED="false" FROM_PRESET="true" GENERATION_DIR="$PROJECT_DIR$/build/vs2026_dbg" />
       <configuration PROFILE_NAME="windows_vs2026_msvc_release" PROFILE_DISPLAY_NAME="win_vs2026_msvc_rel [windows_vs2026_msvc_release]" ENABLED="false" FROM_PRESET="true" GENERATION_DIR="$PROJECT_DIR$/build/vs2026_rel" />
       <configuration PROFILE_NAME="windows_ninja_clangCL_debug" PROFILE_DISPLAY_NAME="win_ninja_clangCL_dbg [windows_ninja_clangCL_debug]" ENABLED="false" FROM_PRESET="true" GENERATION_DIR="$PROJECT_DIR$/build/ninja_clangCL_dbg" />
@@ -31,15 +29,13 @@
       <configuration PROFILE_NAME="windows_vs2026_msvc_release - windows_vs2026_msvc_release" PROFILE_DISPLAY_NAME="win_vs2026_msvc_rel [windows_vs2026_msvc_release - windows_vs2026_msvc_release]" ENABLED="false" FROM_PRESET="true" GENERATION_DIR="$PROJECT_DIR$/build/vs2026_rel" />
       <configuration PROFILE_NAME="windows_ninja_clangCL_debug - windows_ninja_clangCL_debug" PROFILE_DISPLAY_NAME="win_ninja_clangCL_dbg [windows_ninja_clangCL_debug - windows_ninja_clangCL_debug]" ENABLED="false" FROM_PRESET="true" GENERATION_DIR="$PROJECT_DIR$/build/ninja_clangCL_dbg" />
       <configuration PROFILE_NAME="windows_ninja_clangCL_release - windows_ninja_clangCL_release" PROFILE_DISPLAY_NAME="win_ninja_clangCL_rel [windows_ninja_clangCL_release - windows_ninja_clangCL_release]" ENABLED="false" FROM_PRESET="true" GENERATION_DIR="$PROJECT_DIR$/build/ninja_clangCL_rel" />
+      <configuration PROFILE_NAME="windows_code_coverage - windows_code_coverage" PROFILE_DISPLAY_NAME="windows_coverage" ENABLED="false" FROM_PRESET="true" GENERATION_DIR="$PROJECT_DIR$/build/code_coverage" />
     </configurations>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="7a49aeb4-be3f-4139-9a16-13cd7a47a4e5" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.clang-tidy" beforeDir="false" afterPath="$PROJECT_DIR$/.clang-tidy" afterDir="false" />
+    <list default="true" id="7a49aeb4-be3f-4139-9a16-13cd7a47a4e5" name="Changes" comment="- changed my env file name&#10;- removed another .idea file&#10;- added CLion target/configuration as alternative to Linux, and the only way for windows to do, code coverage from tests&#10;- fixed some code to adhere to clang-tidy&#10;- remove clang-tidy llvm header check">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/Dev/Notes/Code-Coverage-Guide.md" beforeDir="false" afterPath="$PROJECT_DIR$/Dev/Notes/Code-Coverage-Guide.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Dev/my_clion_wsl_setup_env_file.env" beforeDir="false" afterPath="$PROJECT_DIR$/Dev/my_clion_for_cmake_toolchain_wsl_setup_env_file.env" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Includes/ExampleLogic/a.hpp" beforeDir="false" afterPath="$PROJECT_DIR$/Includes/ExampleLogic/a.hpp" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -60,6 +56,13 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
+  <component name="RunManager">
+    <configuration default="true" type="CLionExternalRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true">
+      <method v="2">
+        <option name="CLION.EXTERNAL.BUILD" enabled="true" />
+      </method>
+    </configuration>
+  </component>
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
       <changelist id="7a49aeb4-be3f-4139-9a16-13cd7a47a4e5" name="Changes" comment="" />
@@ -76,7 +79,7 @@
       <workItem from="1783803043729" duration="4332000" />
       <workItem from="1783811220975" duration="1108000" />
       <workItem from="1783847659452" duration="6018000" />
-      <workItem from="1783854197082" duration="1197000" />
+      <workItem from="1783854197082" duration="4482000" />
     </task>
     <task id="LOCAL-00001" summary="# Change PRIVATE to PUBLIC so the Executable inherits the LTO instruction">
       <option name="closed" value="true" />
@@ -86,11 +89,16 @@
       <option name="project" value="LOCAL" />
       <updated>1783849460210</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="- changed my env file name&#10;- removed another .idea file&#10;- added CLion target/configuration as alternative to Linux, and the only way for windows to do, code coverage from tests&#10;- fixed some code to adhere to clang-tidy&#10;- remove clang-tidy llvm header check">
+      <option name="closed" value="true" />
+      <created>1783855434906</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1783855434906</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
-  </component>
-  <component name="TypeScriptGeneratedFilesManager">
-    <option name="version" value="3" />
   </component>
   <component name="UnknownFeatures">
     <option featureType="com.intellij.fileTypeFactory" implementationName="*.env" />
@@ -115,7 +123,8 @@
   <component name="VcsManagerConfiguration">
     <MESSAGE value="added good starting base (for windows)&#10;&#10;- vcpkg works&#10;- cmake for cli build and for tests&#10;- testing available through gtest&#10;- bonus: code coverage&#10;- CLion cofigurations&#10;- cmake presets&#10;- preset supportted:&#10;  - visual studio 2026 (msvc)&#10;  - ninja + clang-cl&#10;- added clang-tidy for enforcing rules/checks&#10;- added clang-format for formatting + keeping a certain code style (llvm preset)" />
     <MESSAGE value="# Change PRIVATE to PUBLIC so the Executable inherits the LTO instruction" />
-    <option name="LAST_COMMIT_MESSAGE" value="# Change PRIVATE to PUBLIC so the Executable inherits the LTO instruction" />
+    <MESSAGE value="- changed my env file name&#10;- removed another .idea file&#10;- added CLion target/configuration as alternative to Linux, and the only way for windows to do, code coverage from tests&#10;- fixed some code to adhere to clang-tidy&#10;- remove clang-tidy llvm header check" />
+    <option name="LAST_COMMIT_MESSAGE" value="- changed my env file name&#10;- removed another .idea file&#10;- added CLion target/configuration as alternative to Linux, and the only way for windows to do, code coverage from tests&#10;- fixed some code to adhere to clang-tidy&#10;- remove clang-tidy llvm header check" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="../../../../Documents/Dev/Projects/GameWatch/Code/Clients/Cli/build/code_coverage" NAME="Code coverage through tests Coverage Results" MODIFIED="1783855041679" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="gcov/llvm" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />

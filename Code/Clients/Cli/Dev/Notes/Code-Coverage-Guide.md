@@ -33,7 +33,26 @@ llvm-cov show ./GameWatch.Client.Cli.Tests -instr-profile=coverage.profdata
 
 #### Windows
 ```shell
+# Be inside the Cli folder (which is the root folder of the current project)
 
+# Configure the preset
+cmake --preset "windows_code_coverage"
+
+# Build the preset
+cmake --build --preset "windows_code_coverage"
+
+# Run the test binary (to generate the raw coverage file)
+cd ./output/code_coverage/
+./GameWatch.Client.Cli.Tests.exe
+
+# Index the raw coverage file (turn it into .profdata file)
+llvm-profdata merge -sparse default.profraw -o coverage.profdata
+
+# Print a summary report
+llvm-cov report "./GameWatch.Client.Cli.Tests.exe" -instr-profile="./coverage.profdata"
+
+# See line-by-line coverage
+llvm-cov show "./GameWatch.Client.Cli.Tests.exe" -instr-profile="./coverage.profdata"
 ```
 
 ### Code coverage showing what code which is used in the main app
