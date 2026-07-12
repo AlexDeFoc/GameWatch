@@ -8,9 +8,9 @@ set(EXE_TARGET "GameWatch.Client.Cli")
 # 1. Build the core logic as a static library
 add_library(${LIB_TARGET} STATIC)
 set_target_properties(${LIB_TARGET} PROPERTIES
-        CXX_STANDARD 23
-        CXX_STANDARD_REQUIRED ON
-        CXX_EXTENSIONS OFF
+	CXX_STANDARD 23
+	CXX_STANDARD_REQUIRED ON
+	CXX_EXTENSIONS OFF
 )
 
 target_include_directories(${LIB_TARGET} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Includes")
@@ -20,9 +20,9 @@ target_sources(${LIB_TARGET} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/Sources/Exampl
 # 2. Build the main executable
 add_executable(${EXE_TARGET})
 set_target_properties(${EXE_TARGET} PROPERTIES
-        CXX_STANDARD 23
-        CXX_STANDARD_REQUIRED ON
-        CXX_EXTENSIONS OFF
+	CXX_STANDARD 23
+	CXX_STANDARD_REQUIRED ON
+	CXX_EXTENSIONS OFF
 )
 # The executable only needs main.cpp
 target_sources(${EXE_TARGET} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/Sources/AppEntry/main.cpp")
@@ -34,164 +34,168 @@ target_precompile_headers(${EXE_TARGET} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/Inc
 
 # --- COMPILER & LINKER FLAGS ---
 if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows" AND CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
-    if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-        target_compile_options(${LIB_TARGET} PRIVATE
-                /permissive- /Zc:__cplusplus /Zc:preprocessor /Wall /WX /utf-8 /diagnostics:caret
-        )
+	if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+		target_compile_options(${LIB_TARGET} PRIVATE
+			"/permissive-" "/Zc:__cplusplus" "/Zc:preprocessor" "/Wall" "/WX" "/utf-8" "/diagnostics:caret"
+		)
 
-        target_compile_options(${EXE_TARGET} PRIVATE
-                /permissive- /Zc:__cplusplus /Zc:preprocessor /Wall /WX /utf-8 /diagnostics:caret
-        )
+		target_compile_options(${EXE_TARGET} PRIVATE
+			"/permissive-" "/Zc:__cplusplus" "/Zc:preprocessor" "/Wall" "/WX" "/utf-8" "/diagnostics:caret"
+		)
 
-        if (GW_CLIENT_CLI_BUILD_MODE)
-            if ("${GW_CLIENT_CLI_BUILD_MODE}" STREQUAL "Release")
-                target_compile_options(${LIB_TARGET} PRIVATE
-                        /GL /Oi /Ot /O2
-                )
+		if (GW_CLIENT_CLI_BUILD_MODE)
+			if ("${GW_CLIENT_CLI_BUILD_MODE}" STREQUAL "Release")
+				target_compile_options(${LIB_TARGET} PRIVATE
+					"/GL" "/Oi" "/Ot" "/O2"
+				)
 
-                target_compile_options(${EXE_TARGET} PRIVATE
-                        /GL /Oi /Ot /O2 /wd4711
-                )
+				target_compile_options(${EXE_TARGET} PRIVATE
+					"/GL" "/Oi" "/Ot" "/O2" "/wd4711"
+				)
 
-                target_link_options(${LIB_TARGET} PRIVATE /LTCG)
-                target_link_options(${EXE_TARGET} PRIVATE /LTCG)
-            elseif ("${GW_CLIENT_CLI_BUILD_MODE}" STREQUAL "Debug")
-                target_compile_options(${LIB_TARGET} PRIVATE
-                        /Od /RTC1 /Zc:inline
-                )
+				target_link_options(${LIB_TARGET} PRIVATE "/LTCG")
+				target_link_options(${EXE_TARGET} PRIVATE "/LTCG")
+			elseif ("${GW_CLIENT_CLI_BUILD_MODE}" STREQUAL "Debug")
+				target_compile_options(${LIB_TARGET} PRIVATE
+					"/Od" "/RTC1" "/Zc:inline"
+				)
 
-                target_compile_options(${EXE_TARGET} PRIVATE
-                        /Od /RTC1 /Zc:inline
-                )
-            endif ()
-        endif ()
-    elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-        target_compile_options(${LIB_TARGET} PRIVATE
-                /permissive- /Zc:__cplusplus /Wall /WX /utf-8 /diagnostics:caret
-        )
+				target_compile_options(${EXE_TARGET} PRIVATE
+					"/Od" "/RTC1" "/Zc:inline"
+				)
+			endif ()
+		endif ()
+	elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+		target_compile_options(${LIB_TARGET} PRIVATE
+			"/permissive-" "/Zc:__cplusplus" "/Wall" "/WX" "/utf-8" "/diagnostics:caret"
+		)
 
-        target_compile_options(${EXE_TARGET} PRIVATE
-                /permissive- /Zc:__cplusplus /Wall /WX /utf-8 /diagnostics:caret
-        )
+		target_compile_options(${EXE_TARGET} PRIVATE
+			"/permissive-" "/Zc:__cplusplus" "/Wall" "/WX" "/utf-8" "/diagnostics:caret"
+		)
 
-        if (GW_CLIENT_CLI_BUILD_MODE)
-            if ("${GW_CLIENT_CLI_BUILD_MODE}" STREQUAL "Release")
-                target_compile_options(${LIB_TARGET} PRIVATE
-                        /O2
-                )
+		if (GW_CLIENT_CLI_BUILD_MODE)
+			if ("${GW_CLIENT_CLI_BUILD_MODE}" STREQUAL "Release")
+				target_compile_options(${LIB_TARGET} PRIVATE
+					"/O2"
+					"-Wno-pre-c++17-compat" "-Wno-c++98-compat" "-Wno-newline-eof"
+				)
 
-                target_compile_options(${EXE_TARGET} PRIVATE
-                        /O2
-                )
+				target_compile_options(${EXE_TARGET} PRIVATE
+					"/O2"
+					"-Wno-pre-c++17-compat" "-Wno-c++98-compat" "-Wno-newline-eof"
+				)
 
-                target_link_options(${LIB_TARGET} PRIVATE /LTCG)
-                target_link_options(${EXE_TARGET} PRIVATE /LTCG)
-            elseif ("${GW_CLIENT_CLI_BUILD_MODE}" STREQUAL "Debug")
-                target_compile_options(${LIB_TARGET} PRIVATE
-                        /Od /Zi /RTC1
-                )
+				target_link_options(${LIB_TARGET} PRIVATE "/LTCG")
+				target_link_options(${EXE_TARGET} PRIVATE "/LTCG")
+			elseif ("${GW_CLIENT_CLI_BUILD_MODE}" STREQUAL "Debug")
+				target_compile_options(${LIB_TARGET} PRIVATE
+					"/Od" "/Zi" "/RTC1"
+					"-Wno-pre-c++17-compat" "-Wno-c++98-compat" "-Wno-newline-eof"
+				)
 
-                target_compile_options(${EXE_TARGET} PRIVATE
-                        /Od /Zi /RTC1
-                )
-            endif ()
-        endif ()
-    endif ()
+				target_compile_options(${EXE_TARGET} PRIVATE
+					"/Od" "/Zi" "/RTC1"
+					"-Wno-pre-c++17-compat" "-Wno-c++98-compat" "-Wno-newline-eof"
+				)
+			endif ()
+		endif ()
+	endif ()
 elseif (CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "GNU")
-    if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-        target_compile_options(${LIB_TARGET} PRIVATE
-                -Wall -Wextra -Werror -fdiagnostics-color=always
-        )
+	if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+		target_compile_options(${LIB_TARGET} PRIVATE
+			"-Wall" "-Wextra" "-Werror" "-fdiagnostics-color=always"
+		)
 
-        target_compile_options(${EXE_TARGET} PRIVATE
-                -Wall -Wextra -Werror -fdiagnostics-color=always
-        )
+		target_compile_options(${EXE_TARGET} PRIVATE
+			"-Wall" "-Wextra" "-Werror" "-fdiagnostics-color=always"
+		)
 
-        if (GW_CLIENT_CLI_BUILD_MODE)
-            if ("${GW_CLIENT_CLI_BUILD_MODE}" STREQUAL "Release")
-                target_compile_options(${LIB_TARGET} PRIVATE
-                        -flto -O3
-                )
+		if (GW_CLIENT_CLI_BUILD_MODE)
+			if ("${GW_CLIENT_CLI_BUILD_MODE}" STREQUAL "Release")
+				target_compile_options(${LIB_TARGET} PRIVATE
+					"-flto" "-O3"
+				)
 
-                target_compile_options(${EXE_TARGET} PRIVATE
-                        -flto -O3
-                )
+				target_compile_options(${EXE_TARGET} PRIVATE
+					"-flto" "-O3"
+				)
 
-                target_link_options(${LIB_TARGET} PRIVATE -flto)
-                target_link_options(${EXE_TARGET} PRIVATE -flto)
-            elseif ("${GW_CLIENT_CLI_BUILD_MODE}" STREQUAL "Debug")
-                target_compile_options(${LIB_TARGET} PRIVATE
-                        -Og -g3
-                )
+				target_link_options(${LIB_TARGET} PRIVATE "-flto")
+				target_link_options(${EXE_TARGET} PRIVATE "-flto")
+			elseif ("${GW_CLIENT_CLI_BUILD_MODE}" STREQUAL "Debug")
+				target_compile_options(${LIB_TARGET} PRIVATE
+					"-Og" "-g3"
+				)
 
-                target_compile_options(${EXE_TARGET} PRIVATE
-                        -Og -g3
-                )
-            endif ()
-        endif ()
-    elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-        target_compile_options(${LIB_TARGET} PRIVATE
-                -Wall -Wextra -Werror -fdiagnostics-color=always
-                -Wno-padded -Wno-inline
-        )
+				target_compile_options(${EXE_TARGET} PRIVATE
+					"-Og" "-g3"
+				)
+			endif ()
+		endif ()
+	elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+		target_compile_options(${LIB_TARGET} PRIVATE
+			"-Wall" "-Wextra" "-Werror" "-fdiagnostics-color=always"
+			"-Wno-padded" "-Wno-inline"
+		)
 
-        target_compile_options(${EXE_TARGET} PRIVATE
-                -Wall -Wextra -Werror -fdiagnostics-color=always
-        )
+		target_compile_options(${EXE_TARGET} PRIVATE
+			"-Wall" "-Wextra" "-Werror" "-fdiagnostics-color=always"
+		)
 
-        if (GW_CLIENT_CLI_BUILD_MODE)
-            if ("${GW_CLIENT_CLI_BUILD_MODE}" STREQUAL "Release")
-                target_compile_options(${LIB_TARGET} PRIVATE
-                        -flto -O3
-                )
+		if (GW_CLIENT_CLI_BUILD_MODE)
+			if ("${GW_CLIENT_CLI_BUILD_MODE}" STREQUAL "Release")
+				target_compile_options(${LIB_TARGET} PRIVATE
+					"-flto" "-O3"
+				)
 
-                target_compile_options(${EXE_TARGET} PRIVATE
-                        -flto -O3
-                )
+				target_compile_options(${EXE_TARGET} PRIVATE
+					"-flto" "-O3"
+				)
 
-                target_link_options(${LIB_TARGET} PRIVATE -flto)
-                target_link_options(${EXE_TARGET} PRIVATE -flto)
-            elseif ("${GW_CLIENT_CLI_BUILD_MODE}" STREQUAL "Debug")
-                target_compile_options(${LIB_TARGET} PRIVATE
-                        -Og -g3
-                )
+				target_link_options(${LIB_TARGET} PRIVATE "-flto")
+				target_link_options(${EXE_TARGET} PRIVATE "-flto")
+			elseif ("${GW_CLIENT_CLI_BUILD_MODE}" STREQUAL "Debug")
+				target_compile_options(${LIB_TARGET} PRIVATE
+					"-Og" "-g3"
+				)
 
-                target_compile_options(${EXE_TARGET} PRIVATE
-                        -Og -g3
-                )
-            endif ()
-        endif ()
-    endif ()
+				target_compile_options(${EXE_TARGET} PRIVATE
+					"-Og" "-g3"
+				)
+			endif ()
+		endif ()
+	endif ()
 endif ()
 
 # --- CLANG-TIDY INTEGRATION ---
 find_program(CLANG_TIDY_EXE NAMES "clang-tidy")
 if (CLANG_TIDY_EXE)
-    message(STATUS "Found clang-tidy: ${CLANG_TIDY_EXE}")
+	message(STATUS "Found clang-tidy: ${CLANG_TIDY_EXE}")
 
-    # Apply to the core library
-    set_target_properties(${LIB_TARGET} PROPERTIES
-            CXX_CLANG_TIDY "${CLANG_TIDY_EXE};--config-file=${CMAKE_CURRENT_SOURCE_DIR}/.clang-tidy"
-    )
+	# Apply to the core library
+	set_target_properties(${LIB_TARGET} PROPERTIES
+		CXX_CLANG_TIDY "${CLANG_TIDY_EXE};--config-file=${CMAKE_CURRENT_SOURCE_DIR}/.clang-tidy"
+	)
 
-    # Apply to the main executable
-    set_target_properties(${EXE_TARGET} PROPERTIES
-            CXX_CLANG_TIDY "${CLANG_TIDY_EXE};--config-file=${CMAKE_CURRENT_SOURCE_DIR}/.clang-tidy"
-    )
+	# Apply to the main executable
+	set_target_properties(${EXE_TARGET} PROPERTIES
+		CXX_CLANG_TIDY "${CLANG_TIDY_EXE};--config-file=${CMAKE_CURRENT_SOURCE_DIR}/.clang-tidy"
+	)
 else ()
-    message(WARNING "clang-tidy executable was NOT found on this system!")
+	message(WARNING "clang-tidy executable was NOT found on this system!")
 endif ()
 
 # Coverage Flags
 if (GW_CLIENT_CLI_COVERING_CODE_THIS_BUILD)
-    separate_arguments(COMPILER_ARGS_LIST NATIVE_COMMAND "${GW_CLIENT_CLI_COMPILER_COVERAGE_FLAGS}")
-    separate_arguments(LINKER_ARGS_LIST NATIVE_COMMAND "${GW_CLIENT_CLI_LINKER_COVERAGE_FLAGS}")
+	separate_arguments(COMPILER_ARGS_LIST NATIVE_COMMAND "${GW_CLIENT_CLI_COMPILER_COVERAGE_FLAGS}")
+	separate_arguments(LINKER_ARGS_LIST NATIVE_COMMAND "${GW_CLIENT_CLI_LINKER_COVERAGE_FLAGS}")
 
-    target_compile_options(${LIB_TARGET} PRIVATE ${COMPILER_ARGS_LIST})
-    target_compile_options(${EXE_TARGET} PRIVATE ${COMPILER_ARGS_LIST})
+	target_compile_options(${LIB_TARGET} PRIVATE ${COMPILER_ARGS_LIST})
+	target_compile_options(${EXE_TARGET} PRIVATE ${COMPILER_ARGS_LIST})
 
-    target_link_options(${LIB_TARGET} PRIVATE ${LINKER_ARGS_LIST})
-    target_link_options(${EXE_TARGET} PRIVATE ${LINKER_ARGS_LIST})
+	target_link_options(${LIB_TARGET} PRIVATE ${LINKER_ARGS_LIST})
+	target_link_options(${EXE_TARGET} PRIVATE ${LINKER_ARGS_LIST})
 endif ()
 
 # Enable testing and add the subdirectory

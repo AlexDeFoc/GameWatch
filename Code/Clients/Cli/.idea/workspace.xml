@@ -40,20 +40,19 @@
     </configurations>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="7a49aeb4-be3f-4139-9a16-13cd7a47a4e5" name="Changes" comment="">
+    <list default="true" id="7a49aeb4-be3f-4139-9a16-13cd7a47a4e5" name="Changes" comment="- added pch file ability&#10;- split pch file ability for each target (main app, core, tests)&#10;- refined and split compilation &amp; linking flags">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.run/CodeCoverageFromTests.run.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.run/CodeCoverageFromTests.run.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/CMakeLists.txt" beforeDir="false" afterPath="$PROJECT_DIR$/CMakeLists.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/CMakePresets.json" beforeDir="false" afterPath="$PROJECT_DIR$/CMakePresets.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Includes/pch.hpp" beforeDir="false" afterPath="$PROJECT_DIR$/Includes/pch.hpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Tests/CMakeLists.txt" beforeDir="false" afterPath="$PROJECT_DIR$/Tests/CMakeLists.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Tests/Sources/FirstTest.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Tests/Sources/FirstTest.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Tests/Includes/pch.hpp" beforeDir="false" afterPath="$PROJECT_DIR$/Tests/Includes/pch.hpp" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
-  <component name="ExecutionTargetManager" SELECTED_TARGET="CMakeBuildProfile:windows_vs2026_msvc_release - windows_vs2026_msvc_release" />
+  <component name="ExecutionTargetManager" SELECTED_TARGET="CMakeBuildProfile:windows_vs2026_msvc_debug - windows_vs2026_msvc_debug" />
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/../../.." />
   </component>
@@ -71,6 +70,9 @@
   <component name="ProjectLevelVcsManager">
     <ConfirmationsSetting value="1" id="Add" />
   </component>
+  <component name="ProjectStatusUIService"><![CDATA[{
+  "uiKindId": "Widget"
+}]]></component>
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
@@ -91,6 +93,7 @@
     "codeWithMe.voiceChat.enabledByDefault": "false",
     "ctest.advertisement.all.test.configuration.is.created": "true",
     "git-widget-placeholder": "refactor",
+    "last_opened_file_path": "C:/Users/alex/Documents/Dev/Projects/GameWatch/Code/Clients/Cli/Tests/Includes",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
@@ -100,7 +103,12 @@
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
-  <component name="RunManager" selected="CMake Application.CodeCoverageFromTests">
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\alex\Documents\Dev\Projects\GameWatch\Code\Clients\Cli\Tests\Includes" />
+    </key>
+  </component>
+  <component name="RunManager" selected="CMake Application.GameWatch.Client.Cli">
     <configuration name="GameWatch.Client.Cli" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="GameWatch.Client.Cli" TARGET_NAME="GameWatch.Client.Cli" CONFIG_NAME="windows_vs2026_msvc_debug - windows_vs2026_msvc_debug" RUN_TARGET_PROJECT_NAME="GameWatch.Client.Cli" RUN_TARGET_NAME="GameWatch.Client.Cli">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
@@ -134,7 +142,7 @@
       <workItem from="1783811220975" duration="1108000" />
       <workItem from="1783847659452" duration="6018000" />
       <workItem from="1783854197082" duration="5236000" />
-      <workItem from="1783873554835" duration="8348000" />
+      <workItem from="1783873554835" duration="15020000" />
     </task>
     <task id="LOCAL-00001" summary="# Change PRIVATE to PUBLIC so the Executable inherits the LTO instruction">
       <option name="closed" value="true" />
@@ -160,7 +168,23 @@
       <option name="project" value="LOCAL" />
       <updated>1783872561802</updated>
     </task>
-    <option name="localTasksCounter" value="4" />
+    <task id="LOCAL-00004" summary="- added pch file ability&#10;- split pch file ability for each target (main app, core, tests)&#10;- refined and split compilation &amp; linking flags">
+      <option name="closed" value="true" />
+      <created>1783888678796</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1783888678796</updated>
+    </task>
+    <task id="LOCAL-00005" summary="- added pch file ability&#10;- split pch file ability for each target (main app, core, tests)&#10;- refined and split compilation &amp; linking flags">
+      <option name="closed" value="true" />
+      <created>1783888702679</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1783888702679</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -191,7 +215,8 @@
     <MESSAGE value="# Change PRIVATE to PUBLIC so the Executable inherits the LTO instruction" />
     <MESSAGE value="- changed my env file name&#10;- removed another .idea file&#10;- added CLion target/configuration as alternative to Linux, and the only way for windows to do, code coverage from tests&#10;- fixed some code to adhere to clang-tidy&#10;- remove clang-tidy llvm header check" />
     <MESSAGE value="for code completion:&#10;&#10;- fixed gui way for windows, added for linux as alternative&#10;- added the terminal way for windows" />
-    <option name="LAST_COMMIT_MESSAGE" value="for code completion:&#10;&#10;- fixed gui way for windows, added for linux as alternative&#10;- added the terminal way for windows" />
+    <MESSAGE value="- added pch file ability&#10;- split pch file ability for each target (main app, core, tests)&#10;- refined and split compilation &amp; linking flags" />
+    <option name="LAST_COMMIT_MESSAGE" value="- added pch file ability&#10;- split pch file ability for each target (main app, core, tests)&#10;- refined and split compilation &amp; linking flags" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="../../../../Documents/Dev/Projects/GameWatch/Code/Clients/Cli/build/code_coverage" NAME="Code coverage through tests Coverage Results" MODIFIED="1783855041679" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="gcov/llvm" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
