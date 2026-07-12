@@ -1,132 +1,441 @@
 {
-    "version": 10,
-    "configurePresets": [
-        {
-            "name": "vcpkg-base",
-            "hidden": true,
-            "description": "Base configuration with vcpkg integration",
-            "cacheVariables": {
-                "CMAKE_TOOLCHAIN_FILE": {
-                    "type": "FILEPATH",
-                    "value": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
-                },
-                "VCPKG_TARGET_TRIPLET": "x64-windows"
-            }
-        },
-        {
-            "name": "base-visual-studio",
-            "hidden": true,
-            "description": "Base configuration with visual studio (windows only)",
-            "condition": {
-                "type": "equals",
-                "lhs": "${hostSystemName}",
-                "rhs": "Windows"
-            },
-            "generator": "Visual Studio 18 2026",
-            "architecture": {
-                "value": "x64",
-                "strategy": "external"
-            }
-        },
-        {
-            "name": "base-windows-msvc",
-            "hidden": true,
-            "description": "Base configuration for windows msvc",
-            "inherits": ["vcpkg-base", "base-visual-studio"],
-            "binaryDir": "${sourceDir}/build"
-        },
-        {
-            "name": "windows-msvc-debug",
-            "displayName": "Config Windows MSVC (Debug)",
-            "description": "Target Windows with MSVC (Debug)",
-            "inherits": "base-windows-msvc",
-            "binaryDir": "${sourceDir}/build/msvc/win-x64-debug"
-        },
-        {
-            "name": "windows-msvc-release",
-            "displayName": "Config Windows MSVC (Release)",
-            "description": "Target Windows with MSVC (Release)",
-            "inherits": "base-windows-msvc",
-            "binaryDir": "${sourceDir}/build/msvc/win-x64-rel"
-        },
-        {
-            "name": "base-windows-ninja-clang",
-            "hidden": true,
-            "description": "Base configuration for Ninja with clang-cl (windows only)",
-            "inherits": "vcpkg-base",
-            "condition": {
-                "type": "equals",
-                "lhs": "${hostSystemName}",
-                "rhs": "Windows"
-            },
-            "generator": "Ninja",
-            "architecture": {
-                "value": "x64",
-                "strategy": "external"
-            },
-            "cacheVariables": {
-                "CMAKE_CXX_COMPILER": "clang-cl.exe"
-            }
-        },
-        {
-            "name": "windows-ninja-clang-debug",
-            "displayName": "Config Ninja Clang (Debug)",
-            "description": "Target Windows with Ninja and clang-cl (Debug)",
-            "inherits": "base-windows-ninja-clang",
-            "binaryDir": "${sourceDir}/build/ninja-clang/win-x64-debug",
-            "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Debug"
-            }
-        },
-        {
-            "name": "windows-ninja-clang-release",
-            "displayName": "Config Ninja Clang (Release)",
-            "description": "Target Windows with Ninja and clang-cl (Release)",
-            "inherits": "base-windows-ninja-clang",
-            "binaryDir": "${sourceDir}/build/ninja-clang/win-x64-rel",
-            "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Release"
-            }
-        },
-        {
-            "name": "windows-ninja-clang-coverage",
-            "displayName": "Config Ninja Clang (Coverage)",
-            "description": "Target Windows with Ninja and clang-cl with Coverage Instrumentation",
-            "inherits": "base-windows-ninja-clang",
-            "binaryDir": "${sourceDir}/build/ninja-clang/win-x64-coverage",
-            "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Debug",
-                "CMAKE_CXX_FLAGS": "-fprofile-instr-generate -fcoverage-mapping"
-            }
-        }
-    ],
-    "buildPresets": [
-        {
-            "name": "windows-msvc-debug",
-            "displayName": "Build Windows MSVC (Debug)",
-            "configurePreset": "windows-msvc-debug",
-            "configuration": "Debug"
-        },
-        {
-            "name": "windows-msvc-release",
-            "displayName": "Build Windows MSVC (Release)",
-            "configurePreset": "windows-msvc-release",
-            "configuration": "Release"
-        },
-        {
-            "name": "windows-ninja-clang-debug",
-            "displayName": "Build Ninja Clang (Debug)",
-            "configurePreset": "windows-ninja-clang-debug"
-        },
-        {
-            "name": "windows-ninja-clang-release",
-            "displayName": "Build Ninja Clang (Release)",
-            "configurePreset": "windows-ninja-clang-release"
-        },
-        {
-            "name": "windows-ninja-clang-coverage",
-            "displayName": "Build Ninja Clang (Coverage)",
-            "configurePreset": "windows-ninja-clang-coverage"
-        }
-    ]
+	"version": 10,
+	"configurePresets": [
+		{
+			"name": "default_arhitecture",
+			"hidden": true,
+			"architecture": {
+				"value": "x64",
+				"strategy": "external"
+			}
+		},
+		{
+			"name": "vcpkg_base",
+			"hidden": true,
+			"cacheVariables": {
+				"CMAKE_TOOLCHAIN_FILE": {
+					"type": "FILEPATH",
+					"value": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
+				}
+			}
+		},
+		{
+			"name": "vcpkg_triplet_windows",
+			"hidden": true,
+			"cacheVariables": {
+				"VCPKG_TARGET_TRIPLET": "x64-windows"
+			}
+		},
+		{
+			"name": "vcpkg_triplet_linux",
+			"hidden": true,
+			"cacheVariables": {
+				"VCPKG_TARGET_TRIPLET": "x64-linux"
+			}
+		},
+		{
+			"name": "build_mode_debug",
+			"hidden": true,
+			"cacheVariables": {
+				"CMAKE_BUILD_TYPE": "Debug"
+			}
+		},
+		{
+			"name": "build_mode_release",
+			"hidden": true,
+			"cacheVariables": {
+				"CMAKE_BUILD_TYPE": "Release"
+			}
+		},
+		{
+			"name": "generator_visual_studio_2026",
+			"hidden": true,
+			"generator": "Visual Studio 18 2026"
+		},
+		{
+			"name": "generator_ninja",
+			"hidden": true,
+			"generator": "Ninja"
+		},
+		{
+			"name": "compiler_msvc",
+			"hidden": true
+		},
+		{
+			"name": "compiler_clangCL",
+			"hidden": true,
+			"cacheVariables": {
+				"CMAKE_CXX_COMPILER": "clang-cl.exe"
+			}
+		},
+		{
+			"name": "compiler_clang",
+			"hidden": true,
+			"cacheVariables": {
+				"CMAKE_CXX_COMPILER": "clang++"
+			}
+		},
+		{
+			"name": "compiler_gcc",
+			"hidden": true,
+			"cacheVariables": {
+				"CMAKE_CXX_COMPILER": "g++"
+			}
+		},
+		{
+			"name": "code_is_covered",
+			"hidden": true,
+			"cacheVariables": {
+				"COMPILER_COVERAGE_FLAGS": "-fprofile-instr-generate -fcoverage-mapping",
+				"LINKER_COVERAGE_FLAGS": "-fprofile-instr-generate"
+			}
+		},
+		{
+			"name": "windows_vs2026_msvc_debug",
+			"displayName": "win_vs2026_msvc_dbg",
+			"inherits": [
+				"default_arhitecture",
+				"vcpkg_base",
+				"vcpkg_triplet_windows",
+				"generator_visual_studio_2026",
+				"compiler_msvc"
+			],
+			"condition": {
+				"type": "equals",
+				"lhs": "${hostSystemName}",
+				"rhs": "Windows"
+			},
+			"binaryDir": "${sourceDir}/build/vs2026_dbg",
+			"cacheVariables": {
+				"CMAKE_RUNTIME_OUTPUT_DIRECTORY": "${sourceDir}/output/vs2026_dbg",
+				"CMAKE_LIBRARY_OUTPUT_DIRECTORY": "${sourceDir}/output/vs2026_dbg",
+				"CMAKE_ARCHIVE_OUTPUT_DIRECTORY": "${sourceDir}/output/vs2026_dbg"
+			}
+		},
+		{
+			"name": "windows_vs2026_msvc_release",
+			"displayName": "win_vs2026_msvc_rel",
+			"inherits": [
+				"default_arhitecture",
+				"vcpkg_base",
+				"vcpkg_triplet_windows",
+				"generator_visual_studio_2026",
+				"compiler_msvc"
+			],
+			"condition": {
+				"type": "equals",
+				"lhs": "${hostSystemName}",
+				"rhs": "Windows"
+			},
+			"binaryDir": "${sourceDir}/build/vs2026_rel",
+			"cacheVariables": {
+				"CMAKE_RUNTIME_OUTPUT_DIRECTORY": "${sourceDir}/output/vs2026_rel",
+				"CMAKE_LIBRARY_OUTPUT_DIRECTORY": "${sourceDir}/output/vs2026_rel",
+				"CMAKE_ARCHIVE_OUTPUT_DIRECTORY": "${sourceDir}/output/vs2026_rel"
+			}
+		},
+		{
+			"name": "windows_ninja_clangCL_debug",
+			"displayName": "win_ninja_clangCL_dbg",
+			"inherits": [
+				"default_arhitecture",
+				"vcpkg_base",
+				"vcpkg_triplet_windows",
+				"build_mode_debug",
+				"generator_ninja",
+				"compiler_clangCL"
+			],
+			"condition": {
+				"type": "equals",
+				"lhs": "${hostSystemName}",
+				"rhs": "Windows"
+			},
+			"binaryDir": "${sourceDir}/build/ninja_clangCL_dbg",
+			"cacheVariables": {
+				"CMAKE_RUNTIME_OUTPUT_DIRECTORY": "${sourceDir}/output/ninja_clangCL_dbg",
+				"CMAKE_LIBRARY_OUTPUT_DIRECTORY": "${sourceDir}/output/ninja_clangCL_dbg",
+				"CMAKE_ARCHIVE_OUTPUT_DIRECTORY": "${sourceDir}/output/ninja_clangCL_dbg"
+			}
+		},
+		{
+			"name": "windows_ninja_clangCL_release",
+			"displayName": "win_ninja_clangCL_rel",
+			"inherits": [
+				"default_arhitecture",
+				"vcpkg_base",
+				"vcpkg_triplet_windows",
+				"build_mode_release",
+				"generator_ninja",
+				"compiler_clangCL"
+			],
+			"condition": {
+				"type": "equals",
+				"lhs": "${hostSystemName}",
+				"rhs": "Windows"
+			},
+			"binaryDir": "${sourceDir}/build/ninja_clangCL_rel",
+			"cacheVariables": {
+				"CMAKE_RUNTIME_OUTPUT_DIRECTORY": "${sourceDir}/output/ninja_clangCL_rel",
+				"CMAKE_LIBRARY_OUTPUT_DIRECTORY": "${sourceDir}/output/ninja_clangCL_rel",
+				"CMAKE_ARCHIVE_OUTPUT_DIRECTORY": "${sourceDir}/output/ninja_clangCL_rel"
+			}
+		},
+		{
+			"name": "linux_ninja_clang_debug",
+			"displayName": "linux_ninja_clang_dbg",
+			"inherits": [
+				"default_arhitecture",
+				"vcpkg_base",
+				"vcpkg_triplet_linux",
+				"build_mode_debug",
+				"generator_ninja",
+				"compiler_clang"
+			],
+			"condition": {
+				"type": "equals",
+				"lhs": "${hostSystemName}",
+				"rhs": "Linux"
+			},
+			"binaryDir": "${sourceDir}/build/ninja_clang_dbg",
+			"cacheVariables": {
+				"CMAKE_RUNTIME_OUTPUT_DIRECTORY": "${sourceDir}/output/ninja_clang_dbg",
+				"CMAKE_LIBRARY_OUTPUT_DIRECTORY": "${sourceDir}/output/ninja_clang_dbg",
+				"CMAKE_ARCHIVE_OUTPUT_DIRECTORY": "${sourceDir}/output/ninja_clang_dbg"
+			}
+		},
+		{
+			"name": "linux_ninja_clang_release",
+			"displayName": "linux_ninja_clang_rel",
+			"inherits": [
+				"default_arhitecture",
+				"vcpkg_base",
+				"vcpkg_triplet_linux",
+				"build_mode_release",
+				"generator_ninja",
+				"compiler_clang"
+			],
+			"condition": {
+				"type": "equals",
+				"lhs": "${hostSystemName}",
+				"rhs": "Linux"
+			},
+			"binaryDir": "${sourceDir}/build/ninja_clang_rel",
+			"cacheVariables": {
+				"CMAKE_RUNTIME_OUTPUT_DIRECTORY": "${sourceDir}/output/ninja_clang_rel",
+				"CMAKE_LIBRARY_OUTPUT_DIRECTORY": "${sourceDir}/output/ninja_clang_rel",
+				"CMAKE_ARCHIVE_OUTPUT_DIRECTORY": "${sourceDir}/output/ninja_clang_rel"
+			}
+		},
+		{
+			"name": "linux_ninja_gcc_debug",
+			"displayName": "linux_ninja_gcc_dbg",
+			"inherits": [
+				"default_arhitecture",
+				"vcpkg_base",
+				"vcpkg_triplet_linux",
+				"build_mode_debug",
+				"generator_ninja",
+				"compiler_gcc"
+			],
+			"condition": {
+				"type": "equals",
+				"lhs": "${hostSystemName}",
+				"rhs": "Linux"
+			},
+			"binaryDir": "${sourceDir}/build/ninja_gcc_dbg",
+			"cacheVariables": {
+				"CMAKE_RUNTIME_OUTPUT_DIRECTORY": "${sourceDir}/output/ninja_gcc_dbg",
+				"CMAKE_LIBRARY_OUTPUT_DIRECTORY": "${sourceDir}/output/ninja_gcc_dbg",
+				"CMAKE_ARCHIVE_OUTPUT_DIRECTORY": "${sourceDir}/output/ninja_gcc_dbg"
+			}
+		},
+		{
+			"name": "linux_ninja_gcc_release",
+			"displayName": "linux_ninja_gcc_rel",
+			"inherits": [
+				"default_arhitecture",
+				"vcpkg_base",
+				"vcpkg_triplet_linux",
+				"build_mode_release",
+				"generator_ninja",
+				"compiler_gcc"
+			],
+			"condition": {
+				"type": "equals",
+				"lhs": "${hostSystemName}",
+				"rhs": "Linux"
+			},
+			"binaryDir": "${sourceDir}/build/ninja_gcc_rel",
+			"cacheVariables": {
+				"CMAKE_RUNTIME_OUTPUT_DIRECTORY": "${sourceDir}/output/ninja_gcc_rel",
+				"CMAKE_LIBRARY_OUTPUT_DIRECTORY": "${sourceDir}/output/ninja_gcc_rel",
+				"CMAKE_ARCHIVE_OUTPUT_DIRECTORY": "${sourceDir}/output/ninja_gcc_rel"
+			}
+		},
+		{
+			"name": "windows_code_coverage",
+			"displayName": "win_coverage",
+			"inherits": [
+				"default_arhitecture",
+				"vcpkg_base",
+				"vcpkg_triplet_windows",
+				"build_mode_debug",
+				"generator_ninja",
+				"compiler_clangCL",
+				"code_is_covered"
+			],
+			"condition": {
+				"type": "equals",
+				"lhs": "${hostSystemName}",
+				"rhs": "Windows"
+			},
+			"binaryDir": "${sourceDir}/build/code_coverage",
+			"cacheVariables": {
+				"CMAKE_RUNTIME_OUTPUT_DIRECTORY": "${sourceDir}/output/code_coverage",
+				"CMAKE_LIBRARY_OUTPUT_DIRECTORY": "${sourceDir}/output/code_coverage",
+				"CMAKE_ARCHIVE_OUTPUT_DIRECTORY": "${sourceDir}/output/code_coverage"
+			}
+		},
+		{
+			"name": "linux_code_coverage",
+			"displayName": "linux_coverage",
+			"inherits": [
+				"default_arhitecture",
+				"vcpkg_base",
+				"vcpkg_triplet_linux",
+				"build_mode_debug",
+				"generator_ninja",
+				"compiler_clang",
+				"code_is_covered"
+			],
+			"condition": {
+				"type": "equals",
+				"lhs": "${hostSystemName}",
+				"rhs": "Linux"
+			},
+			"binaryDir": "${sourceDir}/build/code_coverage",
+			"cacheVariables": {
+				"CMAKE_RUNTIME_OUTPUT_DIRECTORY": "${sourceDir}/output/code_coverage",
+				"CMAKE_LIBRARY_OUTPUT_DIRECTORY": "${sourceDir}/output/code_coverage",
+				"CMAKE_ARCHIVE_OUTPUT_DIRECTORY": "${sourceDir}/output/code_coverage"
+			}
+		}
+	],
+	"buildPresets": [
+		{
+			"name": "build_mode_debug",
+			"hidden": true,
+			"configuration": "Debug"
+		},
+		{
+			"name": "build_mode_release",
+			"hidden": true,
+			"configuration": "Release"
+		},
+		{
+			"name": "windows_vs2026_msvc_debug",
+			"inherits": "build_mode_debug",
+			"displayName": "win_vs2026_msvc_dbg",
+			"configurePreset": "windows_vs2026_msvc_debug",
+			"condition": {
+				"type": "equals",
+				"lhs": "${hostSystemName}",
+				"rhs": "Windows"
+			}
+		},
+		{
+			"name": "windows_vs2026_msvc_release",
+			"inherits": "build_mode_release",
+			"displayName": "win_vs2026_msvc_rel",
+			"configurePreset": "windows_vs2026_msvc_release",
+			"condition": {
+				"type": "equals",
+				"lhs": "${hostSystemName}",
+				"rhs": "Windows"
+			}
+		},
+		{
+			"name": "windows_ninja_clangCL_debug",
+			"inherits": "build_mode_debug",
+			"displayName": "win_ninja_clangCL_dbg",
+			"configurePreset": "windows_ninja_clangCL_debug",
+			"condition": {
+				"type": "equals",
+				"lhs": "${hostSystemName}",
+				"rhs": "Windows"
+			}
+		},
+		{
+			"name": "windows_ninja_clangCL_release",
+			"inherits": "build_mode_release",
+			"displayName": "win_ninja_clangCL_rel",
+			"configurePreset": "windows_ninja_clangCL_release",
+			"condition": {
+				"type": "equals",
+				"lhs": "${hostSystemName}",
+				"rhs": "Windows"
+			}
+		},
+		{
+			"name": "linux_ninja_clang_debug",
+			"inherits": "build_mode_debug",
+			"displayName": "linux_ninja_clang_dbg",
+			"configurePreset": "linux_ninja_clang_debug",
+			"condition": {
+				"type": "equals",
+				"lhs": "${hostSystemName}",
+				"rhs": "Linux"
+			}
+		},
+		{
+			"name": "linux_ninja_clang_release",
+			"inherits": "build_mode_release",
+			"displayName": "linux_ninja_clang_rel",
+			"configurePreset": "linux_ninja_clang_release",
+			"condition": {
+				"type": "equals",
+				"lhs": "${hostSystemName}",
+				"rhs": "Linux"
+			}
+		},
+		{
+			"name": "linux_ninja_gcc_debug",
+			"inherits": "build_mode_debug",
+			"displayName": "linux_ninja_gcc_dbg",
+			"configurePreset": "linux_ninja_gcc_debug"
+		},
+		{
+			"name": "linux_ninja_gcc_release",
+			"inherits": "build_mode_release",
+			"displayName": "linux_ninja_gcc_rel",
+			"configurePreset": "linux_ninja_gcc_release",
+			"condition": {
+				"type": "equals",
+				"lhs": "${hostSystemName}",
+				"rhs": "Linux"
+			}
+		},
+		{
+			"name": "windows_code_coverage",
+			"inherits": "build_mode_debug",
+			"displayName": "windows_coverage",
+			"configurePreset": "windows_code_coverage",
+			"condition": {
+				"type": "equals",
+				"lhs": "${hostSystemName}",
+				"rhs": "Windows"
+			}
+		},
+		{
+			"name": "linux_code_coverage",
+			"inherits": "build_mode_debug",
+			"displayName": "linux_coverage",
+			"configurePreset": "linux_code_coverage",
+			"condition": {
+				"type": "equals",
+				"lhs": "${hostSystemName}",
+				"rhs": "Linux"
+			}
+		}
+	]
 }

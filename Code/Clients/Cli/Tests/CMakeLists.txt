@@ -1,72 +1,48 @@
-cmake_minimum_required(VERSION 4.3.0)
+cmake_minimum_required(VERSION 4.2.3)
 project(GameWatch.Client.Cli.Tests LANGUAGES CXX)
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(TARGET_NAME "GameWatch.Client.Cli.Tests")
-
 add_executable(${TARGET_NAME})
 
 set_target_properties(${TARGET_NAME} PROPERTIES
-    CXX_STANDARD 23,
-    CXX_STANDARD_REQUIRED ON,
-    CXX_EXTENSIONS OFF
+        CXX_STANDARD 23
+        CXX_STANDARD_REQUIRED ON
+        CXX_EXTENSIONS OFF
 )
 
-target_include_directories(${TARGET_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/Includes")
+# Test-specific sources
 target_sources(${TARGET_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/Sources/FirstTest.cpp")
 
-if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
-    if (CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC" AND CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+# --- COMPILER FLAGS (Tests) ---
+# Note: I removed /GL and -flto (LTCG) from the test target.
+# Link-Time Optimization slows down test iteration loops dramatically and can interfere with coverage.
+if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows" AND CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
+    if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
         target_compile_options(${TARGET_NAME} PRIVATE
-                /permissive-
-                /Zc:__cplusplus
-                /Zc:preprocessor
-                /Wall
-                /WX
-                /utf-8
-                /diagnostics:caret
-                /GL
-                /external:W0
-                /external:anglebrackets
-                /wd4514 # "unreferenced inline function has been removed" (Very common noise with /Wall)
-                /wd4710 # "function not inlined"
-                /wd4711 # "function selected for automatic inline expansion"
-                /wd4820 # "bytes padding added after data member"
-                /wd5045 # "Compiler will insert Spectre mitigation for memory load"
+                /permissive- /Zc:__cplusplus /Zc:preprocessor /W4 /WX /utf-8 /diagnostics:caret
         )
+    endif ()
+elseif (CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "GNU")
+    target_compile_options(${TARGET_NAME} PRIVATE -Wall -Wextra -Werror -fdiagnostics-color=always)
+endif ()
 
-        target_link_options(${TARGET_NAME} PRIVATE
-                /LTCG
-        )
-    elseif(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC" AND CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-        target_compile_options(${TARGET_NAME} PRIVATE
-                /permissive-
-                /Zc:__cplusplus
-                /Wall
-                /WX
-                /utf-8
-                /diagnostics:caret
-                /external:W0
-                -Wno-c++98-compat
-                -Wno-newline-eof
-        )
+if (COMPILER_COVERAGE_FLAGS)
+    separate_arguments(COMPILER_ARGS_LIST NATIVE_COMMAND "${COMPILER_COVERAGE_FLAGS}")
+    separate_arguments(LINKER_ARGS_LIST NATIVE_COMMAND "${LINKER_COVERAGE_FLAGS}")
+    target_compile_options(${TARGET_NAME} PRIVATE ${COMPILER_ARGS_LIST})
+    target_link_options(${TARGET_NAME} PRIVATE ${LINKER_ARGS_LIST})
+endif ()
 
-        target_link_options(${TARGET_NAME} PRIVATE
-                /LTCG
-        )
-    endif()
-endif()
-
-# --- GOOGLE TEST WIRING ---
-
-# 1. Locate the package installed by vcpkg
+# 1. Locate GTest
 find_package(GTest CONFIG REQUIRED)
 
-# 2. Link against gtest_main (automatically provides a main() entry point for your tests!)
-target_link_libraries(${TARGET_NAME} PRIVATE GTest::gtest GTest::gtest_main)
+# 2. Link tests against GTest AND main app's core library
+target_link_libraries(${TARGET_NAME} PRIVATE
+        GTest::gtest
+        GTest::gtest_main
+        GameWatch.Client.Cli.Core
+)
 
-# 3. Discover and register individual tests automatically
+# 3. Discover and register tests
 include(GoogleTest)
 gtest_discover_tests(${TARGET_NAME})
-
-# --------------------------
