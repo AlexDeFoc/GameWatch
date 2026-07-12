@@ -28,35 +28,139 @@ set_target_properties(${EXE_TARGET} PROPERTIES
 target_sources(${EXE_TARGET} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/Sources/AppEntry/main.cpp")
 target_link_libraries(${EXE_TARGET} PRIVATE ${LIB_TARGET})
 
-# --- COMPILER FLAGS ---
-# Apply your flags to the LIB_TARGET (which the EXE will inherit where appropriate)
+# Precompile headers
+target_precompile_headers(${LIB_TARGET} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/Includes/pch.hpp")
+target_precompile_headers(${EXE_TARGET} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/Includes/pch.hpp")
+
+# --- COMPILER & LINKER FLAGS ---
 if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows" AND CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
     if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
         target_compile_options(${LIB_TARGET} PRIVATE
                 /permissive- /Zc:__cplusplus /Zc:preprocessor /Wall /WX /utf-8 /diagnostics:caret
-                /GL /external:W0 /external:anglebrackets /wd4514 /wd4710 /wd4711 /wd4820 /wd5045
         )
-        target_link_options(${LIB_TARGET} PRIVATE /LTCG)
+
+        target_compile_options(${EXE_TARGET} PRIVATE
+                /permissive- /Zc:__cplusplus /Zc:preprocessor /Wall /WX /utf-8 /diagnostics:caret
+        )
+
+        if (GW_CLIENT_CLI_BUILD_MODE)
+            if ("${GW_CLIENT_CLI_BUILD_MODE}" STREQUAL "Release")
+                target_compile_options(${LIB_TARGET} PRIVATE
+                        /GL /Oi /Ot /O2
+                )
+
+                target_compile_options(${EXE_TARGET} PRIVATE
+                        /GL /Oi /Ot /O2 /wd4711
+                )
+
+                target_link_options(${LIB_TARGET} PRIVATE /LTCG)
+                target_link_options(${EXE_TARGET} PRIVATE /LTCG)
+            elseif ("${GW_CLIENT_CLI_BUILD_MODE}" STREQUAL "Debug")
+                target_compile_options(${LIB_TARGET} PRIVATE
+                        /Od /RTC1 /Zc:inline
+                )
+
+                target_compile_options(${EXE_TARGET} PRIVATE
+                        /Od /RTC1 /Zc:inline
+                )
+            endif ()
+        endif ()
     elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
         target_compile_options(${LIB_TARGET} PRIVATE
-                /permissive- /Zc:__cplusplus /Wall /WX /utf-8 /diagnostics:caret /external:W0
-                -Wno-c++98-compat -Wno-newline-eof
+                /permissive- /Zc:__cplusplus /Wall /WX /utf-8 /diagnostics:caret
         )
-        target_link_options(${LIB_TARGET} PRIVATE /LTCG)
+
+        target_compile_options(${EXE_TARGET} PRIVATE
+                /permissive- /Zc:__cplusplus /Wall /WX /utf-8 /diagnostics:caret
+        )
+
+        if (GW_CLIENT_CLI_BUILD_MODE)
+            if ("${GW_CLIENT_CLI_BUILD_MODE}" STREQUAL "Release")
+                target_compile_options(${LIB_TARGET} PRIVATE
+                        /O2
+                )
+
+                target_compile_options(${EXE_TARGET} PRIVATE
+                        /O2
+                )
+
+                target_link_options(${LIB_TARGET} PRIVATE /LTCG)
+                target_link_options(${EXE_TARGET} PRIVATE /LTCG)
+            elseif ("${GW_CLIENT_CLI_BUILD_MODE}" STREQUAL "Debug")
+                target_compile_options(${LIB_TARGET} PRIVATE
+                        /Od /Zi /RTC1
+                )
+
+                target_compile_options(${EXE_TARGET} PRIVATE
+                        /Od /Zi /RTC1
+                )
+            endif ()
+        endif ()
     endif ()
 elseif (CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "GNU")
     if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
         target_compile_options(${LIB_TARGET} PRIVATE
-                -Wall -Wextra -Werror -fdiagnostics-color=always -flto
-                -Wno-newline-eof -Wno-padded
+                -Wall -Wextra -Werror -fdiagnostics-color=always
         )
-        target_link_options(${LIB_TARGET} PUBLIC -flto)
+
+        target_compile_options(${EXE_TARGET} PRIVATE
+                -Wall -Wextra -Werror -fdiagnostics-color=always
+        )
+
+        if (GW_CLIENT_CLI_BUILD_MODE)
+            if ("${GW_CLIENT_CLI_BUILD_MODE}" STREQUAL "Release")
+                target_compile_options(${LIB_TARGET} PRIVATE
+                        -flto -O3
+                )
+
+                target_compile_options(${EXE_TARGET} PRIVATE
+                        -flto -O3
+                )
+
+                target_link_options(${LIB_TARGET} PRIVATE -flto)
+                target_link_options(${EXE_TARGET} PRIVATE -flto)
+            elseif ("${GW_CLIENT_CLI_BUILD_MODE}" STREQUAL "Debug")
+                target_compile_options(${LIB_TARGET} PRIVATE
+                        -Og -g3
+                )
+
+                target_compile_options(${EXE_TARGET} PRIVATE
+                        -Og -g3
+                )
+            endif ()
+        endif ()
     elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         target_compile_options(${LIB_TARGET} PRIVATE
-                -Wall -Wextra -Werror -fdiagnostics-color=always -flto
+                -Wall -Wextra -Werror -fdiagnostics-color=always
                 -Wno-padded -Wno-inline
         )
-        target_link_options(${LIB_TARGET} PUBLIC -flto)
+
+        target_compile_options(${EXE_TARGET} PRIVATE
+                -Wall -Wextra -Werror -fdiagnostics-color=always
+        )
+
+        if (GW_CLIENT_CLI_BUILD_MODE)
+            if ("${GW_CLIENT_CLI_BUILD_MODE}" STREQUAL "Release")
+                target_compile_options(${LIB_TARGET} PRIVATE
+                        -flto -O3
+                )
+
+                target_compile_options(${EXE_TARGET} PRIVATE
+                        -flto -O3
+                )
+
+                target_link_options(${LIB_TARGET} PRIVATE -flto)
+                target_link_options(${EXE_TARGET} PRIVATE -flto)
+            elseif ("${GW_CLIENT_CLI_BUILD_MODE}" STREQUAL "Debug")
+                target_compile_options(${LIB_TARGET} PRIVATE
+                        -Og -g3
+                )
+
+                target_compile_options(${EXE_TARGET} PRIVATE
+                        -Og -g3
+                )
+            endif ()
+        endif ()
     endif ()
 endif ()
 
@@ -79,14 +183,13 @@ else ()
 endif ()
 
 # Coverage Flags
-# Coverage Flags
-if (COMPILER_COVERAGE_FLAGS)
-    separate_arguments(COMPILER_ARGS_LIST NATIVE_COMMAND "${COMPILER_COVERAGE_FLAGS}")
+if (GW_CLIENT_CLI_COVERING_CODE_THIS_BUILD)
+    separate_arguments(COMPILER_ARGS_LIST NATIVE_COMMAND "${GW_CLIENT_CLI_COMPILER_COVERAGE_FLAGS}")
+    separate_arguments(LINKER_ARGS_LIST NATIVE_COMMAND "${GW_CLIENT_CLI_LINKER_COVERAGE_FLAGS}")
+
     target_compile_options(${LIB_TARGET} PRIVATE ${COMPILER_ARGS_LIST})
     target_compile_options(${EXE_TARGET} PRIVATE ${COMPILER_ARGS_LIST})
-endif ()
-if (LINKER_COVERAGE_FLAGS)
-    separate_arguments(LINKER_ARGS_LIST NATIVE_COMMAND "${LINKER_COVERAGE_FLAGS}")
+
     target_link_options(${LIB_TARGET} PRIVATE ${LINKER_ARGS_LIST})
     target_link_options(${EXE_TARGET} PRIVATE ${LINKER_ARGS_LIST})
 endif ()

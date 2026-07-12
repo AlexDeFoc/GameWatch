@@ -1,4 +1,3 @@
-#include <gtest/gtest.h>
 #include "ExampleLogic/a.hpp"
 
 TEST(CliTest, DummyAssert) { EXPECT_EQ(1, 1); }
