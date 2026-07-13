@@ -42,13 +42,6 @@
 			}
 		},
 		{
-			"name": "build_mode_debug_cache_variable",
-			"hidden": true,
-			"cacheVariables": {
-				"GW_CLIENT_CLI_BUILD_MODE": "Debug"
-			}
-		},
-		{
 			"name": "build_mode_release_cache_variable",
 			"hidden": true,
 			"cacheVariables": {
@@ -58,7 +51,6 @@
 		{
 			"name": "build_mode_debug",
 			"hidden": true,
-			"inherits": "build_mode_debug_cache_variable",
 			"cacheVariables": {
 				"CMAKE_BUILD_TYPE": "Debug"
 			}
@@ -66,7 +58,6 @@
 		{
 			"name": "build_mode_release",
 			"hidden": true,
-			"inherits": "build_mode_release_cache_variable",
 			"cacheVariables": {
 				"CMAKE_BUILD_TYPE": "Release"
 			}
@@ -118,8 +109,7 @@
 				"multi_cfg_gen_arhitecture",
 				"vcpkg_base",
 				"vcpkg_triplet_windows",
-				"generator_visual_studio_2026",
-				"build_mode_debug_cache_variable"
+				"generator_visual_studio_2026"
 			],
 			"condition": {
 				"type": "equals",
@@ -140,8 +130,7 @@
 				"multi_cfg_gen_arhitecture",
 				"vcpkg_base",
 				"vcpkg_triplet_windows",
-				"generator_visual_studio_2026",
-				"build_mode_release_cache_variable"
+				"generator_visual_studio_2026"
 			],
 			"condition": {
 				"type": "equals",

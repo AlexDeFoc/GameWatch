@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="CodeCoverageFromTests" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="GameWatch.Client.Cli" TARGET_NAME="GameWatch.Client.Cli.Tests" CONFIG_NAME="linux_code_coverage" RUN_TARGET_PROJECT_NAME="GameWatch.Client.Cli" RUN_TARGET_NAME="GameWatch.Client.Cli.Tests">
+  <configuration default="false" name="CodeCoverageFromTests" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="GameWatch.Client.Cli" TARGET_NAME="GameWatch.Client.Cli.Tests" CONFIG_NAME="windows_vs2026_msvc_release - windows_vs2026_msvc_release" RUN_TARGET_PROJECT_NAME="GameWatch.Client.Cli" RUN_TARGET_NAME="GameWatch.Client.Cli.Tests">
     <method v="2">
       <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
     </method>

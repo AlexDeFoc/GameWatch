@@ -88,11 +88,6 @@ llvm-cov show ./GameWatch.Client.Cli -instr-profile=coverage.profdata
 
 ## Code coverage through IDE (CLion)
 
-### Note:
-If you are coding in Windows and using WSL for Linux, you probably have different cmake toolchains, one for your
-windows setup and one for your wsl setup. Do not forget to change which is the default, depending on what OS are you
-building/coding/doing the coverage!
-
 ### Code coverage showing what code which is tested (steps)
 
 #### Linux
