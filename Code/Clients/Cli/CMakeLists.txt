@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 4.2.3)
+
 project(GameWatch.Client.Cli LANGUAGES CXX)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -11,6 +12,7 @@ set_target_properties(${LIB_TARGET} PROPERTIES
 	CXX_STANDARD 23
 	CXX_STANDARD_REQUIRED ON
 	CXX_EXTENSIONS OFF
+	CXX_SCAN_FOR_MODULES OFF
 )
 
 target_include_directories(${LIB_TARGET} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Includes")
@@ -23,6 +25,7 @@ set_target_properties(${EXE_TARGET} PROPERTIES
 	CXX_STANDARD 23
 	CXX_STANDARD_REQUIRED ON
 	CXX_EXTENSIONS OFF
+	CXX_SCAN_FOR_MODULES OFF
 )
 # The executable only needs main.cpp
 target_sources(${EXE_TARGET} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/Sources/AppEntry/main.cpp")
@@ -173,14 +176,21 @@ find_program(CLANG_TIDY_EXE NAMES "clang-tidy")
 if (CLANG_TIDY_EXE)
 	message(STATUS "Found clang-tidy: ${CLANG_TIDY_EXE}")
 
-	# Apply to the core library
+	# 1. Initialize the command list variable
+	set(CLANG_TIDY_CMD "${CLANG_TIDY_EXE}" "--config-file=${CMAKE_CURRENT_SOURCE_DIR}/.clang-tidy")
+
+	# 2. Append the flag to the variable if we are using GCC
+	if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+		list(APPEND CLANG_TIDY_CMD "--extra-arg=-Wno-ignored-gch")
+	endif ()
+
+	# 3. Pass the actual variable to the targets
 	set_target_properties(${LIB_TARGET} PROPERTIES
-		CXX_CLANG_TIDY "${CLANG_TIDY_EXE};--config-file=${CMAKE_CURRENT_SOURCE_DIR}/.clang-tidy"
+		CXX_CLANG_TIDY "${CLANG_TIDY_CMD}"
 	)
 
-	# Apply to the main executable
 	set_target_properties(${EXE_TARGET} PROPERTIES
-		CXX_CLANG_TIDY "${CLANG_TIDY_EXE};--config-file=${CMAKE_CURRENT_SOURCE_DIR}/.clang-tidy"
+		CXX_CLANG_TIDY "${CLANG_TIDY_CMD}"
 	)
 else ()
 	message(WARNING "clang-tidy executable was NOT found on this system!")

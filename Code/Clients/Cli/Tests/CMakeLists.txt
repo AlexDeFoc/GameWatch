@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 4.2.3)
+
 project(GameWatch.Client.Cli.Tests LANGUAGES CXX)
 
 set(TARGET_NAME "GameWatch.Client.Cli.Tests")
@@ -8,6 +9,7 @@ set_target_properties(${TARGET_NAME} PROPERTIES
 	CXX_STANDARD 23
 	CXX_STANDARD_REQUIRED ON
 	CXX_EXTENSIONS OFF
+	CXX_SCAN_FOR_MODULES OFF
 )
 
 # Test-specific sources
