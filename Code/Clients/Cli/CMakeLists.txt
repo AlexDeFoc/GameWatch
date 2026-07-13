@@ -40,20 +40,22 @@ if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows" AND CMAKE_CXX_COMPILER_FRONTEND_VA
 	if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 		target_compile_options(${LIB_TARGET} PRIVATE
 			"/permissive-" "/Zc:__cplusplus" "/Zc:preprocessor" "/Wall" "/WX" "/utf-8" "/diagnostics:caret"
+			"/w15038" "/w14668" "/w14244" "/w14267" "/w14389" "/w14456" "/w14457" "/w14458" "/w14459"
 		)
 
 		target_compile_options(${EXE_TARGET} PRIVATE
 			"/permissive-" "/Zc:__cplusplus" "/Zc:preprocessor" "/Wall" "/WX" "/utf-8" "/diagnostics:caret"
+			"/w15038" "/w14668" "/w14244" "/w14267" "/w14389" "/w14456" "/w14457" "/w14458" "/w14459"
 		)
 
 		if (GW_CLIENT_CLI_BUILD_MODE)
 			if ("${GW_CLIENT_CLI_BUILD_MODE}" STREQUAL "Release")
 				target_compile_options(${LIB_TARGET} PRIVATE
-					"/GL" "/Oi" "/Ot" "/O2"
+					"/GL" "/Oi" "/Ot" "/O2" "/LTCG" "/w14710" "/wd4711"
 				)
 
 				target_compile_options(${EXE_TARGET} PRIVATE
-					"/GL" "/Oi" "/Ot" "/O2" "/wd4711"
+					"/GL" "/Oi" "/Ot" "/O2" "/LTCG" "/w14710" "/wd4711"
 				)
 
 				target_link_options(${LIB_TARGET} PRIVATE "/LTCG")
@@ -70,23 +72,31 @@ if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows" AND CMAKE_CXX_COMPILER_FRONTEND_VA
 		endif ()
 	elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 		target_compile_options(${LIB_TARGET} PRIVATE
-			"/permissive-" "/Zc:__cplusplus" "/Wall" "/WX" "/utf-8" "/diagnostics:caret"
+			"/permissive-" "/Zc:__cplusplus" "/Wall" "/WX" "/utf-8" "/diagnostics:caret" "-Wundef" "-Wshadow"
+			"-Wunused-macros" "-Wnamespaces" "-Wfloat-equal" "-Wformat=2" "-Wformat-security" "-Wformat-nonliteral"
+			"-Wcast-qual" "-Wcast-align" "-Wpacked" "-Woverloaded-virtual" "-Wzero-as-null-pointer-constant" "-Wuseless-cast"
+			"-Wredundant-tags" "-Wvirtual-move-assign" "-Wpessimizing-move" "-Wredundant-move" "-Werror=conversion"
+			"-Werror=sign-conversion" "-Werror=float-conversion" "-Wno-unused-function" "-Wno-pre-c++17-compat"
+			"-Wno-c++98-compat" "-Wno-newline-eof"
 		)
 
 		target_compile_options(${EXE_TARGET} PRIVATE
-			"/permissive-" "/Zc:__cplusplus" "/Wall" "/WX" "/utf-8" "/diagnostics:caret"
+			"/permissive-" "/Zc:__cplusplus" "/Wall" "/WX" "/utf-8" "/diagnostics:caret" "-Wundef" "-Wshadow"
+			"-Wunused-macros" "-Wnamespaces" "-Wfloat-equal" "-Wformat=2" "-Wformat-security" "-Wformat-nonliteral"
+			"-Wcast-qual" "-Wcast-align" "-Wpacked" "-Woverloaded-virtual" "-Wzero-as-null-pointer-constant" "-Wuseless-cast"
+			"-Wredundant-tags" "-Wvirtual-move-assign" "-Wpessimizing-move" "-Wredundant-move" "-Werror=conversion"
+			"-Werror=sign-conversion" "-Werror=float-conversion" "-Wno-unused-function" "-Wno-pre-c++17-compat"
+			"-Wno-c++98-compat" "-Wno-newline-eof"
 		)
 
 		if (GW_CLIENT_CLI_BUILD_MODE)
 			if ("${GW_CLIENT_CLI_BUILD_MODE}" STREQUAL "Release")
 				target_compile_options(${LIB_TARGET} PRIVATE
-					"/O2"
-					"-Wno-pre-c++17-compat" "-Wno-c++98-compat" "-Wno-newline-eof"
+					"/O2" "-Wdouble-promotion" "-Winline"
 				)
 
 				target_compile_options(${EXE_TARGET} PRIVATE
-					"/O2"
-					"-Wno-pre-c++17-compat" "-Wno-c++98-compat" "-Wno-newline-eof"
+					"/O2" "-Wdouble-promotion" "-Winline"
 				)
 
 				target_link_options(${LIB_TARGET} PRIVATE "/LTCG")
@@ -94,12 +104,10 @@ if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows" AND CMAKE_CXX_COMPILER_FRONTEND_VA
 			elseif ("${GW_CLIENT_CLI_BUILD_MODE}" STREQUAL "Debug")
 				target_compile_options(${LIB_TARGET} PRIVATE
 					"/Od" "/Zi" "/RTC1"
-					"-Wno-pre-c++17-compat" "-Wno-c++98-compat" "-Wno-newline-eof"
 				)
 
 				target_compile_options(${EXE_TARGET} PRIVATE
 					"/Od" "/Zi" "/RTC1"
-					"-Wno-pre-c++17-compat" "-Wno-c++98-compat" "-Wno-newline-eof"
 				)
 			endif ()
 		endif ()
@@ -107,21 +115,28 @@ if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows" AND CMAKE_CXX_COMPILER_FRONTEND_VA
 elseif (CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "GNU")
 	if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 		target_compile_options(${LIB_TARGET} PRIVATE
-			"-Wall" "-Wextra" "-Werror" "-fdiagnostics-color=always"
+			"-Wall" "-Wextra" "-Wpedantic" "-Werror" "-Wunused-command-line-argument" "-Wno-unused-function" "-Wundef"
+			"-Wshadow" "-Wunused-macros" "-Wfloat-equal" "-Wformat=2" "-Wformat-security" "-Wformat-nonliteral"
+			"-Wcast-qual" "-Wcast-align" "-Wpacked" "-Woverloaded-virtual" "-Wzero-as-null-pointer-constant"
+			"-Wpessimizing-move" "-Wredundant-move" "-Werror=conversion" "-Werror=sign-conversion" "-Werror=float-conversion"
+			"-fvisibility=hidden"
 		)
 
 		target_compile_options(${EXE_TARGET} PRIVATE
-			"-Wall" "-Wextra" "-Werror" "-fdiagnostics-color=always"
+			"-Wall" "-Wextra" "-Wpedantic" "-Werror" "-Wunused-command-line-argument" "-Wno-unused-function" "-Wundef"
+			"-Wshadow" "-Wunused-macros" "-Wfloat-equal" "-Wformat=2" "-Wformat-security" "-Wformat-nonliteral"
+			"-Wcast-qual" "-Wcast-align" "-Wpacked" "-Woverloaded-virtual" "-Wzero-as-null-pointer-constant"
+			"-Wpessimizing-move" "-Wredundant-move" "-Werror=conversion" "-Werror=sign-conversion" "-Werror=float-conversion"
 		)
 
 		if (GW_CLIENT_CLI_BUILD_MODE)
 			if ("${GW_CLIENT_CLI_BUILD_MODE}" STREQUAL "Release")
 				target_compile_options(${LIB_TARGET} PRIVATE
-					"-flto" "-O3"
+					"-O3" "-flto" "-Wdouble-promotion" "-Winline" "-Wdisabled-optimization"
 				)
 
 				target_compile_options(${EXE_TARGET} PRIVATE
-					"-flto" "-O3"
+					"-O3" "-flto" "-Wdouble-promotion" "-Winline" "-Wdisabled-optimization"
 				)
 
 				target_link_options(${LIB_TARGET} PRIVATE "-flto")
@@ -138,22 +153,27 @@ elseif (CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_CXX_COMPILER_FRONTEND_
 		endif ()
 	elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 		target_compile_options(${LIB_TARGET} PRIVATE
-			"-Wall" "-Wextra" "-Werror" "-fdiagnostics-color=always"
-			"-Wno-padded" "-Wno-inline"
+			"-Wall" "-Wextra" "-Wpedantic" "-Werror" "-Wno-unused-function" "-Wundef" "-Wshadow" "-Wunused-macros"
+			"-Wfloat-equal" "-Wformat=2" "-Wformat-security" "-Wformat-nonliteral" "-Wcast-qual" "-Wcast-align" "-Wpacked"
+			"-Woverloaded-virtual" "-Wzero-as-null-pointer-constant" "-Wpessimizing-move" "-Wredundant-move"
+			"-Werror=conversion" "-Werror=sign-conversion" "-Werror=float-conversion" "-fvisibility=hidden"
 		)
 
 		target_compile_options(${EXE_TARGET} PRIVATE
-			"-Wall" "-Wextra" "-Werror" "-fdiagnostics-color=always"
+			"-Wall" "-Wextra" "-Wpedantic" "-Werror" "-Wno-unused-function" "-Wundef" "-Wshadow" "-Wunused-macros"
+			"-Wfloat-equal" "-Wformat=2" "-Wformat-security" "-Wformat-nonliteral" "-Wcast-qual" "-Wcast-align" "-Wpacked"
+			"-Woverloaded-virtual" "-Wzero-as-null-pointer-constant" "-Wpessimizing-move" "-Wredundant-move"
+			"-Werror=conversion" "-Werror=sign-conversion" "-Werror=float-conversion"
 		)
 
 		if (GW_CLIENT_CLI_BUILD_MODE)
 			if ("${GW_CLIENT_CLI_BUILD_MODE}" STREQUAL "Release")
 				target_compile_options(${LIB_TARGET} PRIVATE
-					"-flto" "-O3"
+					"-O3" "-flto" "-Wdouble-promotion" "-Winline" "-Wdisabled-optimization"
 				)
 
 				target_compile_options(${EXE_TARGET} PRIVATE
-					"-flto" "-O3"
+					"-O3" "-flto" "-Wdouble-promotion" "-Winline" "-Wdisabled-optimization"
 				)
 
 				target_link_options(${LIB_TARGET} PRIVATE "-flto")
