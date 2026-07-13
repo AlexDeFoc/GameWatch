@@ -100,7 +100,7 @@ starting to configure all the presets.
 and start to configure it (i usually just select it and hit 'Reload CMake Project'). DO NOT load the CMakeLists.txt file
 from the Tests folder!
 5. From the 'Run/Debug configurations' zone at the top right usually of the IDE, select the 'GameWatch.Client.Cli.Test'
-option which has the Google icon.
+option which has the Google icon. (or select the target available which has been provided manually for CLion only)
 6. Click the dropdown arrow, then select the hit the 'More Actions' option (the 3 dots) to the right of the target
 7. Select the option called 'Run GameWatch.Client.Cli.Tests with Coverage'
 
@@ -114,7 +114,7 @@ option which has the Google icon.
    and start to configure it (i usually just select it and hit 'Reload CMake Project'). DO NOT load the CMakeLists.txt file
    from the Tests folder!
 5. From the 'Run/Debug configurations' zone at the top right usually of the IDE, select the 'CodeCoverageFromTests'
-   option which has the Google icon.
+   option which has the Google icon. (or select the target available which has been provided manually for CLion only)
 6. Click the dropdown arrow, then select the hit the 'More Actions' option (the 3 dots) to the right of the target
 7. Select the option called 'Run CodeCoverageFromTests with Coverage'
 
@@ -128,11 +128,13 @@ option which has the Google icon.
    and start to configure it (i usually just select it and hit 'Reload CMake Project'). DO NOT load the CMakeLists.txt file
    from the Tests folder!
 5. From the 'Run/Debug configurations' zone at the top right usually of the IDE, select the 'CodeCoverageFromTests'
-   option which has the Google icon.
+   option which has the Google icon. (or select the target available which has been provided manually for CLion only)
 6. Click the dropdown arrow, then select the hit the 'More Actions' option (the 3 dots) to the right of the target
 7. Select the option called 'Run CodeCoverageFromTests with Coverage'
 
 ### Code coverage showing what code which is used in the main app (steps)
+
+#### Windows & Linux
 
 1. Press CTRL+SHIFT+A and select the option called 'Load CMake Presets' to load all cmake presets, but then stop it from
    starting to configure all the presets.
@@ -142,6 +144,6 @@ option which has the Google icon.
    and start to configure it (i usually just select it and hit 'Reload CMake Project'). DO NOT load the CMakeLists.txt file
    from the Tests folder!
 5. From the 'Run/Debug configurations' zone at the top right usually of the IDE, select the GameWatch.Client.Cli
-   option which has the Google icon.
+   option which has the Google icon. (or select the target available which has been provided manually for CLion only)
 6. Click the dropdown arrow, then select the hit the 'More Actions' option (the 3 dots) to the right of the target
 7. Select the option called 'Run GameWatch.Client.Cli with Coverage'

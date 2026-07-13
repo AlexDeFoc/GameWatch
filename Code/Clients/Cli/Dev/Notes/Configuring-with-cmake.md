@@ -6,8 +6,11 @@ have to retry, which it then will work. (THIS IS only needed though when you fir
 
 2. (CLion IDE related) If you are coding in Windows and using WSL for Linux, you probably have different cmake toolchains, one for your
 windows setup and one for your wsl setup. Do not forget to change which is the default, depending on what OS are you
-building/coding/doing the coverage!
+building/coding/doing the coverage! -> This is not needed anymore since you can customize the existing & created presets in
+   CLion cmake settings
 
-3. (CLion IDE related) Don't forget to choose the CMake presets which have their name duplicated. They are the ones that use the
+3. (CLion IDE related) Don't forget to load & use the CMake presets which have their
+"CMake options" = configuration stage, and "Build options" = build stage, set to a value. They are the ones that use the
 CMakePresets.json in the config stage AND build stage. Else you'd get the config stage and just default build stage
-which is most likely wrong!
+which is most likely wrong! -> This is not needed anymore since you can customize the existing & created presets in
+CLion cmake settings
