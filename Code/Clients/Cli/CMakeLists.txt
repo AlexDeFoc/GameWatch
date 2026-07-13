@@ -15,9 +15,9 @@ set_target_properties(${LIB_TARGET} PROPERTIES
 	CXX_SCAN_FOR_MODULES OFF
 )
 
-target_include_directories(${LIB_TARGET} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Includes")
+target_include_directories(${LIB_TARGET} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
 # Add all actual business logic cpp files here, but NOT main.cpp
-target_sources(${LIB_TARGET} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/Sources/ExampleLogic/a.cpp")
+target_sources(${LIB_TARGET} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src/lang_mng.cpp")
 
 # 2. Build the main executable
 add_executable(${EXE_TARGET})
@@ -28,12 +28,12 @@ set_target_properties(${EXE_TARGET} PROPERTIES
 	CXX_SCAN_FOR_MODULES OFF
 )
 # The executable only needs main.cpp
-target_sources(${EXE_TARGET} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/Sources/AppEntry/main.cpp")
+target_sources(${EXE_TARGET} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp")
 target_link_libraries(${EXE_TARGET} PRIVATE ${LIB_TARGET})
 
 # Precompile headers
-target_precompile_headers(${LIB_TARGET} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/Includes/pch.hpp")
-target_precompile_headers(${EXE_TARGET} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/Includes/pch.hpp")
+target_precompile_headers(${LIB_TARGET} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include/pch.hpp")
+target_precompile_headers(${EXE_TARGET} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include/pch.hpp")
 
 # --- COMPILER & LINKER FLAGS ---
 if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows" AND CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
@@ -174,4 +174,4 @@ endif ()
 
 # Enable testing and add the subdirectory
 enable_testing()
-add_subdirectory(Tests)
+add_subdirectory(tests)
