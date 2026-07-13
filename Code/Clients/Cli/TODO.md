@@ -1,3 +1,2 @@
-1. Add static analyzers for clang builds
-2. Make Lang Manager
-3. write guide on setup/use terminal, CLion
+1. Make Lang Manager
+2. write guide on setup/use terminal, CLion
