@@ -95,6 +95,7 @@ find_package(GTest CONFIG REQUIRED)
 # 2. Link tests against GTest AND main app's core library
 target_link_libraries(${TARGET_NAME} PRIVATE
 	GTest::gtest
+	GTest::gmock
 	GTest::gtest_main
 	GameWatch.Client.Cli.Core
 )

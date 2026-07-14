@@ -2,6 +2,7 @@
 
 #include "disable_warnings.hpp"
 #include <gtest/gtest.h>
+#include <gmock/gmock.h>
 #include <array>
 #include <cassert>
 #include <cstdint>
@@ -13,4 +14,12 @@
 #include <optional>
 #include <concepts>
 #include <type_traits>
+#include <ranges>
+#include <format>
+#include <functional>
+#include <fstream>
+#include <sstream>
+#include <iostream>
+#include <istream>
+#include <ostream>
 #include "enable_warnings.hpp"

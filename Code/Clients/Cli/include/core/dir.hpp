@@ -1,5 +1,8 @@
 #pragma once
 
+#include <string>
+#include <vector>
+
 namespace gw {
 class dir {
   const std::vector<std::string> levels;

@@ -1,83 +1,109 @@
 #include "core/file.hpp"
 
-auto gw::file::resolve_path(const file_opts &opts) noexcept -> std::string {
+gw::file::file(file_opts opts) noexcept : ifile{file_reader_stream_storage_},
+                                          dir_{std::move(opts.dir)},
+                                          stem_{std::move(opts.stem)},
+                                          ext_{std::move(opts.ext)} {
+}
+
+auto gw::file::dir() const noexcept -> const gw::dir * {
+  try {
+    return dir_.has_value() ? &dir_.value() : nullptr;
+  } catch (...) {
+    return nullptr;
+  }
+}
+
+auto gw::file::stem() const noexcept -> const std::string * {
+  try {
+    return stem_.has_value() ? &stem_.value() : nullptr;
+  } catch (...) {
+    return nullptr;
+  }
+}
+
+auto gw::file::ext() const noexcept -> const std::string * {
+  try {
+    return ext_.has_value() ? &ext_.value() : nullptr;
+  } catch (...) {
+    return nullptr;
+  }
+}
+
+auto gw::file::parent() const noexcept -> const gw::dir * {
+  return this->dir();
+}
+
+auto gw::file::path() const noexcept -> std::optional<std::string> {
   auto should_add_dir{false};
   auto should_add_stem{false};
   auto should_add_ext{false};
 
-  gw::dir const *dir{nullptr};
-  std::string const *stem{nullptr};
-  std::string const *ext{nullptr};
-
-  if (opts.dir.has_value()) {
+  if (dir_.has_value()) {
     should_add_dir = true;
-    dir = &opts.dir.value();
   }
 
-  if (opts.stem.has_value()) {
+  if (stem_.has_value()) {
     should_add_stem = true;
-    stem = &opts.stem.value();
   }
 
-  if (opts.ext.has_value()) {
+  if (ext_.has_value()) {
     should_add_ext = true;
-    ext = &opts.ext.value();
   }
 
   try {
     if (should_add_dir) {
       if (should_add_stem) {
         if (should_add_ext) {
-          return std::format("{}/{}{}", dir->path(), *stem, *ext);
+          return std::format("{}/{}{}", dir_->path(), stem_.value(),
+                             ext_.value());
         }
 
-        return std::format("{}/{}", dir->path(), *stem);
+        return std::format("{}/{}", dir_->path(), stem_.value());
       }
 
       if (should_add_ext) {
-        return std::format("{}/{}", dir->path(), *ext);
+        return std::format("{}/{}", dir_->path(), ext_.value());
       }
 
-      return dir->path();
+      return dir_->path();
     }
 
     if (should_add_stem) {
       if (should_add_ext) {
-        return std::format("{}{}", *stem, *ext);
+        return std::format("{}{}", stem_.value(), ext_.value());
       }
 
-      return *stem;
+      return stem_;
     }
 
     if (should_add_ext) {
-      return *ext;
+      return ext_;
     }
   } catch (...) {
-    return "";
+    return std::nullopt;
   }
 
-  return "";
+  return std::nullopt;
 }
 
-gw::file::file(file_opts opts) noexcept : ifile{stream_storage_},
-                                          dir_{std::move(opts.dir)},
-                                          stem_{std::move(opts.stem)},
-                                          ext_{std::move(opts.ext)} {
-}
+auto gw::file::read_contents() noexcept -> std::string {
 
-auto gw::file::path() const noexcept -> std::string {
-  std::string result;
+  const auto filepath_option = this->path();
+  std::string filepath;
 
-  if (dir_.has_value()) {
-    result += dir_.value().path();
+  if (filepath_option.has_value()) {
+    filepath = filepath_option.value();
+  }
+  else {
+    assert(false && "filepath is empty!");
   }
 
-  result += '/';
-  result += stem_;
+  file_reader_stream_storage_.open(filepath);
 
-  if (ext_.has_value()) {
-    result += ext_.value();
-  }
+  auto file_contents = ifile::read_contents();
 
-  return result;
+  file_reader_stream_storage_.close();
+
+  return file_contents;
 }
