@@ -8,6 +8,10 @@ class file {
   const std::string stem_;
   const std::optional<std::string> ext_;
 
+  // Private static helper to extract the path
+  [[nodiscard]] static auto resolve_path(
+      const file_opts &opts) noexcept -> std::string;
+
 public:
   explicit file(file_opts opts) noexcept;
 
