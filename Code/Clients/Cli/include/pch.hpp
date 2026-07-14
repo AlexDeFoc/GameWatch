@@ -1,6 +1,6 @@
-#ifndef _GW_CLIENT_CLI_PCH_HPP_
-#define _GW_CLIENT_CLI_PCH_HPP_
+#pragma once
 
+#include "disable_warnings.hpp"
 #include <array>
 #include <cassert>
 #include <cstdint>
@@ -8,5 +8,9 @@
 #include <string>
 #include <string_view>
 #include <vector>
-
-#endif
+#include <memory>
+#include <optional>
+#include <concepts>
+#include <type_traits>
+#include <ranges>
+#include "enable_warnings.hpp"

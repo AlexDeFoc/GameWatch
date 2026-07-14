@@ -17,7 +17,12 @@ set_target_properties(${LIB_TARGET} PROPERTIES
 
 target_include_directories(${LIB_TARGET} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
 # Add all actual business logic cpp files here, but NOT main.cpp
-target_sources(${LIB_TARGET} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src/lang_mng.cpp")
+target_sources(${LIB_TARGET} PRIVATE
+	"${CMAKE_CURRENT_SOURCE_DIR}/src/dir.cpp"
+	"${CMAKE_CURRENT_SOURCE_DIR}/src/file.cpp"
+	"${CMAKE_CURRENT_SOURCE_DIR}/src/file_sys.cpp"
+	"${CMAKE_CURRENT_SOURCE_DIR}/src/lang_mng.cpp"
+)
 
 # 2. Build the main executable
 add_executable(${EXE_TARGET})

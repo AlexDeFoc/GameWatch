@@ -2,6 +2,15 @@
 
 #include "disable_warnings.hpp"
 #include <gtest/gtest.h>
+#include <array>
+#include <cassert>
+#include <cstdint>
+#include <print>
+#include <string>
+#include <string_view>
+#include <vector>
+#include <memory>
+#include <optional>
 #include <concepts>
 #include <type_traits>
 #include "enable_warnings.hpp"

@@ -1,5 +1,8 @@
 #pragma once
 
+namespace gw {
 class lang_mng {
-  lang_mng() = delete;
+public:
+  lang_mng() noexcept;
 };
+}

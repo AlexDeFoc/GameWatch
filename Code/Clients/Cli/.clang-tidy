@@ -8,7 +8,9 @@ Checks: 'bugprone-*,
          llvm-*,
          misc-*,
          portability-*,
-         -llvm-header-guard'
+         -llvm-header-guard,
+         -misc-include-cleaner,
+         -readability-identifier-length'
 
 # Treat warnings from these checks as compilation errors
 WarningsAsErrors: '*'
