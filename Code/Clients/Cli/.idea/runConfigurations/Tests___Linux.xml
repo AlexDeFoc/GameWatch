@@ -1,7 +1,0 @@
-<component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Tests - Linux" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="GameWatch.Client.Cli" TARGET_NAME="GameWatch.Client.Cli.Tests" CONFIG_NAME="Linux - ninja_clang_dbg" RUN_TARGET_PROJECT_NAME="GameWatch.Client.Cli" RUN_TARGET_NAME="GameWatch.Client.Cli.Tests">
-    <method v="2">
-      <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
-    </method>
-  </configuration>
-</component>

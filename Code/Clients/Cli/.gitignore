@@ -1,6 +1,0 @@
-build/
-output/
-.idea/*
-
-!.idea/runConfigurations/
-!.idea/cmake.xml
