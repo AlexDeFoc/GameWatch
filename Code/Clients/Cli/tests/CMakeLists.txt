@@ -12,11 +12,18 @@ set_target_properties(${TARGET_NAME} PROPERTIES
 	CXX_SCAN_FOR_MODULES OFF
 )
 
+target_include_directories(${TARGET_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include")
+
 # Test-specific sources
-target_sources(${TARGET_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/Sources/FirstTest.cpp")
+target_sources(${TARGET_NAME} PRIVATE
+	"${CMAKE_CURRENT_SOURCE_DIR}/src/dir.cpp"
+	"${CMAKE_CURRENT_SOURCE_DIR}/src/file.cpp"
+	"${CMAKE_CURRENT_SOURCE_DIR}/src/file_sys.cpp"
+	"${CMAKE_CURRENT_SOURCE_DIR}/src/lang_mng.cpp"
+)
 
 # Precompile headers
-target_precompile_headers(${TARGET_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/Includes/pch.hpp")
+target_precompile_headers(${TARGET_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include/pch.hpp")
 
 # --- COMPILER & LINKER FLAGS ---
 if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows" AND CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
@@ -88,6 +95,7 @@ find_package(GTest CONFIG REQUIRED)
 # 2. Link tests against GTest AND main app's core library
 target_link_libraries(${TARGET_NAME} PRIVATE
 	GTest::gtest
+	GTest::gmock
 	GTest::gtest_main
 	GameWatch.Client.Cli.Core
 )
