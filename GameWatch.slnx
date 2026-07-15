@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="GameWatch.Client.Cli/GameWatch.Client.Cli.csproj" />
+  <Project Path="GameWatch.Core/GameWatch.Core.csproj" />
+</Solution>
