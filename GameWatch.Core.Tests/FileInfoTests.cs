@@ -48,7 +48,9 @@ public sealed class FileInfoTests
 
     var fileInfo7 = new FileInfo();
 
-    var fileInfo8 = new FileInfo();
+    var fileInfo8 = new FileInfo(fileInfo7);
+
+    var fileInfo9 = new FileInfo();
 
     fileInfo7.DirInfo = new DirInfo(folderLevel1);
     fileInfo7.Stem = fileStem;
@@ -61,7 +63,8 @@ public sealed class FileInfoTests
     await Assert.That(fileInfo5.Path()).IsEqualTo(fileStem);
     await Assert.That(fileInfo6.Path()).IsEqualTo(fileExt);
     await Assert.That(fileInfo7.Path()).IsEqualTo(folderLevel1 + '/' + fileStem + fileExt);
-    await Assert.That(fileInfo8.Path()).IsNull();
+    await Assert.That(fileInfo8.Path()).IsEqualTo(folderLevel1 + '/' + fileStem + fileExt);
+    await Assert.That(fileInfo9.Path()).IsNull();
   }
 
   [Test]
@@ -74,7 +77,7 @@ public sealed class FileInfoTests
 
     var fileInfo = new FileInfo
                    {
-                     DirInfo = new DirInfo(folderLevel).Append(folderLevel2),
+                     DirInfo = new DirInfo(folderLevel).ToChild(folderLevel2),
                      Stem = fileStem,
                      Ext = fileExt
                    };

@@ -6,11 +6,11 @@ using System.Text;
 using BenchmarkDotNet.Attributes;
 // ReSharper disable ConvertToConstant.Local
 
-namespace GameWatch.Core.Benchmarks;
+namespace GameWatch.Core.Benchmarks.BenchmarksForTesting;
 
 [SuppressMessage("Performance", "CA1822:Mark members as static")]
 [MemoryDiagnoser]
-public sealed class TestingBenchmarksTestingDirInfoPath
+public class TestingBenchmarksTestingDirInfoPath
 {
   private readonly string _folderLevel1 = "folder1";
   private readonly string _folderLevel2 = "folder2";

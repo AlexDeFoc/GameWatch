@@ -4,11 +4,22 @@ namespace GameWatch.Core;
 
 public sealed class FileInfo
 {
-  public DirInfo? DirInfo { get; set; }
+  public IDirInfo? DirInfo { get; set; }
   public string? Stem { get; set; }
   public string? Ext { get; set; }
 
-  public DirInfo? Parent() => DirInfo;
+  public FileInfo()
+  {
+  }
+
+  public FileInfo(FileInfo other)
+  {
+    DirInfo = other.DirInfo is DirInfo concreteDir ? new DirInfo(concreteDir) : null;
+    Stem = other.Stem is not null ? new(other.Stem) : null;
+    Ext = other.Ext is not null ? new(other.Ext) : null;
+  }
+
+  public IDirInfo? Parent() => DirInfo;
 
   public string? ParentPath() => DirInfo?.Path();
 
