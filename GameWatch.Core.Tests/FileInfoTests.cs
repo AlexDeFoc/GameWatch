@@ -11,7 +11,7 @@ public sealed class FileInfoTests
     const string fileStem = "file_name";
     const string fileExt = ".txt";
 
-    var fileInfo = new FileInfo()
+    var fileInfo = new FileInfo
                    {
                      DirInfo = new DirInfo(folderLevel1),
                      Stem = fileStem,
@@ -59,12 +59,12 @@ public sealed class FileInfoTests
     await Assert.That(fileInfo.Path()).IsEqualTo(folderLevel1 + '/' + fileStem + fileExt);
     await Assert.That(fileInfo2.Path()).IsEqualTo(folderLevel1 + '/' + fileStem);
     await Assert.That(fileInfo3.Path()).IsEqualTo(folderLevel1 + '/' + fileExt);
-    await Assert.That(fileInfo4.Path()).IsEqualTo(fileStem + fileExt);
-    await Assert.That(fileInfo5.Path()).IsEqualTo(fileStem);
-    await Assert.That(fileInfo6.Path()).IsEqualTo(fileExt);
+    await Assert.That(fileInfo4.Path()).IsEqualTo("/" + fileStem + fileExt);
+    await Assert.That(fileInfo5.Path()).IsEqualTo("/" +fileStem);
+    await Assert.That(fileInfo6.Path()).IsEqualTo("/" + fileExt);
     await Assert.That(fileInfo7.Path()).IsEqualTo(folderLevel1 + '/' + fileStem + fileExt);
-    await Assert.That(fileInfo8.Path()).IsEqualTo(folderLevel1 + '/' + fileStem + fileExt);
-    await Assert.That(fileInfo9.Path()).IsNull();
+    await Assert.That(fileInfo8.Path()).IsEqualTo("/");
+    await Assert.That(fileInfo9.Path()).IsEqualTo("/");
   }
 
   [Test]
@@ -83,9 +83,10 @@ public sealed class FileInfoTests
                    };
 
     await Assert.That(fileInfo.Path()).IsEqualTo(folderLevel + "/" + folderLevel2 + "/" + fileStem + fileExt);
-    await Assert.That(fileInfo.Parent()?.Path()).IsEqualTo(folderLevel + "/" + folderLevel2);
+    await Assert.That(fileInfo.Parent().Path()).IsEqualTo(folderLevel + "/" + folderLevel2);
     await Assert.That(fileInfo.ParentPath()).IsEqualTo(folderLevel + "/" + folderLevel2);
     await Assert.That(fileInfo.Stem).IsEqualTo(fileStem);
     await Assert.That(fileInfo.Ext).IsEqualTo(fileExt);
+    await Assert.That(fileInfo.FileName()).IsEqualTo(fileStem + fileExt);
   }
 }

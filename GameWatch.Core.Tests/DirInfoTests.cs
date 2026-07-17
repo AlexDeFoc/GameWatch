@@ -22,8 +22,8 @@ public sealed class DirInfoTests
     await Assert.That(dirInfo.Path()).IsEqualTo(folderLevel1 + '/' + folderLevel2 + '/' + folderLevel3);
     await Assert.That(dirInfo2.Path()).IsEqualTo(folderLevel1);
     await Assert.That(dirInfo3.Path()).IsEqualTo(folderLevel2);
-    await Assert.That(dirInfo4.Path()).IsEqualTo(folderLevel2);
-    await Assert.That(dirInfo5.Path()).IsNull();
+    await Assert.That(dirInfo4.Path()).IsEqualTo("/");
+    await Assert.That(dirInfo5.Path()).IsEqualTo("/");
   }
 
   [Test]

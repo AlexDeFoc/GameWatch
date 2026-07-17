@@ -1,4 +1,6 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿// Report: It appears that the immutability version allocates less memory, and it's faster on the cpu
+
+using System.Diagnostics.CodeAnalysis;
 using BenchmarkDotNet.Attributes;
 using GameWatch.Core.Benchmarks.Mocks;
 
@@ -19,8 +21,8 @@ public class DirInfoImmutabilityVsMutabilityCosts
 
     for (var i = 1; i < 30; ++i)
     {
-      _startingMutableDirInfo.Append($"folder{i}");
-      _startingImmutableDirInfo = _startingImmutableDirInfo.Append($"folder{i}");
+      _startingMutableDirInfo.ToChild($"folder{i}");
+      _startingImmutableDirInfo = _startingImmutableDirInfo.ToChild($"folder{i}");
     }
   }
 
@@ -29,9 +31,9 @@ public class DirInfoImmutabilityVsMutabilityCosts
   {
     var copy = new MutableDirInfo(_startingMutableDirInfo);
 
-    copy.GoOutward();
-    copy.GoOutward();
-    copy.GoOutward();
+    copy.ToParent();
+    copy.ToParent();
+    copy.ToParent();
 
     return copy;
   }
@@ -39,6 +41,6 @@ public class DirInfoImmutabilityVsMutabilityCosts
   [Benchmark]
   public ImmutableDirInfo Immutable_GoOutward_3_Times()
   {
-    return _startingImmutableDirInfo.GoOutward().GoOutward().GoOutward();
+    return _startingImmutableDirInfo.ToParent().ToParent().ToParent();
   }
 }

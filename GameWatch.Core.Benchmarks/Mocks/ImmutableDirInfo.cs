@@ -11,7 +11,7 @@ public sealed class ImmutableDirInfo : DirInfoBase
   {
   }
 
-  public ImmutableDirInfo()
+  private ImmutableDirInfo()
   {
   }
 
@@ -19,14 +19,8 @@ public sealed class ImmutableDirInfo : DirInfoBase
   {
   }
 
-  public ImmutableDirInfo(MutableDirInfo other) : base(other)
-  {
-  }
-
   // Methods
-  public override ImmutableDirInfo GoInward(string folderName) => Append(folderName);
-
-  public override ImmutableDirInfo Parent() => FolderLevels.Count switch
+  public override ImmutableDirInfo ToParent() => FolderLevels.Count switch
   {
     0 => this,
     1 => new ImmutableDirInfo(),
@@ -34,18 +28,9 @@ public sealed class ImmutableDirInfo : DirInfoBase
     _ => throw new NotImplementedException("Program flow cannot reach this point")
   };
 
-  public override ImmutableDirInfo Append(string folderName)
+  public override ImmutableDirInfo ToChild(string folderName)
   {
     var newLevels = new List<string>(FolderLevels) { folderName };
-    return new ImmutableDirInfo(newLevels);
-  }
-
-  public override ImmutableDirInfo GoOutward()
-  {
-    if (FolderLevels.Count == 0) return this;
-
-    var newLevels = new List<string>(FolderLevels);
-    newLevels.RemoveAt(FolderLevels.Count - 1);
     return new ImmutableDirInfo(newLevels);
   }
 }

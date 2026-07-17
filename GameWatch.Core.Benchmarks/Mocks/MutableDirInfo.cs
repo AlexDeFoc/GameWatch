@@ -11,7 +11,7 @@ public sealed class MutableDirInfo : DirInfoBase
   {
   }
 
-  public MutableDirInfo()
+  private MutableDirInfo()
   {
   }
 
@@ -24,9 +24,7 @@ public sealed class MutableDirInfo : DirInfoBase
   }
 
   // Methods
-  public override MutableDirInfo GoInward(string folderName) => Append(folderName);
-
-  public override MutableDirInfo Parent() => FolderLevels.Count switch
+  public override MutableDirInfo ToParent() => FolderLevels.Count switch
   {
     0 => this,
     1 => new MutableDirInfo(),
@@ -34,17 +32,9 @@ public sealed class MutableDirInfo : DirInfoBase
     _ => throw new NotImplementedException("Program flow cannot reach this point")
   };
 
-  public override MutableDirInfo Append(string folderName)
+  public override MutableDirInfo ToChild(string folderName)
   {
     FolderLevels.Add(folderName);
-    return this;
-  }
-
-  public override MutableDirInfo GoOutward()
-  {
-    if (FolderLevels.Count != 0)
-      FolderLevels.RemoveAt(FolderLevels.Count - 1);
-
     return this;
   }
 }

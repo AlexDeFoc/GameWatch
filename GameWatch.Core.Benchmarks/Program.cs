@@ -8,6 +8,6 @@ public static class Program
   public static void Main()
   {
     // BenchmarkRunner.Run<TestingBenchmarksTestingDirInfoPath>();
-    BenchmarkRunner.Run<DirInfoImmutabilityVsMutabilityCosts>();
+    // BenchmarkRunner.Run<DirInfoImmutabilityVsMutabilityCosts>();
   }
 }

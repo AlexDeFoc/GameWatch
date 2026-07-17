@@ -4,44 +4,43 @@ namespace GameWatch.Core;
 
 public sealed class FileInfo
 {
-  public IDirInfo? DirInfo { get; set; }
-  public string? Stem { get; set; }
-  public string? Ext { get; set; }
+  public DirInfo DirInfo { get; set; }
+  public string Stem { get; set; }
+  public string Ext { get; set; }
 
+  // Constructors
   public FileInfo()
   {
+    DirInfo = new();
+    Stem = string.Empty;
+    Ext = string.Empty;
   }
 
   public FileInfo(FileInfo other)
   {
-    DirInfo = other.DirInfo is DirInfo concreteDir ? new DirInfo(concreteDir) : null;
-    Stem = other.Stem is not null ? new(other.Stem) : null;
-    Ext = other.Ext is not null ? new(other.Ext) : null;
+    DirInfo = other.DirInfo;
+    Stem = other.Stem;
+    Ext = other.Ext;
   }
 
-  public IDirInfo? Parent() => DirInfo;
+  // Methods
+  public DirInfo Parent() => DirInfo;
+  public string ParentPath() => DirInfo.Path();
+  public string FileName() => Stem + Ext;
 
-  public string? ParentPath() => DirInfo?.Path();
-
-  public string? Path()
+  public string Path()
   {
-    if (DirInfo == null && Stem == null && Ext == null)
-      return null;
-
     var pathBuilder = new StringBuilder();
-    var dirInfoPath = DirInfo?.Path();
 
-    if (dirInfoPath is not null)
-    {
-      pathBuilder.Append(dirInfoPath);
+    var dirPath = DirInfo.Path();
+
+    pathBuilder.Append(dirPath);
+
+    if (dirPath is not "/" && (Stem != string.Empty || Ext != string.Empty))
       pathBuilder.Append('/');
-    }
 
-    if (Stem is not null)
-      pathBuilder.Append(Stem);
-
-    if (Ext is not null)
-      pathBuilder.Append(Ext);
+    pathBuilder.Append(Stem);
+    pathBuilder.Append(Ext);
 
     return pathBuilder.ToString();
   }
