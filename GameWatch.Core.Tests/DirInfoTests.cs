@@ -19,9 +19,9 @@ public sealed class DirInfoTests
 
     dirInfo3 = dirInfo3.ToChild(folderLevel2);
 
-    await Assert.That(dirInfo.Path()).IsEqualTo(folderLevel1 + '/' + folderLevel2 + '/' + folderLevel3);
-    await Assert.That(dirInfo2.Path()).IsEqualTo(folderLevel1);
-    await Assert.That(dirInfo3.Path()).IsEqualTo(folderLevel2);
+    await Assert.That(dirInfo.Path()).IsEqualTo("/" + folderLevel1 + "/" + folderLevel2 + "/" + folderLevel3);
+    await Assert.That(dirInfo2.Path()).IsEqualTo("/" + folderLevel1);
+    await Assert.That(dirInfo3.Path()).IsEqualTo("/" + folderLevel2);
     await Assert.That(dirInfo4.Path()).IsEqualTo("/");
     await Assert.That(dirInfo5.Path()).IsEqualTo("/");
   }
@@ -35,8 +35,8 @@ public sealed class DirInfoTests
 
     var dirInfo = new DirInfo(folderLevel1).ToChild(folderLevel2).ToChild(folderLevel3);
 
-    await Assert.That(dirInfo.Path()).IsEqualTo(folderLevel1 + '/' + folderLevel2 + '/' + folderLevel3);
-    await Assert.That(dirInfo.ToParent().Path()).IsEqualTo(folderLevel1 + '/' + folderLevel2);
+    await Assert.That(dirInfo.Path()).IsEqualTo("/" + folderLevel1 + "/" + folderLevel2 + "/" + folderLevel3);
+    await Assert.That(dirInfo.ToParent().Path()).IsEqualTo("/" + folderLevel1 + "/" + folderLevel2);
     await Assert.That(dirInfo.Stem()).IsEqualTo(folderLevel3);
   }
 
@@ -51,7 +51,20 @@ public sealed class DirInfoTests
     var dirInfo = new DirInfo(folderLevel1).ToChild(folderLevel2).ToChild(folderLevel3).ToChild(folderLevel4);
     var dirInfo2 = new DirInfo(folderLevel1).ToChild(folderLevel2).ToChild(folderLevel3).ToChild(folderLevel4);
 
-    await Assert.That(dirInfo.ToParent().ToParent().Path()).IsEqualTo(folderLevel1 + '/' + folderLevel2);
-    await Assert.That(dirInfo2.ToParent().ToParent().ToChild(folderLevel4).Path()).IsEqualTo(folderLevel1 + '/' + folderLevel2 + '/' + folderLevel4);
+    await Assert.That(dirInfo.ToParent().ToParent().Path()).IsEqualTo("/" + folderLevel1 + "/" + folderLevel2);
+    await Assert.That(dirInfo2.ToParent().ToParent().ToChild(folderLevel4).Path()).IsEqualTo("/" + folderLevel1 + "/" + folderLevel2 + "/" + folderLevel4);
+  }
+
+  [Test]
+  public async Task PathsRelativeToCurrentFolder()
+  {
+    const string targetSubFolder = "folder1";
+    const string targetSubFolder2 = "folder2";
+
+    var dirInfo = new DirInfo(targetSubFolder, root: DirInfo.RootType.Root);
+    var dirInfo2 = new DirInfo([targetSubFolder, targetSubFolder2], root: DirInfo.RootType.CurrentDir);
+
+    await Assert.That(dirInfo.Path()).IsEqualTo("/" + targetSubFolder);
+    await Assert.That(dirInfo2.Path()).IsEqualTo("./" + targetSubFolder + "/" + targetSubFolder2);
   }
 }

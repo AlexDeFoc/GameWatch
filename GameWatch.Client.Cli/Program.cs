@@ -1,9 +1,16 @@
-﻿namespace GameWatch.Client.Cli;
+﻿using System;
+using GameWatch.Core;
 
-class Program
+namespace GameWatch.Client.Cli;
+
+public static class Program
 {
-    static void Main(string[] args)
+    public static void Main()
     {
-        Console.WriteLine("Hello, World!");
+      var fs = new FileSys();
+
+      Console.WriteLine($"FilePath: {fs.GetFileInfoFromPreset(FileInfoPreset.OurCliClientExe).Path()}");
+      Console.WriteLine($"FolderPath: {fs.GetDirInfoFromPreset(DirInfoPreset.OurCliClientFolder).Path()}");
+      Console.WriteLine($"FolderPath: {fs.GetDirInfoFromPreset(DirInfoPreset.OurClientsFolder).Path()}");
     }
 }
