@@ -6,6 +6,10 @@ public interface IFileSys
 
   DirInfo GetDirInfoFromPreset(DirInfoPreset preset);
   FileInfo GetFileInfoFromPreset(FileInfoPreset preset);
-  bool CheckExists(DirInfo _);
-  bool CheckExists(FileInfo _);
+  bool CheckExists(DirInfo dir);
+  bool CheckExists(FileInfo file);
+  void Delete(FileInfo file);
+  void Copy(FileInfo src, FileInfo dest, bool overwrite);
+  string ReadText(FileInfo file);
+  void WriteText(FileInfo file, string content);
 }

@@ -2,5 +2,9 @@
 
 public enum FileInfoPreset
 {
-  OurCliClientExe
+  OurCliClientExe,
+  OurUserDataDbHealthCheckState1,
+  OurUserDataDbHealthCheckState2,
+  OurUserDataDb,
+  OurUserDataBackupDbForHealthCheck
 }

@@ -3,5 +3,7 @@
 public enum DirInfoPreset
 {
   OurClientsFolder,
-  OurCliClientFolder
+  OurCliClientFolder,
+  OurLogsFolder,
+  OurUserDataFolder
 }

@@ -58,7 +58,11 @@ public sealed class FileSysTests
     var fileSys = new FileSysMock();
 
     var cliClientExeDir = fileSys.GetFileInfoFromPreset(FileInfoPreset.OurCliClientExe);
+    var newExtraFile = new FileInfo { Stem = "file_name", Ext = ".json" };
 
-    await Assert.That(fileSys.CheckExists(cliClientExeDir)).IsTrue();
+    fileSys.WriteText(newExtraFile, "empty");
+
+    await Assert.That(fileSys.CheckExists(cliClientExeDir)).IsFalse();
+    await Assert.That(fileSys.CheckExists(newExtraFile)).IsTrue();
   }
 }
