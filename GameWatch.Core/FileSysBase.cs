@@ -50,30 +50,12 @@ public abstract class FileSysBase : IFileSys
                                         Stem = KnownFileNames.GetFileName(KnownFileNames.FileId.CliClientExe).Stem,
                                         Ext = KnownFileNames.GetFileName(KnownFileNames.FileId.CliClientExe).Ext
                                       },
-    FileInfoPreset.OurUserDataDbHealthCheckState1 => new FileInfo
-                                                     {
-                                                       DirInfo = GetDirInfoFromPreset(DirInfoPreset.OurLogsFolder),
-                                                       Stem = KnownFileNames.GetFileName(KnownFileNames.FileId.UserDataDbHealthCheckState1File).Stem,
-                                                       Ext = KnownFileNames.GetFileName(KnownFileNames.FileId.UserDataDbHealthCheckState1File).Ext
-                                                     },
-    FileInfoPreset.OurUserDataDbHealthCheckState2 => new FileInfo
-                                                     {
-                                                       DirInfo = GetDirInfoFromPreset(DirInfoPreset.OurLogsFolder),
-                                                       Stem = KnownFileNames.GetFileName(KnownFileNames.FileId.UserDataDbHealthCheckState2File).Stem,
-                                                       Ext = KnownFileNames.GetFileName(KnownFileNames.FileId.UserDataDbHealthCheckState2File).Ext
-                                                     },
     FileInfoPreset.OurUserDataDb => new FileInfo
                                     {
                                       DirInfo = GetDirInfoFromPreset(DirInfoPreset.OurUserDataFolder),
                                       Stem = KnownFileNames.GetFileName(KnownFileNames.FileId.UserDataDbFile).Stem,
                                       Ext = KnownFileNames.GetFileName(KnownFileNames.FileId.UserDataDbFile).Ext
                                     },
-    FileInfoPreset.OurUserDataBackupDbForHealthCheck => new FileInfo
-                                                        {
-                                                          DirInfo = GetDirInfoFromPreset(DirInfoPreset.OurUserDataFolder),
-                                                          Stem = KnownFileNames.GetFileName(KnownFileNames.FileId.UserDataBackupDbForHealthCheckFile).Stem,
-                                                          Ext = KnownFileNames.GetFileName(KnownFileNames.FileId.UserDataBackupDbForHealthCheckFile).Ext
-                                                        },
     _ => throw new NotImplementedException("Program flow cannot reach this point")
   };
 }
