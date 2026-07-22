@@ -53,8 +53,22 @@ public sealed class DirInfo : IDirInfo
   public RootType Root { get; }
 
   // Methods
+  public static string GetDirSeparator(char s) => s == '/' ? "/" : "\\";
+
+  public static string GetStemFromFileName(string fileName)
+  {
+    var startingDotIndex = fileName.IndexOf('.');
+    return startingDotIndex != -1 ? fileName[startingDotIndex..] : string.Empty;
+  }
+
+  public static string GetExtFromFileName(string fileName)
+  {
+    var startingDotIndex = fileName.IndexOf('.');
+    return startingDotIndex != -1 ? fileName[..startingDotIndex] : fileName;
+  }
+
   public string Stem() => FolderLevels.Count > 0 ? FolderLevels.Last() : string.Empty;
-  public string Path() => FolderLevels.Count == 0 ? GetRoot() : GetRoot() + string.Join('/', FolderLevels);
+  public string Path() => FolderLevels.Count == 0 ? GetRoot() : GetRoot() + string.Join(GetDirSeparator(System.IO.Path.DirectorySeparatorChar), FolderLevels);
   public DirInfo ToChild(string childFolderName) => new([..FolderLevels, childFolderName]);
 
   public DirInfo ToParent() => FolderLevels.Count switch
@@ -79,8 +93,8 @@ public sealed class DirInfo : IDirInfo
 
   private string GetRoot() => Root switch
   {
-    RootType.Root => "/",
-    RootType.CurrentDir => "./",
+    RootType.Root => GetDirSeparator(System.IO.Path.DirectorySeparatorChar),
+    RootType.CurrentDir => "." + GetDirSeparator(System.IO.Path.DirectorySeparatorChar),
     _ => throw new NotImplementedException("Program flow cannot reach this point")
   };
 

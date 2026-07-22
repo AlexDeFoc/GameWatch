@@ -5,5 +5,6 @@ public enum DirInfoPreset
   OurClientsFolder,
   OurCliClientFolder,
   OurLogsFolder,
-  OurUserDataFolder
+  OurUserDataFolder,
+  OurTranslationsFolder
 }

@@ -36,8 +36,8 @@ public sealed class FileInfo
 
     pathBuilder.Append(dirPath);
 
-    if (dirPath is not "/" && (Stem != string.Empty || Ext != string.Empty))
-      pathBuilder.Append('/');
+    if ((dirPath != DirInfo.GetDirSeparator(System.IO.Path.DirectorySeparatorChar) && dirPath != DirInfo.GetDirSeparator(System.IO.Path.AltDirectorySeparatorChar)) && (Stem != string.Empty || Ext != string.Empty))
+      pathBuilder.Append(System.IO.Path.DirectorySeparatorChar);
 
     pathBuilder.Append(Stem);
     pathBuilder.Append(Ext);

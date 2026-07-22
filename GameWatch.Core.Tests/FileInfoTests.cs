@@ -7,6 +7,7 @@ public sealed class FileInfoTests
   [Test]
   public async Task ConstructFileInfo()
   {
+    var dirSeparator = DirInfo.GetDirSeparator(System.IO.Path.DirectorySeparatorChar);
     const string folderLevel1 = "folder1";
     const string fileStem = "file_name";
     const string fileExt = ".txt";
@@ -56,20 +57,21 @@ public sealed class FileInfoTests
     fileInfo7.Stem = fileStem;
     fileInfo7.Ext = fileExt;
 
-    await Assert.That(fileInfo.Path()).IsEqualTo("/" + folderLevel1 + '/' + fileStem + fileExt);
-    await Assert.That(fileInfo2.Path()).IsEqualTo("/" + folderLevel1 + '/' + fileStem);
-    await Assert.That(fileInfo3.Path()).IsEqualTo("/" + folderLevel1 + '/' + fileExt);
-    await Assert.That(fileInfo4.Path()).IsEqualTo("/" + fileStem + fileExt);
-    await Assert.That(fileInfo5.Path()).IsEqualTo("/" +fileStem);
-    await Assert.That(fileInfo6.Path()).IsEqualTo("/" + fileExt);
-    await Assert.That(fileInfo7.Path()).IsEqualTo("/" + folderLevel1 + '/' + fileStem + fileExt);
-    await Assert.That(fileInfo8.Path()).IsEqualTo("/");
-    await Assert.That(fileInfo9.Path()).IsEqualTo("/");
+    await Assert.That(fileInfo.Path()).IsEqualTo(dirSeparator + folderLevel1 + dirSeparator + fileStem + fileExt);
+    await Assert.That(fileInfo2.Path()).IsEqualTo(dirSeparator + folderLevel1 + dirSeparator + fileStem);
+    await Assert.That(fileInfo3.Path()).IsEqualTo(dirSeparator + folderLevel1 + dirSeparator + fileExt);
+    await Assert.That(fileInfo4.Path()).IsEqualTo(dirSeparator + fileStem + fileExt);
+    await Assert.That(fileInfo5.Path()).IsEqualTo(dirSeparator +fileStem);
+    await Assert.That(fileInfo6.Path()).IsEqualTo(dirSeparator + fileExt);
+    await Assert.That(fileInfo7.Path()).IsEqualTo(dirSeparator + folderLevel1 + dirSeparator + fileStem + fileExt);
+    await Assert.That(fileInfo8.Path()).IsEqualTo(dirSeparator);
+    await Assert.That(fileInfo9.Path()).IsEqualTo(dirSeparator);
   }
 
   [Test]
   public async Task GetAllComponents()
   {
+    var dirSeparator = DirInfo.GetDirSeparator(System.IO.Path.DirectorySeparatorChar);
     const string folderLevel = "folder1";
     const string folderLevel2 = "folder2";
     const string fileStem = "file_name";
@@ -82,9 +84,9 @@ public sealed class FileInfoTests
                      Ext = fileExt
                    };
 
-    await Assert.That(fileInfo.Path()).IsEqualTo("/" + folderLevel + "/" + folderLevel2 + "/" + fileStem + fileExt);
-    await Assert.That(fileInfo.Parent().Path()).IsEqualTo("/" + folderLevel + "/" + folderLevel2);
-    await Assert.That(fileInfo.ParentPath()).IsEqualTo("/" + folderLevel + "/" + folderLevel2);
+    await Assert.That(fileInfo.Path()).IsEqualTo(dirSeparator + folderLevel + dirSeparator + folderLevel2 + dirSeparator + fileStem + fileExt);
+    await Assert.That(fileInfo.Parent().Path()).IsEqualTo(dirSeparator + folderLevel + dirSeparator + folderLevel2);
+    await Assert.That(fileInfo.ParentPath()).IsEqualTo(dirSeparator + folderLevel + dirSeparator + folderLevel2);
     await Assert.That(fileInfo.Stem).IsEqualTo(fileStem);
     await Assert.That(fileInfo.Ext).IsEqualTo(fileExt);
     await Assert.That(fileInfo.FileName()).IsEqualTo(fileStem + fileExt);

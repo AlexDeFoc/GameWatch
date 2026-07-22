@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 
 namespace GameWatch.Core;
@@ -30,7 +31,18 @@ public sealed class FileSys : FileSysBase
     throw new NotImplementedException("Not implemented!");
   }
 
+  // Note: Don't forget while making recursively the folders use 'WithAbsolutePath().Path()'
   public override void WriteText(FileInfo file, string content)
+  {
+    throw new NotImplementedException("Not implemented!");
+  }
+
+  public override bool IsFileInDir(DirInfo targetDir, FileInfo targetFile)
+  {
+    throw new NotImplementedException("Not implemented!");
+  }
+
+  public override List<FileInfo> GetFilesInDir(DirInfo dir)
   {
     throw new NotImplementedException("Not implemented!");
   }

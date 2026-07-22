@@ -1,4 +1,6 @@
-﻿namespace GameWatch.Core;
+﻿using System.Collections.Generic;
+
+namespace GameWatch.Core;
 
 public interface IFileSys
 {
@@ -12,4 +14,6 @@ public interface IFileSys
   void Copy(FileInfo src, FileInfo dest, bool overwrite);
   string ReadText(FileInfo file);
   void WriteText(FileInfo file, string content);
+  bool IsFileInDir(DirInfo targetDir, FileInfo targetFile);
+  List<FileInfo> GetFilesInDir(DirInfo dir);
 }

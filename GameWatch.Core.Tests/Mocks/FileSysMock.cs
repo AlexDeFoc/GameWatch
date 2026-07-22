@@ -1,28 +1,37 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace GameWatch.Core.Tests.Mocks;
 
 public sealed class FileSysMock : FileSysBase
 {
-  public Dictionary<string, string> VirtualDisk { get; } = [];
+  public Dictionary<FileInfo, string> VirtualDisk { get; } = [];
 
   public override bool CheckExists(DirInfo _) => true;
-  public override bool CheckExists(FileInfo file) => VirtualDisk.ContainsKey(file.Path());
+  public override bool CheckExists(FileInfo file) => VirtualDisk.ContainsKey(file);
 
-  public override string ReadText(FileInfo file) => VirtualDisk.TryGetValue(file.Path(), out var content) ? content : string.Empty;
+  public override string ReadText(FileInfo file) => VirtualDisk.TryGetValue(file, out var fileContents) ? fileContents : string.Empty;
 
-  public override void WriteText(FileInfo file, string content) => VirtualDisk[file.Path()] = content;
+  public override void WriteText(FileInfo file, string content) => VirtualDisk[file] = content;
 
-  public override void Delete(FileInfo file) => VirtualDisk.Remove(file.Path());
+  public override void Delete(FileInfo file) => VirtualDisk.Remove(file);
 
   public override void Copy(FileInfo src, FileInfo dest, bool overwrite)
   {
-    var srcPath = src.Path();
-    var destPath = dest.Path();
-
-    if (VirtualDisk.TryGetValue(srcPath, out var content) && overwrite && VirtualDisk.ContainsKey(destPath))
+    if (VirtualDisk.TryGetValue(src, out var content) && overwrite && VirtualDisk.ContainsKey(dest))
     {
-      VirtualDisk[destPath] = content;
+      VirtualDisk[dest] = content;
     }
   }
+
+  public override List<FileInfo> GetFilesInDir(DirInfo dir)
+    // => VirtualDisk.Where(kvp => kvp.Key.DirInfo == dir)
+    //               .Select(kvp => kvp.Key)
+    //               .ToList();
+    => VirtualDisk.Keys
+                  .Where(f => string.Equals(f.DirInfo.Path(), dir.Path(), StringComparison.OrdinalIgnoreCase))
+                  .ToList();
+
+  public override bool IsFileInDir(DirInfo targetDir, FileInfo targetFile) => VirtualDisk.ContainsKey(targetFile);
 }

@@ -32,6 +32,8 @@ public abstract class FileSysBase : IFileSys
   public abstract void Copy(FileInfo src, FileInfo dest, bool overwrite);
   public abstract string ReadText(FileInfo file);
   public abstract void WriteText(FileInfo file, string content);
+  public abstract bool IsFileInDir(DirInfo targetDir, FileInfo targetFile);
+  public abstract List<FileInfo> GetFilesInDir(DirInfo dir);
 
   public DirInfo GetDirInfoFromPreset(DirInfoPreset preset) => preset switch
   {
@@ -39,6 +41,7 @@ public abstract class FileSysBase : IFileSys
     DirInfoPreset.OurCliClientFolder => new DirInfo([..AppRootDir.FolderLevels, "Clients", "Cli"], AppRootDir.Root),
     DirInfoPreset.OurLogsFolder => new DirInfo([..AppRootDir.FolderLevels, "Logs"], AppRootDir.Root),
     DirInfoPreset.OurUserDataFolder => new DirInfo([..AppRootDir.FolderLevels, "UserData"], AppRootDir.Root),
+    DirInfoPreset.OurTranslationsFolder => new DirInfo([..AppRootDir.FolderLevels, "AppData", "Translations"], AppRootDir.Root),
     _ => throw new NotImplementedException("Program flow cannot reach this point")
   };
 
