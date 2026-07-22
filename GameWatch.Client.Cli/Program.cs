@@ -14,6 +14,10 @@ internal static class Program
       cfg.SetApplicationName("GameWatch.Client.Cli");
       cfg.SetApplicationVersion("1.0.0");
 
+      cfg.AddCommand<ListGamesCommand>("list")
+         .WithAlias("l")
+         .WithDescription("List existing games\n[bold]    Alias: l[/]");
+
       cfg.AddCommand<AddNewGameCommand>("add")
          .WithAlias("a")
          .WithDescription("Adds new game\n[bold]    Alias: a[/]");
