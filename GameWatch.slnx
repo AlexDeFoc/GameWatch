@@ -1,8 +1,3 @@
 <Solution>
   <Project Path="GameWatch.Client.Cli/GameWatch.Client.Cli.csproj" />
-  <Project Path="GameWatch.Core.Benchmarks/GameWatch.Core.Benchmarks.csproj">
-    <BuildType Project="Release" />
-  </Project>
-  <Project Path="GameWatch.Core.Tests/GameWatch.Core.Tests.csproj" />
-  <Project Path="GameWatch.Core/GameWatch.Core.csproj" />
 </Solution>

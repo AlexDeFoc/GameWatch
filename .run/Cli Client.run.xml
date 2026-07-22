@@ -1,8 +1,8 @@
 ﻿<component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Core.Benchmarks" type="DotNetProject" factoryName=".NET Project">
-    <option name="EXE_PATH" value="$PROJECT_DIR$/GameWatch.Core.Benchmarks/bin/Release/net10.0/GameWatch.Core.Benchmarks.exe" />
+  <configuration default="false" name="Cli Client" type="DotNetProject" factoryName=".NET Project">
+    <option name="EXE_PATH" value="$PROJECT_DIR$/build/debug/GameWatch/Clients/Cli/GameWatch.Client.Cli.exe" />
     <option name="PROGRAM_PARAMETERS" value="" />
-    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/GameWatch.Core.Benchmarks/bin/Release/net10.0" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/build/debug/GameWatch/Clients/Cli" />
     <option name="PASS_PARENT_ENVS" value="1" />
     <option name="ENV_FILE_PATHS" value="" />
     <option name="REDIRECT_INPUT_PATH" value="" />
@@ -10,13 +10,14 @@
     <option name="USE_MONO" value="0" />
     <option name="RUNTIME_ARGUMENTS" value="" />
     <option name="AUTO_ATTACH_CHILDREN" value="0" />
-    <option name="PROJECT_PATH" value="$PROJECT_DIR$/GameWatch.Core.Benchmarks/GameWatch.Core.Benchmarks.csproj" />
+    <option name="PROJECT_PATH" value="$PROJECT_DIR$/GameWatch.Client.Cli/GameWatch.Client.Cli.csproj" />
     <option name="PROJECT_EXE_PATH_TRACKING" value="1" />
     <option name="PROJECT_ARGUMENTS_TRACKING" value="1" />
     <option name="PROJECT_WORKING_DIRECTORY_TRACKING" value="1" />
-    <option name="PROJECT_KIND" value="Unloaded" />
+    <option name="PROJECT_KIND" value="DotNetCore" />
     <option name="PROJECT_TFM" value="net10.0" />
     <method v="2">
+      <option name="Build" default="false" projectName="GameWatch.Client.Cli.Core" projectPath="$PROJECT_DIR$/GameWatch.Client.Cli.Core/GameWatch.Client.Cli.Core.csproj" />
       <option name="Build" />
     </method>
   </configuration>
