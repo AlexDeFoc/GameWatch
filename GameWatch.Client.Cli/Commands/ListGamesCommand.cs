@@ -4,7 +4,7 @@ using System;
 using System.Linq;
 using System.Threading;
 using Dapper;
-using Spectre.Console;
+using GameWatch.Client.Cli.GamEntry;
 using Spectre.Console.Cli;
 
 namespace GameWatch.Client.Cli.Commands;
@@ -20,11 +20,13 @@ internal sealed class ListGamesCommand : Command<ListGamesCommand.Settings>
     DatabaseUtils.EnsureDatabaseCreated(dbPath);
 
     using var connection = DatabaseUtils.GetOpenConnection(dbPath);
-    using var transaction = connection.BeginTransaction();
 
-    const string selectSql = "SELECT Title, PlayTime FROM Games;";
-    var gameList = connection.Query<GameEntry>(selectSql).ToList();
-    transaction.Commit();
+    const string selectSql = """
+                             SELECT Id, Title, PlayTime, SavingMode, ExePath
+                             FROM View_AllGames
+                             ORDER BY Title ASC;
+                             """;
+    var gameList = connection.Query<Game>(selectSql).ToList();
 
     if (!gameList.Any())
     {
@@ -34,7 +36,9 @@ internal sealed class ListGamesCommand : Command<ListGamesCommand.Settings>
 
     foreach (var game in gameList)
     {
-      Console.WriteLine($"{game.Title} - {TimeSpan.FromSeconds(game.PlayTime)}");
+        var formattedTime = TimeSpan.FromSeconds(game.PlayTime);
+        var extraInfo = game.SavingMode == SavingMode.Auto ? $" [Auto: {game.ExePath}]" : " [Manual]";
+      Console.WriteLine($"{game.Title} - {formattedTime}{extraInfo}");
     }
 
     return 0;
