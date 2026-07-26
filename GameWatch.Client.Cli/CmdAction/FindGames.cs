@@ -8,6 +8,17 @@ public sealed class FindGames : Command<CmdCfg.FindGames>
 {
     protected override int Execute(CommandContext context, CmdCfg.FindGames settings, CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        var procs = Helpers.ProcessFinder.GetListOfAvailableProcesses();
+
+        foreach (var proc in procs)
+        {
+            Console.WriteLine($"Pid: {proc.Pid}");
+            Console.WriteLine($"Window Title: {proc.WindowTitle}");
+            Console.WriteLine($"Process Name: {proc.ProcName}");
+            Console.WriteLine($"FilePath: {proc.FilePath}");
+            Console.WriteLine();
+        }
+
+        return 0;
     }
 }
