@@ -48,16 +48,30 @@ public static class Program
                     game.AddCommand<CmdAction.RemoveAutoGame>("auto")
                         .WithDescription("Removes an auto game record.");
                 });
+
+                remove.AddBranch("games", games =>
+                {
+                    games.SetDescription("Remove all game records of a certain type.");
+                    games.AddCommand<CmdAction.RemoveAllManualGames>("manual")
+                        .WithDescription("Removes all manual game records.");
+                    games.AddCommand<CmdAction.RemoveAllAutoGames>("auto")
+                        .WithDescription("Removes all auto game records.");
+                    games.AddCommand<CmdAction.RemoveAllGames>("all")
+                         .WithDescription("Removes all game records.");
+                });
             });
 
             cfg.AddBranch("edit", edit =>
             {
                 edit.SetDescription("Commands for modifying existing game data.");
-                edit.AddBranch("set", set =>
+                edit.AddBranch("game", game =>
                 {
-                    set.SetDescription("Set specific game attributes.");
-                    set.AddCommand<CmdAction.EditSetGame>("game")
-                       .WithDescription("Edit certain game properties.");
+                    game.SetDescription("Interact with a specific games attributes.");
+                    game.AddCommand<CmdAction.EditSetGame>("set")
+                        .WithDescription("Edit certain game properties.");
+
+                    game.AddCommand<CmdAction.EditResetGame>("reset")
+                        .WithDescription("Reset game playtime.");
                 });
             });
 
