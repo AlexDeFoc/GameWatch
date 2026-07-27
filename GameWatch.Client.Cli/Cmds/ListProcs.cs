@@ -2,11 +2,13 @@
 using System.Threading;
 using Spectre.Console.Cli;
 
-namespace GameWatch.Client.Cli.CmdAction;
+namespace GameWatch.Client.Cli.Cmds;
 
-public sealed class FindGames : Command<CmdCfg.FindGames>
+public sealed class ListProcs : Command<ListProcs.Settings>
 {
-    protected override int Execute(CommandContext context, CmdCfg.FindGames settings, CancellationToken cancellationToken)
+    public class Settings : CommandSettings;
+
+    protected override int Execute(CommandContext context, Settings settings, CancellationToken cancellationToken)
     {
         var procs = Helpers.ProcessFinder.GetListOfAvailableProcesses();
 

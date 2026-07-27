@@ -1,7 +1,3 @@
 ﻿namespace GameWatch.Client.Cli.DTO;
 
-public record ProcForDisplay(
-    long Pid,
-    string WindowTitle,
-    string ProcName,
-    string FilePath);
+public record ProcForDisplay(int Pid, string WindowTitle, string ProcName, string FilePath);
