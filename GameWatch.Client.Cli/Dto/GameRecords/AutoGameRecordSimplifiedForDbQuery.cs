@@ -1,9 +1,8 @@
-﻿// ReSharper disable UnusedMember.Global
-// ReSharper disable UnusedAutoPropertyAccessor.Global
-// ReSharper disable AutoPropertyCanBeMadeGetOnly.Global
+﻿// ReSharper disable UnusedAutoPropertyAccessor.Global
+// ReSharper disable UnusedMember.Global
 namespace GameWatch.Client.Cli.Dto.GameRecords;
 
-public sealed class ManualGameRecordForDbQuery
+public sealed class AutoGameRecordSimplifiedForDbQuery
 {
     public int TableId { get; init; }
     public int TablePositionIdx { get; init; }

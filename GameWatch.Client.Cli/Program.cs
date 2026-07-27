@@ -19,8 +19,6 @@ public static class Program
                 list.SetDescription("List recorded games, game details, or active processes.");
                 list.AddCommand<Cmds.ListGames>("games")
                     .WithDescription("List tracked game records.");
-                list.AddCommand<Cmds.ShowGame>("game")
-                    .WithDescription("Display detailed properties for a specific game.");
                 list.AddCommand<Cmds.ListProcs>("procs")
                     .WithDescription("List active running processes available for tracking.");
             }).WithAlias("ls");

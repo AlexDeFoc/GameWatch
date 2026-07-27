@@ -1,9 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Dapper;
 using GameWatch.Client.Cli.Dto;
 using GameWatch.Client.Cli.Dto.GameRecords;
 using Microsoft.Data.Sqlite;
+
 // ReSharper disable RedundantAnonymousTypePropertyName
 
 namespace GameWatch.Client.Cli.Helpers;
@@ -164,6 +167,46 @@ public static class DbFactory
                 tran.Rollback();
                 throw;
             }
+        }
+
+        public static List<ManualGameRecordForDbQuery> GetManualGames(SqliteConnection conn)
+        {
+            const string sql = "SELECT TableId, TablePositionIdx, GameRecordTitle, GameRecordPlayTime FROM ManualGames";
+            return conn.Query<ManualGameRecordForDbQuery>(sql).ToList();
+        }
+
+        public static List<AutoGameRecordWithDetailsForDbQuery> GetAutoGamesWithDetails(SqliteConnection conn)
+        {
+            const string sql = """
+                               SELECT
+                                   TableId,
+                                   TablePositionIdx,
+                                   GameRecordTitle,
+                                   GameRecordPlayTime,
+                                   ProcessWindowTitle,
+                                   ProcessFilePath,
+                                   WindowTitleRegexPattern,
+                                   FilePathRegexPattern,
+                                   ShouldMatchAgainstProcessWindowTitle,
+                                   ShouldMatchAgainstProcessFilePath,
+                                   ShouldMatchProcessWindowTitleAgainstRegexPattern,
+                                   ShouldMatchProcessFilePathAgainstRegexPattern
+                               FROM AutoGames
+                               """;
+            return conn.Query<AutoGameRecordWithDetailsForDbQuery>(sql).ToList();
+        }
+
+        public static List<AutoGameRecordSimplifiedForDbQuery> GetAutoGamesSimplified(SqliteConnection conn)
+        {
+            const string sql = """
+                               SELECT
+                                   TableId,
+                                   TablePositionIdx,
+                                   GameRecordTitle,
+                                   GameRecordPlayTime
+                               FROM AutoGames
+                               """;
+            return conn.Query<AutoGameRecordSimplifiedForDbQuery>(sql).ToList();
         }
 
         private static int GetNextPositionIdx(SqliteConnection conn, SqliteTransaction tran, GameMode gameMode)

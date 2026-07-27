@@ -2,7 +2,7 @@
 // ReSharper disable PropertyCanBeMadeInitOnly.Global
 namespace GameWatch.Client.Cli.Dto.GameRecords;
 
-public class AutoGameRecord
+public sealed class AutoGameRecord
 {
     public required string Title { get; set; }
     public required int PlayTime { get; set; }

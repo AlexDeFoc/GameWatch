@@ -53,6 +53,23 @@ public sealed class AddAutoGameFromProcess : Command<AddAutoGameFromProcess.Sett
 
     protected override ValidationResult Validate(CommandContext context, Settings settings)
     {
+        if (settings is { ShouldMatchWindowTitleAgainstRegexPattern: true, WindowTitleRegexPattern: not null })
+        {
+            if (!RegexHandler.ValidatePattern(settings.WindowTitleRegexPattern))
+            {
+                ValidationResult.Error("Regex string provided for Process Window Title matching, is invalid regex syntax.");
+            }
+        }
+
+        // ReSharper disable once InvertIf
+        if (settings is { ShouldMatchFilePathAgainstRegexPattern: true, FilePathRegexPattern: not null })
+        {
+            if (!RegexHandler.ValidatePattern(settings.FilePathRegexPattern))
+            {
+                ValidationResult.Error("Regex string provided for Process FilePath matching, is invalid regex syntax.");
+            }
+        }
+
         return settings switch
         {
             { ShouldMatchAgainstWindowTitle: true, ShouldMatchWindowTitleAgainstRegexPattern: true } => ValidationResult.Error("Cannot match against the full window title string while attempting to match partially using a regex pattern. These flags are mutually exclusive!"),
@@ -96,14 +113,12 @@ public sealed class AddAutoGameFromProcess : Command<AddAutoGameFromProcess.Sett
 
         if (settings.ShouldMatchWindowTitleAgainstRegexPattern)
         {
-            gameRecord.ProcessWindowTitle = ourProc.WindowTitle;
             gameRecord.ShouldMatchProcessWindowTitleAgainstRegexPattern = true;
             gameRecord.WindowTitleRegexPattern = settings.WindowTitleRegexPattern;
         }
 
         if (settings.ShouldMatchFilePathAgainstRegexPattern)
         {
-            gameRecord.ProcessFilePath = ourProc.FilePath;
             gameRecord.ShouldMatchProcessFilePathAgainstRegexPattern = true;
             gameRecord.FilePathRegexPattern = settings.FilePathRegexPattern;
         }

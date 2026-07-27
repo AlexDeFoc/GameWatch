@@ -28,10 +28,10 @@ public sealed class AddManualGame : Command<AddManualGame.Settings>
         using var tran = conn.BeginTransaction();
 
         var gameRecord = new ManualGameRecord
-        (
-            Title: settings.GameRecordTitle,
-            PlayTime: settings.GameRecordPlayTime
-        );
+                         {
+                             Title = settings.GameRecordTitle,
+                             PlayTime = settings.GameRecordPlayTime
+                         };
 
         DbFactory.GameLibrary.AddGame(conn, tran, gameRecord);
 
