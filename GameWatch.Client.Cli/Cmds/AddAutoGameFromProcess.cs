@@ -57,7 +57,7 @@ public sealed class AddAutoGameFromProcess : Command<AddAutoGameFromProcess.Sett
         {
             if (!RegexHandler.ValidatePattern(settings.WindowTitleRegexPattern))
             {
-                ValidationResult.Error("Regex string provided for Process Window Title matching, is invalid regex syntax.");
+                return ValidationResult.Error("Regex string provided for Process Window Title matching, is invalid regex syntax.");
             }
         }
 
@@ -66,7 +66,7 @@ public sealed class AddAutoGameFromProcess : Command<AddAutoGameFromProcess.Sett
         {
             if (!RegexHandler.ValidatePattern(settings.FilePathRegexPattern))
             {
-                ValidationResult.Error("Regex string provided for Process FilePath matching, is invalid regex syntax.");
+                return ValidationResult.Error("Regex string provided for Process FilePath matching, is invalid regex syntax.");
             }
         }
 
