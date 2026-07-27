@@ -18,36 +18,36 @@ public sealed class AddAutoGameFromProcess : Command<AddAutoGameFromProcess.Sett
         public required string GameRecordTitle { get; init; }
 
         [CommandOption("--pid <PROCESS_ID>", isRequired: true)]
-        [Description("ID of the target active process. TIP: Can be gathered from 'list procs'.")]
+        [Description("ID of the target active process. TIP: Can be gathered from 'list procs'")]
         public required int ProcessPid { get; init; }
 
         [CommandOption("-p|--playtime <SECONDS>")]
-        [Description("Initial game record playtime in seconds.")]
+        [Description("Initial game record playtime in seconds")]
         [DefaultValue(0)]
         public int GameRecordPlayTime { get; init; }
 
         [CommandOption("--regex-win-title <REGEX_PATTERN>")]
-        [Description("Regex patter to which to match the process window title against.")]
+        [Description("Regex patter to which to match the process window title against")]
         public string? WindowTitleRegexPattern { get; init; }
 
         [CommandOption("--regex-fp <REGEX_PATTERN>")]
-        [Description("Regex patter to which to match the process filepath against.")]
+        [Description("Regex patter to which to match the process filepath against")]
         public string? FilePathRegexPattern { get; init; }
 
         [CommandOption("--match-win-title")]
-        [Description("Should when monitoring match against the process window title.")]
+        [Description("Should when monitoring match against the process window title")]
         public bool ShouldMatchAgainstWindowTitle { get; init; }
 
         [CommandOption("--match-fp")]
-        [Description("Should when monitoring match against the process filepath.")]
+        [Description("Should when monitoring match against the process filepath")]
         public bool ShouldMatchAgainstFilePath { get; init; }
 
         [CommandOption("--regex-match-win-title")]
-        [Description("Should when monitoring match the process window title against a regex pattern.")]
+        [Description("Should when monitoring match the process window title against a regex pattern")]
         public bool ShouldMatchWindowTitleAgainstRegexPattern { get; init; }
 
         [CommandOption("--regex-match-fp")]
-        [Description("Should when monitoring match the process filepath against a regex pattern.")]
+        [Description("Should when monitoring match the process filepath against a regex pattern")]
         public bool ShouldMatchFilePathAgainstRegexPattern { get; init; }
     }
 
@@ -82,9 +82,6 @@ public sealed class AddAutoGameFromProcess : Command<AddAutoGameFromProcess.Sett
 
     protected override int Execute(CommandContext context, Settings settings, CancellationToken cancellationToken)
     {
-        using var conn = DbFactory.GameLibrary.CreateConnection();
-        using var tran = conn.BeginTransaction();
-
         var matchAgainstAllAvailableProcessProperties = settings is { ShouldMatchAgainstWindowTitle: false, ShouldMatchAgainstFilePath: false, ShouldMatchWindowTitleAgainstRegexPattern: false, ShouldMatchFilePathAgainstRegexPattern: false };
 
         var ourProc = ProcessFinder.GetOurProcFromPid(settings.ProcessPid);
@@ -123,7 +120,7 @@ public sealed class AddAutoGameFromProcess : Command<AddAutoGameFromProcess.Sett
             gameRecord.FilePathRegexPattern = settings.FilePathRegexPattern;
         }
 
-        DbFactory.GameLibrary.AddGame(conn, tran, gameRecord);
+        DbFactory.GameLibrary.AddGame(gameRecord);
 
         return 0;
     }

@@ -19,11 +19,31 @@ public static class DbFactory
         private static readonly string DbFolderPath = PathResolver.ResolveRelativePath("../../UserData/");
         private static readonly string ConnString = $"Data Source={DbPath}";
 
+        private static int GetNextPositionIdx(SqliteConnection conn, SqliteTransaction tran, GameMode gameMode)
+        {
+            switch (gameMode)
+            {
+                case GameMode.Manual:
+                {
+                    // COALESCE(MAX(TablePositionIdx), -1) + 1 returns 0 when empty, or MAX + 1
+                    const string sql = "SELECT COALESCE(MAX(TablePositionIdx), -1) + 1 FROM ManualGames;";
+                    return conn.ExecuteScalar<int>(sql, transaction: tran);
+                }
+                case GameMode.Auto:
+                {
+                    const string sql = "SELECT COALESCE(MAX(TablePositionIdx), -1) + 1 FROM AutoGames;";
+                    return conn.ExecuteScalar<int>(sql, transaction: tran);
+                }
+                default:
+                    throw new NotImplementedException();
+            }
+        }
+
         /// <summary>
         /// Creates, opens, and configures a fresh SQLite connection.
         /// Caller is responsible for disposing it via 'using'.
         /// </summary>
-        public static SqliteConnection CreateConnection()
+        private static SqliteConnection CreateConnection()
         {
             var conn = new SqliteConnection(ConnString);
             conn.Open();
@@ -90,11 +110,14 @@ public static class DbFactory
             tran.Commit();
         }
 
-        public static void AddGame(SqliteConnection conn, SqliteTransaction tran, ManualGameRecord gameRecord)
+        public static void AddGame(ManualGameRecord gameRecord)
         {
+            using var conn = CreateConnection();
+            using var tran = conn.BeginTransaction();
+
             try
             {
-                var nextIdx = GetNextPositionIdx(conn, tran, GameMode.Auto);
+                var nextIdx = GetNextPositionIdx(conn, tran, GameMode.Manual);
 
                 const string sqlAction = """
                                          INSERT INTO ManualGames(TablePositionIdx, GameRecordTitle, GameRecordPlayTime)
@@ -111,11 +134,14 @@ public static class DbFactory
             }
         }
 
-        public static void AddGame(SqliteConnection conn, SqliteTransaction tran, AutoGameRecord gameRecord)
+        public static void AddGame(AutoGameRecord gameRecord)
         {
+            using var conn = CreateConnection();
+            using var tran = conn.BeginTransaction();
+
             try
             {
-                var nextIdx = GetNextPositionIdx(conn, tran, GameMode.Manual);
+                var nextIdx = GetNextPositionIdx(conn, tran, GameMode.Auto);
 
                 const string sqlAction = """
                                          INSERT INTO AutoGames(
@@ -169,14 +195,24 @@ public static class DbFactory
             }
         }
 
-        public static List<ManualGameRecordForDbQuery> GetManualGames(SqliteConnection conn)
+        public static List<ManualGameRecordForDbQuery> GetManualGames()
         {
-            const string sql = "SELECT TableId, TablePositionIdx, GameRecordTitle, GameRecordPlayTime FROM ManualGames";
+            using var conn = CreateConnection();
+            const string sql = """
+                               SELECT
+                                   TableId,
+                                   TablePositionIdx,
+                                   GameRecordTitle,
+                                   GameRecordPlayTime
+                               FROM ManualGames
+                               ORDER BY TablePositionIdx ASC;
+                               """;
             return conn.Query<ManualGameRecordForDbQuery>(sql).ToList();
         }
 
-        public static List<AutoGameRecordWithDetailsForDbQuery> GetAutoGamesWithDetails(SqliteConnection conn)
+        public static List<AutoGameRecordWithDetailsForDbQuery> GetAutoGamesWithDetails()
         {
+            using var conn = CreateConnection();
             const string sql = """
                                SELECT
                                    TableId,
@@ -192,12 +228,14 @@ public static class DbFactory
                                    ShouldMatchProcessWindowTitleAgainstRegexPattern,
                                    ShouldMatchProcessFilePathAgainstRegexPattern
                                FROM AutoGames
+                               ORDER BY TablePositionIdx ASC;
                                """;
             return conn.Query<AutoGameRecordWithDetailsForDbQuery>(sql).ToList();
         }
 
-        public static List<AutoGameRecordSimplifiedForDbQuery> GetAutoGamesSimplified(SqliteConnection conn)
+        public static List<AutoGameRecordSimplifiedForDbQuery> GetAutoGamesSimplified()
         {
+            using var conn = CreateConnection();
             const string sql = """
                                SELECT
                                    TableId,
@@ -205,28 +243,100 @@ public static class DbFactory
                                    GameRecordTitle,
                                    GameRecordPlayTime
                                FROM AutoGames
+                               ORDER BY TablePositionIdx ASC;
                                """;
             return conn.Query<AutoGameRecordSimplifiedForDbQuery>(sql).ToList();
         }
 
-        private static int GetNextPositionIdx(SqliteConnection conn, SqliteTransaction tran, GameMode gameMode)
+        public static DeleteGameActionStatus DeleteGame(GameMode targetGameMode, int posIdx)
         {
-            switch (gameMode)
+            using var conn = CreateConnection();
+            using var tran = conn.BeginTransaction();
+
+            var tableName = targetGameMode switch
             {
-                // Gets the next vector position index (MAX + 1, or 0 if table is empty).
-                case GameMode.Manual:
+                GameMode.Manual => "ManualGames",
+                GameMode.Auto => "AutoGames",
+                _ => throw new NotImplementedException()
+            };
+
+            try
+            {
+                var selectSql = $"SELECT GameRecordTitle FROM {tableName} WHERE TablePositionIdx = @PosIdx;";
+
+                var gameTitle = conn.QueryFirstOrDefault<string>(selectSql, new { PosIdx = posIdx }, transaction: tran);
+
+                if (string.IsNullOrEmpty(gameTitle))
                 {
-                    const string sql = "SELECT COALESCE(MAX(TablePositionIdx) + 1, 0) FROM ManualGames;";
-                    return conn.ExecuteScalar<int>(sql, transaction: tran);
+                    return new DeleteGameActionStatus(
+                        HasSucceeded: false,
+                        DeletedGameTitle: string.Empty,
+                        FailureReason: $"No record found at position index {posIdx} in {tableName}.");
                 }
-                case GameMode.Auto:
-                {
-                    const string sql = "SELECT COALESCE(MAX(TablePositionIdx) + 1, 0) FROM AutoGames;";
-                    return conn.ExecuteScalar<int>(sql, transaction: tran);
-                }
-                default:
-                    throw new NotImplementedException();
+
+                var deleteSql = $"DELETE FROM {tableName} WHERE TablePositionIdx = @PosIdx;";
+                conn.Execute(deleteSql, new { PosIdx = posIdx }, transaction: tran);
+
+                var shiftIndicesSql = $"""
+                                       UPDATE {tableName}
+                                       SET TablePositionIdx = TablePositionIdx - 1
+                                       WHERE TablePositionIdx > @PosIdx;
+                                       """;
+                conn.Execute(shiftIndicesSql, new { PosIdx = posIdx }, transaction: tran);
+
+                tran.Commit();
+
+                return new DeleteGameActionStatus(
+                    HasSucceeded: true,
+                    DeletedGameTitle: gameTitle,
+                    FailureReason: string.Empty);
+            }
+            catch (Exception ex)
+            {
+                tran.Rollback();
+
+                return new DeleteGameActionStatus(
+                    HasSucceeded: false,
+                    DeletedGameTitle: string.Empty,
+                    FailureReason: $"Database error: {ex.Message}");
             }
         }
+
+        public static DeleteAllGamesActionStatus DeleteAllGames(GameMode targetGameMode)
+        {
+            using var conn = CreateConnection();
+            using var tran = conn.BeginTransaction();
+
+            var tableName = targetGameMode switch
+            {
+                GameMode.Manual => "ManualGames",
+                GameMode.Auto => "AutoGames",
+                _ => throw new NotImplementedException()
+            };
+
+            try
+            {
+                var deleteSql = $"DELETE FROM {tableName};";
+                conn.Execute(deleteSql, transaction: tran);
+
+                tran.Commit();
+
+                return new DeleteAllGamesActionStatus(
+                    HasSucceeded: true,
+                    FailureReason: string.Empty);
+            }
+            catch (Exception ex)
+            {
+                tran.Rollback();
+
+                return new DeleteAllGamesActionStatus(
+                    HasSucceeded: false,
+                    FailureReason: $"Database error: {ex.Message}");
+            }
+        }
+
+        public record DeleteGameActionStatus(bool HasSucceeded, string DeletedGameTitle, string FailureReason);
+
+        public record DeleteAllGamesActionStatus(bool HasSucceeded, string FailureReason);
     }
 }
