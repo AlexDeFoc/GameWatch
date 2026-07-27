@@ -1,4 +1,4 @@
-﻿namespace GameWatch.Client.Cli.DTO;
+﻿namespace GameWatch.Client.Cli.Dto;
 
 // Maybe add as additional attributes: FileDescription
 

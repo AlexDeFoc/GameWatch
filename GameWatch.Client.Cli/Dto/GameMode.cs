@@ -1,4 +1,4 @@
-﻿namespace GameWatch.Client.Cli.DTO;
+﻿namespace GameWatch.Client.Cli.Dto;
 
 public enum GameMode
 {

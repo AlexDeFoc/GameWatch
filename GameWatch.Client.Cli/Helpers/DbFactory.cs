@@ -1,5 +1,8 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using Dapper;
+using GameWatch.Client.Cli.Dto;
+using GameWatch.Client.Cli.Dto.GameRecords;
 using Microsoft.Data.Sqlite;
 
 namespace GameWatch.Client.Cli.Helpers;
@@ -51,33 +54,27 @@ public static class DbFactory
             using var tran = conn.BeginTransaction();
 
             const string createTableSql = """
-                                          -- Data: Games
-                                          CREATE TABLE IF NOT EXISTS Games (
-                                              Id INTEGER PRIMARY KEY,
-                                              PositionIdx INTEGER NOT NULL,
-                                              Title TEXT NOT NULL,
-                                              PlayTime INTEGER NOT NULL DEFAULT 0,
-                                              WindowTitle TEXT,
-                                              ProcessName TEXT,
-                                              FilePath TEXT
+                                          -- Data: ManualGames
+                                          CREATE TABLE IF NOT EXISTS ManualGames (
+                                              TableId INTEGER PRIMARY KEY,
+                                              TablePositionIdx INTEGER NOT NULL,
+                                              GameRecordTitle TEXT NOT NULL,
+                                              GameRecordPlayTime INTEGER NOT NULL
                                           );
 
-                                          -- Index for Fast Vector/List Sorting
-                                          CREATE INDEX IF NOT EXISTS idx_games_position ON Games(PositionIdx);
-
-                                          -- View: Manual games
-                                          CREATE VIEW IF NOT EXISTS View_ManualGames AS
-                                          SELECT Id, PositionIdx, Title, PlayTime
-                                          FROM Games
-                                          WHERE ProcessName IS NULL OR ProcessName = ''
-                                          ORDER BY PositionIdx ASC;
-
-                                          -- View: Auto games
-                                          CREATE VIEW IF NOT EXISTS View_AutoGames AS
-                                          SELECT Id, PositionIdx, Title, PlayTime, WindowTitle, ProcessName, FilePath
-                                          FROM Games
-                                          WHERE ProcessName IS NOT NULL AND ProcessName != ''
-                                          ORDER BY PositionIdx ASC;
+                                          -- Data: AutoGames
+                                          CREATE TABLE IF NOT EXISTS AutoGames (
+                                              TableId INTEGER PRIMARY KEY,
+                                              TablePositionIdx INTEGER NOT NULL,
+                                              GameRecordTitle TEXT NOT NULL,
+                                              GameRecordPlayTime INTEGER NOT NULL,
+                                              ProcessWindowTitle TEXT NOT NULL,
+                                              ProcessFilePath TEXT NOT NULL,
+                                              MatchAgainstProcessWindowTitleFully INTEGER NOT NULL,
+                                              MatchAgainstProcessFileNameFully INTEGER NOT NULL,
+                                              MatchAgainstProcessWindowTitleUsingRegex INTEGER NOT NULL,
+                                              MatchAgainstProcessFileNameUsingRegex INTEGER NOT NULL
+                                          );
                                           """;
 
             // Pass the active transaction to Dapper
@@ -87,14 +84,45 @@ public static class DbFactory
             tran.Commit();
         }
 
-        /// <summary>
-        /// Gets the next vector position index (MAX + 1, or 0 if table is empty).
-        /// Accepts an existing transaction to be part of an atomic operation.
-        /// </summary>
-        public static int GetNextPositionIdx(SqliteConnection conn, SqliteTransaction? tran = null)
+        public static void AddGame(SqliteConnection conn, SqliteTransaction tran, ManualGameRecord gameRecord)
         {
-            const string sql = "SELECT COALESCE(MAX(PositionIdx) + 1, 0) FROM Games;";
-            return conn.ExecuteScalar<int>(sql, transaction: tran);
+            try
+            {
+                var nextIdx = GetNextPositionIdx(conn, tran, GameMode.Manual);
+
+                const string sqlAction = """
+                                         INSERT INTO ManualGames(TablePositionIdx, GameRecordTitle, GameRecordPlayTime)
+                                         VALUES (@TablePositionIdx, @GameRecordTitle, @GameRecordPlayTime)
+                                         """;
+
+                conn.Execute(sqlAction, new { TablePositionIdx = nextIdx, GameRecordTitle = gameRecord.Title, GameRecordPlayTime = gameRecord.PlayTime }, transaction: tran);
+                tran.Commit();
+            }
+            catch
+            {
+                tran.Rollback();
+                throw;
+            }
+        }
+
+        private static int GetNextPositionIdx(SqliteConnection conn, SqliteTransaction tran, GameMode gameMode)
+        {
+            switch (gameMode)
+            {
+                // Gets the next vector position index (MAX + 1, or 0 if table is empty).
+                case GameMode.Manual:
+                {
+                    const string sql = "SELECT COALESCE(MAX(TablePositionIdx) + 1, 0) FROM ManualGames;";
+                    return conn.ExecuteScalar<int>(sql, transaction: tran);
+                }
+                case GameMode.Auto:
+                {
+                    const string sql = "SELECT COALESCE(MAX(TablePositionIdx) + 1, 0) FROM AutoGames;";
+                    return conn.ExecuteScalar<int>(sql, transaction: tran);
+                }
+                default:
+                    throw new NotImplementedException();
+            }
         }
     }
 }

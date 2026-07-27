@@ -16,7 +16,6 @@ public sealed class ListProcs : Command<ListProcs.Settings>
         {
             Console.WriteLine($"Pid: {proc.Pid}");
             Console.WriteLine($"Window Title: {proc.WindowTitle}");
-            Console.WriteLine($"Process Name: {proc.ProcName}");
             Console.WriteLine($"FilePath: {proc.FilePath}");
             Console.WriteLine();
         }

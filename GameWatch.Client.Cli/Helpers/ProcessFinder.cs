@@ -4,13 +4,13 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
-using GameWatch.Client.Cli.DTO;
+using GameWatch.Client.Cli.Dto;
 
 namespace GameWatch.Client.Cli.Helpers;
 
 public static class ProcessFinder
 {
-    public static List<ProcForDisplay> GetListOfAvailableProcesses()
+    public static List<OurProc> GetListOfAvailableProcesses()
     {
         var procs = Process.GetProcesses().ToList();
 
@@ -21,9 +21,9 @@ public static class ProcessFinder
         return stage1Procs;
     }
 
-    private static List<ProcForDisplay> RemoveProcessesWhichAreNotUsable(List<Process> procList)
+    private static List<OurProc> RemoveProcessesWhichAreNotUsable(List<Process> procList)
     {
-        var filteredProcList = new List<ProcForDisplay>();
+        var filteredProcList = new List<OurProc>();
 
         foreach (var proc in procList)
         {
@@ -48,17 +48,16 @@ public static class ProcessFinder
         return filteredProcList;
     }
 
-    private static ProcForDisplay CreateOurProcessFromValidSysProc(Process proc)
+    private static OurProc CreateOurProcessFromValidSysProc(Process proc)
     {
-        return new ProcForDisplay(Pid: proc.Id,
+        return new OurProc(Pid: proc.Id,
                               WindowTitle: proc.MainWindowTitle,
-                              ProcName: proc.ProcessName,
                               FilePath: proc.MainModule!.FileName);
     }
 
     private static class Filters
     {
-        public static List<ProcForDisplay> RemoveSystemProcesses(List<ProcForDisplay> procList)
+        public static List<OurProc> RemoveSystemProcesses(List<OurProc> procList)
         {
             var potentialDirsFromWhichToExclude = new List<string>();
 

@@ -25,8 +25,15 @@ public static class Program
                     .WithDescription("List active running processes available for tracking.");
             }).WithAlias("ls");
 
-            cfg.AddCommand<Cmds.AddGame>("add")
-               .WithDescription("Add a game record manually, from a running process, or via preset.");
+            cfg.AddBranch("add", add =>
+            {
+                add.SetDescription("Command for adding.");
+                add.AddBranch("game", game =>
+                {
+                    game.SetDescription("Command for adding games.");
+                    game.AddCommand<Cmds.AddManualGame>("manual").WithDescription("Command for adding a game in manual mode.");
+                });
+            });
 
             cfg.AddCommand<Cmds.RemoveGame>("remove")
                .WithAlias("rm")
