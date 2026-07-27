@@ -21,6 +21,8 @@ public static class ProcessFinder
         return stage1Procs;
     }
 
+    public static OurProc GetOurProcFromPid(int pid) => CreateOurProcessFromValidSysProc(Process.GetProcessById(pid));
+
     private static List<OurProc> RemoveProcessesWhichAreNotUsable(List<Process> procList)
     {
         var filteredProcList = new List<OurProc>();
@@ -51,8 +53,8 @@ public static class ProcessFinder
     private static OurProc CreateOurProcessFromValidSysProc(Process proc)
     {
         return new OurProc(Pid: proc.Id,
-                              WindowTitle: proc.MainWindowTitle,
-                              FilePath: proc.MainModule!.FileName);
+                           WindowTitle: proc.MainWindowTitle,
+                           FilePath: proc.MainModule!.FileName);
     }
 
     private static class Filters

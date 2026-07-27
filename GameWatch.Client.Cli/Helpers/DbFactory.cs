@@ -68,12 +68,14 @@ public static class DbFactory
                                               TablePositionIdx INTEGER NOT NULL,
                                               GameRecordTitle TEXT NOT NULL,
                                               GameRecordPlayTime INTEGER NOT NULL,
-                                              ProcessWindowTitle TEXT NOT NULL,
-                                              ProcessFilePath TEXT NOT NULL,
-                                              MatchAgainstProcessWindowTitleFully INTEGER NOT NULL,
-                                              MatchAgainstProcessFileNameFully INTEGER NOT NULL,
-                                              MatchAgainstProcessWindowTitleUsingRegex INTEGER NOT NULL,
-                                              MatchAgainstProcessFileNameUsingRegex INTEGER NOT NULL
+                                              ProcessWindowTitle TEXT,
+                                              ProcessFilePath TEXT,
+                                              WindowTitleRegexPattern TEXT,
+                                              FilePathRegexPattern TEXT,
+                                              ShouldMatchAgainstProcessWindowTitle INTEGER NOT NULL,
+                                              ShouldMatchAgainstProcessFilePath INTEGER NOT NULL,
+                                              ShouldMatchProcessWindowTitleAgainstRegexPattern INTEGER NOT NULL,
+                                              ShouldMatchProcessFilePathAgainstRegexPattern INTEGER NOT NULL
                                           );
                                           """;
 
@@ -88,7 +90,7 @@ public static class DbFactory
         {
             try
             {
-                var nextIdx = GetNextPositionIdx(conn, tran, GameMode.Manual);
+                var nextIdx = GetNextPositionIdx(conn, tran, GameMode.Auto);
 
                 const string sqlAction = """
                                          INSERT INTO ManualGames(TablePositionIdx, GameRecordTitle, GameRecordPlayTime)
@@ -96,6 +98,64 @@ public static class DbFactory
                                          """;
 
                 conn.Execute(sqlAction, new { TablePositionIdx = nextIdx, GameRecordTitle = gameRecord.Title, GameRecordPlayTime = gameRecord.PlayTime }, transaction: tran);
+                tran.Commit();
+            }
+            catch
+            {
+                tran.Rollback();
+                throw;
+            }
+        }
+
+        public static void AddGame(SqliteConnection conn, SqliteTransaction tran, AutoGameRecord gameRecord)
+        {
+            try
+            {
+                var nextIdx = GetNextPositionIdx(conn, tran, GameMode.Manual);
+
+                const string sqlAction = """
+                                         INSERT INTO AutoGames(
+                                             TablePositionIdx,
+                                             GameRecordTitle,
+                                             GameRecordPlayTime,
+                                             ProcessWindowTitle,
+                                             ProcessFilePath,
+                                             WindowTitleRegexPattern,
+                                             FilePathRegexPattern,
+                                             ShouldMatchAgainstProcessWindowTitle,
+                                             ShouldMatchAgainstProcessFilePath,
+                                             ShouldMatchProcessWindowTitleAgainstRegexPattern,
+                                             ShouldMatchProcessFilePathAgainstRegexPattern
+                                         )
+                                         VALUES (
+                                             @TablePositionIdx,
+                                             @GameRecordTitle,
+                                             @GameRecordPlayTime,
+                                             @ProcessWindowTitle,
+                                             @ProcessFilePath,
+                                             @WindowTitleRegexPattern,
+                                             @FilePathRegexPattern,
+                                             @ShouldMatchAgainstProcessWindowTitle,
+                                             @ShouldMatchAgainstProcessFilePath,
+                                             @ShouldMatchProcessWindowTitleAgainstRegexPattern,
+                                             @ShouldMatchProcessFilePathAgainstRegexPattern
+                                         )
+                                         """;
+
+                conn.Execute(sqlAction, new
+                                        {
+                                            TablePositionIdx = nextIdx,
+                                            GameRecordTitle = gameRecord.Title,
+                                            GameRecordPlayTime = gameRecord.PlayTime,
+                                            ProcessWindowTitle = gameRecord.ProcessWindowTitle,
+                                            ProcessFilePath = gameRecord.ProcessFilePath,
+                                            WindowTitleRegexPattern = gameRecord.WindowTitleRegexPattern,
+                                            FilePathRegexPattern = gameRecord.FilePathRegexPattern,
+                                            ShouldMatchAgainstProcessWindowTitle = gameRecord.ShouldMatchAgainstProcessWindowTitle,
+                                            ShouldMatchAgainstProcessFilePath = gameRecord.ShouldMatchAgainstProcessFilePath,
+                                            ShouldMatchProcessWindowTitleAgainstRegexPattern = gameRecord.ShouldMatchProcessWindowTitleAgainstRegexPattern,
+                                            ShouldMatchProcessFilePathAgainstRegexPattern = gameRecord.ShouldMatchProcessFilePathAgainstRegexPattern
+                                        }, transaction: tran);
                 tran.Commit();
             }
             catch

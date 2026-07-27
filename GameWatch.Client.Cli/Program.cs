@@ -32,6 +32,9 @@ public static class Program
                 {
                     game.SetDescription("Command for adding games.");
                     game.AddCommand<Cmds.AddManualGame>("manual").WithDescription("Command for adding a game in manual mode.");
+                    game.AddCommand<Cmds.AddAutoGameFromProcess>("auto-proc")
+                        .WithDescription("Command for adding a game in auto mode and sourcing properties from an active process. If no matching flags are provided, the command defaults to matching against all available properties of the target process.");
+                    game.AddCommand<Cmds.AddAutoGameFromPreset>("auto-preset").WithDescription("Command for adding a game in auto mode and sourcing properties from an existing preset.");
                 });
             });
 
