@@ -1,4 +1,6 @@
-﻿namespace GameWatch.Client.Cli.Dto.GameRecords;
+﻿// ReSharper disable RedundantDefaultMemberInitializer
+// ReSharper disable PropertyCanBeMadeInitOnly.Global
+namespace GameWatch.Client.Cli.Dto.GameRecords;
 
 public class AutoGameRecord
 {

@@ -3,6 +3,8 @@ using System.Threading;
 using GameWatch.Client.Cli.Dto.GameRecords;
 using GameWatch.Client.Cli.Helpers;
 using Spectre.Console.Cli;
+// ReSharper disable ClassNeverInstantiated.Global
+// ReSharper disable UnusedAutoPropertyAccessor.Global
 
 namespace GameWatch.Client.Cli.Cmds;
 

@@ -4,6 +4,7 @@ using Dapper;
 using GameWatch.Client.Cli.Dto;
 using GameWatch.Client.Cli.Dto.GameRecords;
 using Microsoft.Data.Sqlite;
+// ReSharper disable RedundantAnonymousTypePropertyName
 
 namespace GameWatch.Client.Cli.Helpers;
 
