@@ -2,6 +2,6 @@
 obj/
 bin/
 output/
-build/
 GameWatch.sln.DotSettings
 GameWatch.sln.DotSettings.user
+!LICENSE
