@@ -193,6 +193,7 @@ public static class DbFactory
 
             try
             {
+                // TODO: Maybe clean it up using the helper method that allows us to get gameId from posIdx
                 var selectSql = $"""
                                  SELECT Id, Title
                                  FROM {tableName}
@@ -276,6 +277,22 @@ public static class DbFactory
                        """;
 
             conn.Execute(sql, new { SecondsToAdd = secondsToAdd, Ids = ids }, transaction: tran);
+            tran.Commit();
+        }
+
+        public static void ResetGamePlayTime(GameMode gameMode, int gameId)
+        {
+            using var conn = CreateConnection();
+            using var tran = conn.BeginTransaction();
+            var tableName = GetTableName(gameMode);
+
+            var sql = $"""
+                       UPDATE {tableName}
+                       SET PlayTimeSeconds = 0
+                       WHERE Id = @Id
+                       """;
+
+            conn.Execute(sql, new { Id = gameId }, transaction: tran);
             tran.Commit();
         }
 

@@ -55,6 +55,10 @@ public static class Program
                .WithAlias("cl")
                .WithDescription("Clear all records from a certain game collection\n    Alias: cl");
 
+            cfg.AddCommand<Cmds.ResetGame>("reset")
+               .WithAlias("rs")
+               .WithDescription("Reset a single game record from a certain game collection\n    Alias: rs");
+
             cfg.AddBranch("update", update =>
             {
                 update.SetDescription("Update application binaries or preset databases\n    Alias: up");

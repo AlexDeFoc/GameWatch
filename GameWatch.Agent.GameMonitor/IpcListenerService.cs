@@ -150,6 +150,50 @@ public sealed class IpcListenerService(AgentState state, ILogger<IpcListenerServ
                 break;
             }
 
+            case Core.Ipc.IpcConstants.CommandResetActiveManualGame:
+            {
+                if (int.TryParse(payload, out var id))
+                {
+                    if (state.ActiveManualGames.TryGetValue(id, out var session))
+                    {
+                        session.LastFlushedUtc = DateTime.UtcNow;
+
+                        if (logger.IsEnabled(LogLevel.Information))
+                            logger.LogInformation("[IPC] Reset session timer clock for active Manual Game Id={Id}", id);
+                    }
+                    else
+                    {
+                        if (logger.IsEnabled(LogLevel.Error))
+                            logger.LogError("[IPC Error] Provided manual game Id={Id} wasn't actively being tracked", id);
+                    }
+                }
+
+                break;
+            }
+
+            case Core.Ipc.IpcConstants.CommandResetActiveAutoGame:
+            {
+                if (int.TryParse(payload, out var id))
+                {
+                    var gamePid = state.ActiveAutoGames.FirstOrDefault(kvp => kvp.Value.GameId == id).Key;
+
+                    if (gamePid != 0 && state.ActiveAutoGames.TryGetValue(gamePid, out var session))
+                    {
+                        session.LastFlushedUtc = DateTime.UtcNow;
+
+                        if (logger.IsEnabled(LogLevel.Information))
+                            logger.LogInformation("[IPC] Reset session timer clock for active Auto Game Id={Id}", id);
+                    }
+                    else
+                    {
+                        if (logger.IsEnabled(LogLevel.Error))
+                            logger.LogError("[IPC Error] Provided auto game Id={Id} wasn't actively being tracked", id);
+                    }
+                }
+
+                break;
+            }
+
             default:
             {
                 if (logger.IsEnabled(LogLevel.Warning))

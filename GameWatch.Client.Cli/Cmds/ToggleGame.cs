@@ -25,18 +25,19 @@ public sealed class ToggleGame : AsyncCommand<ToggleGame.Settings>
 
     protected override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
     {
+        var gameIdGotten = DbFactory.GameLibrary.GetGameIdByPosition(GameMode.Manual, settings.GameIdx);
+
+        if (gameIdGotten == null)
+        {
+            AnsiConsole.MarkupLine("[red]⛔ Failure Reason:[/] Index provided is out of range.");
+            return 1;
+        }
+
+        var gameId = gameIdGotten.Value;
+
         // Notify running Agent over IPC with the specific Game Idx
         try
         {
-            var gameIdGotten = DbFactory.GameLibrary.GetGameIdByPosition(GameMode.Manual, settings.GameIdx);
-
-            if (gameIdGotten == null)
-            {
-                AnsiConsole.MarkupLine("[red]⛔ Failure Reason:[/] Index provided is out of range.");
-                return 1;
-            }
-
-            var gameId = gameIdGotten.Value;
 
             var notified = await IpcClient.SendToggleManualGameSignalAsync(IpcTarget.GameWatchGameMonitorAgent, gameId, cancellationToken);
 

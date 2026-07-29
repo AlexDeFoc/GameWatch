@@ -13,7 +13,7 @@ using Spectre.Console.Cli;
 
 namespace GameWatch.Client.Cli.Cmds;
 
-public sealed class RemoveGame : AsyncCommand<RemoveGame.Settings>
+public sealed class ResetGame : AsyncCommand<ResetGame.Settings>
 {
     public class Settings : CommandSettings
     {
@@ -44,23 +44,33 @@ public sealed class RemoveGame : AsyncCommand<RemoveGame.Settings>
     {
         var targetGameMode = settings.TargetGameModeIsAuto ? GameMode.Auto : GameMode.Manual;
 
-        var actionStatus = DbFactory.GameLibrary.DeleteGame(targetGameMode, settings.GameIdx);
+        var gameIdGotten = DbFactory.GameLibrary.GetGameIdByPosition(targetGameMode, settings.GameIdx);
+
+        if (gameIdGotten == null)
+        {
+            AnsiConsole.MarkupLine("[red]⛔ Failure Reason:[/] Index provided is out of range.");
+            return 1;
+        }
+
+        var gameId = gameIdGotten.Value;
+
+        DbFactory.GameLibrary.ResetGamePlayTime(targetGameMode, gameId);
 
         // Notify running Agent over IPC with the specific Game ID
         try
         {
             var notified = targetGameMode == GameMode.Auto
-                ? await IpcClient.SendRemoveAutoManualGameSignalAsync(IpcTarget.GameWatchGameMonitorAgent, actionStatus.DeletedGameId, cancellationToken)
-                : await IpcClient.SendRemoveManualGameSignalAsync(IpcTarget.GameWatchGameMonitorAgent, actionStatus.DeletedGameId, cancellationToken);
+                ? await IpcClient.SendResetActiveAutoGameSignalAsync(IpcTarget.GameWatchGameMonitorAgent, gameId, cancellationToken)
+                : await IpcClient.SendResetActiveManualGameSignalAsync(IpcTarget.GameWatchGameMonitorAgent, gameId, cancellationToken);
 
             if (!notified)
             {
-                AnsiConsole.MarkupLine("[yellow]⚠ Note:[/] Background agent is not running. Game removed from database.");
+                AnsiConsole.MarkupLine("[yellow]⚠ Note:[/] Background agent is not running. Game reset.");
             }
         }
         catch (Exception)
         {
-            AnsiConsole.MarkupLine("[yellow]⚠ Note:[/] Failed to ping background agent. Game removed from DB successfully.");
+            AnsiConsole.MarkupLine("[yellow]⚠ Note:[/] Failed to ping background agent. Game reset successfully.");
         }
 
         return 0;
