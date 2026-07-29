@@ -67,17 +67,17 @@ public static class IpcClient
     /// Sends remove manual game signal to the running background Agent.
     /// Returns true if delivered successfully; false if the Agent host is offline or unreachable.
     /// </summary>
-    public static async Task<bool> SendRemoveManualGameSignalAsync(IpcTarget target, int gameIdx, CancellationToken cancellationToken)
+    public static async Task<bool> SendRemoveManualGameSignalAsync(IpcTarget target, int gameId, CancellationToken cancellationToken)
     {
-        return await SendCommandAsync(target, $"{IpcConstants.CommandRemoveManualGame} {gameIdx}", cancellationToken);
+        return await SendCommandAsync(target, $"{IpcConstants.CommandRemoveManualGame} {gameId}", cancellationToken);
     }
 
     /// <summary>
     /// Sends remove auto game signal to the running background Agent.
     /// Returns true if delivered successfully; false if the Agent host is offline or unreachable.
     /// </summary>
-    public static async Task<bool> SendAutoManualGameSignalAsync(IpcTarget target, int gameIdx, CancellationToken cancellationToken)
+    public static async Task<bool> SendAutoManualGameSignalAsync(IpcTarget target, int gameId, CancellationToken cancellationToken)
     {
-        return await SendCommandAsync(target, $"{IpcConstants.CommandRemoveAutoGame} {gameIdx}", cancellationToken);
+        return await SendCommandAsync(target, $"{IpcConstants.CommandRemoveAutoGame} {gameId}", cancellationToken);
     }
 }

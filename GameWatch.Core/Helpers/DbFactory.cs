@@ -19,30 +19,6 @@ public static class DbFactory
         private static string _dbPath = null!;
         private static string _connString = null!;
 
-        private static string GetTableName(GameMode gameMode) => gameMode switch
-        {
-            GameMode.Manual => "ManualGames",
-            GameMode.Auto => "AutoGames",
-            _ => throw new ArgumentOutOfRangeException(nameof(gameMode), gameMode, "Unsupported game mode.")
-        };
-
-        /// <summary>Call this every time we want to perform a db action.</summary>
-        private static SqliteConnection CreateConnection()
-        {
-            var conn = new SqliteConnection(_connString);
-            conn.Open();
-
-            const string connPragmas = """
-                                       PRAGMA synchronous = NORMAL;
-                                       PRAGMA busy_timeout = 5000;
-                                       PRAGMA temp_store = MEMORY;
-                                       PRAGMA foreign_keys = ON;
-                                       """;
-
-            conn.Execute(connPragmas);
-            return conn;
-        }
-
         /// <summary>Call this once at application startup.</summary>
         public static void InitializeDatabase(string relativePathToUserDataFolder)
         {
@@ -224,7 +200,7 @@ public static class DbFactory
                                  Limit 1 OFFSET @Offset;
                                  """;
 
-                var targetGame = conn.QueryFirstOrDefault<(int Id, string Title)>(selectSql, new { Offset = offset }, transaction: tran);
+                var targetGame = conn.QueryFirstOrDefault<(int Id, string? Title)>(selectSql, new { Offset = offset }, transaction: tran);
 
                 if (targetGame.Title == null)
                 {
@@ -301,6 +277,48 @@ public static class DbFactory
 
             conn.Execute(sql, new { SecondsToAdd = secondsToAdd, Ids = ids }, transaction: tran);
             tran.Commit();
+        }
+
+        public static int? GetGameIdByPosition(GameMode mode, int posIdx)
+        {
+            if (posIdx <= 0) return null;
+
+            using var conn = CreateConnection();
+            var tableName = GetTableName(mode);
+            var offset = posIdx - 1;
+
+            var sql = $"""
+                       SELECT Id
+                       FROM {tableName}
+                       ORDER BY Id ASC
+                       LIMIT 1 OFFSET @Offset;
+                       """;
+
+            return conn.QueryFirstOrDefault<int?>(sql, new { Offset = offset });
+        }
+
+        private static string GetTableName(GameMode gameMode) => gameMode switch
+        {
+            GameMode.Manual => "ManualGames",
+            GameMode.Auto => "AutoGames",
+            _ => throw new ArgumentOutOfRangeException(nameof(gameMode), gameMode, "Unsupported game mode.")
+        };
+
+        /// <summary>Call this every time we want to perform a db action.</summary>
+        private static SqliteConnection CreateConnection()
+        {
+            var conn = new SqliteConnection(_connString);
+            conn.Open();
+
+            const string connPragmas = """
+                                       PRAGMA synchronous = NORMAL;
+                                       PRAGMA busy_timeout = 5000;
+                                       PRAGMA temp_store = MEMORY;
+                                       PRAGMA foreign_keys = ON;
+                                       """;
+
+            conn.Execute(connPragmas);
+            return conn;
         }
 
         public record DeleteGameActionStatus(bool HasSucceeded, int DeletedGameId, string DeletedGameTitle, string FailureReason);

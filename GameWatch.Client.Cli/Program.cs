@@ -26,7 +26,7 @@ public static class Program
 
             cfg.AddCommand<Cmds.ToggleGame>("toggle")
                .WithAlias("tg")
-               .WithDescription("Toggles (starts or stops) game record from a certain game collection\n    Alias: tg");
+               .WithDescription("Start or stop a certain manual game record\n    Alias: tg");
 
             cfg.AddBranch("add", add =>
             {

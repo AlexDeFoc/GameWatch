@@ -1,8 +1,10 @@
 ﻿using System;
 using System.ComponentModel;
 using System.Threading;
+using System.Threading.Tasks;
 using GameWatch.Core.Dto;
 using GameWatch.Core.Helpers;
+using GameWatch.Core.Ipc;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
@@ -12,45 +14,42 @@ using Spectre.Console.Cli;
 
 namespace GameWatch.Client.Cli.Cmds;
 
-public sealed class ToggleGame : Command<ToggleGame.Settings>
+public sealed class ToggleGame : AsyncCommand<ToggleGame.Settings>
 {
     public class Settings : CommandSettings
     {
         [CommandOption("-i|--idx <GAME_INDEX>", isRequired: true)]
-        [Description("The game index. TIP: Can be gathered from 'list games'")]
+        [Description("The game index. TIP: Can be gathered from 'list games --manual-only'")]
         public required int GameIdx { get; init; }
-
-        [CommandOption("-m|--manual-game")]
-        [Description("Toggle game from manual collection")]
-        public bool TargetGameModeIsManual { get; init; }
-
-        [CommandOption("-a|--auto-game")]
-        [Description("Toggle game from auto collection")]
-        public bool TargetGameModeIsAuto { get; init; }
     }
 
-    protected override ValidationResult Validate(CommandContext context, Settings settings)
+    protected override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
     {
-        return settings switch
+        // Notify running Agent over IPC with the specific Game Idx
+        try
         {
-            { TargetGameModeIsAuto: false, TargetGameModeIsManual: false } => ValidationResult.Error("Must provide at least one game mode flag to let the app determine from which collection to select the game."),
-            { TargetGameModeIsAuto: true, TargetGameModeIsManual: true } => ValidationResult.Error("Cannot toggle a game from both game collections because the provided id will most certainly mean a different game in both collections."),
-            _ => ValidationResult.Success()
-        };
-    }
+            var gameIdGotten = DbFactory.GameLibrary.GetGameIdByPosition(GameMode.Manual, settings.GameIdx);
 
-    protected override int Execute(CommandContext context, Settings settings, CancellationToken cancellationToken)
-    {
-        throw new NotImplementedException();
+            if (gameIdGotten == null)
+            {
+                AnsiConsole.MarkupLine("[red]⛔ Failure Reason:[/] Index provided is out of range.");
+                return 1;
+            }
 
-        // var targetGameMode = settings.TargetGameModeIsAuto ? GameMode.Auto : GameMode.Manual;
-        //
-        // var actionStatus = DbFactory.GameLibrary.ToggleGame(targetGameMode, settings.GameIdx);
-        //
-        // Console.WriteLine(actionStatus.HasSucceeded
-        //                       ? $"Deleted game called '{actionStatus.DeletedGameTitle}'."
-        //                       : $"Failed to delete game. Reason: '{actionStatus.FailureReason}'");
-        //
-        // return 0;
+            var gameId = gameIdGotten.Value;
+
+            var notified = await IpcClient.SendToggleManualGameSignalAsync(IpcTarget.GameWatchGameMonitorAgent, gameId, cancellationToken);
+
+            if (!notified)
+            {
+                AnsiConsole.MarkupLine("[red]⛔ Failure Reason:[/] Background agent is not running.");
+            }
+        }
+        catch (Exception)
+        {
+            AnsiConsole.MarkupLine("[red]⛔ Failure Reason:[/] Failed to ping/reach the background agent.");
+        }
+
+        return 0;
     }
 }
