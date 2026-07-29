@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 
-namespace GameWatch.Client.Cli.Helpers;
+namespace GameWatch.Core.Helpers;
 
 public static class PathResolver
 {

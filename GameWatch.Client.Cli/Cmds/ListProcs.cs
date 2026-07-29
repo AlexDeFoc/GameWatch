@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using Spectre.Console.Cli;
+
 // ReSharper disable ClassNeverInstantiated.Global
 
 namespace GameWatch.Client.Cli.Cmds;
@@ -11,7 +12,7 @@ public sealed class ListProcs : Command<ListProcs.Settings>
 
     protected override int Execute(CommandContext context, Settings settings, CancellationToken cancellationToken)
     {
-        var procs = Helpers.ProcessFinder.GetListOfAvailableProcesses();
+        var procs = Core.Helpers.ProcessFinder.GetListOfAvailableProcesses();
 
         foreach (var proc in procs)
         {

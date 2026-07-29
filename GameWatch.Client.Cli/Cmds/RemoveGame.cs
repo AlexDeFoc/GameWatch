@@ -1,18 +1,19 @@
 ﻿using System;
 using System.ComponentModel;
 using System.Threading;
-using GameWatch.Client.Cli.Dto;
-using GameWatch.Client.Cli.Helpers;
+using System.Threading.Tasks;
+using GameWatch.Core.Dto;
+using GameWatch.Core.Helpers;
+using GameWatch.Core.Ipc;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
 // ReSharper disable UnusedAutoPropertyAccessor.Global
-
 // ReSharper disable ClassNeverInstantiated.Global
 
 namespace GameWatch.Client.Cli.Cmds;
 
-public sealed class RemoveGame : Command<RemoveGame.Settings>
+public sealed class RemoveGame : AsyncCommand<RemoveGame.Settings>
 {
     public class Settings : CommandSettings
     {
@@ -39,15 +40,28 @@ public sealed class RemoveGame : Command<RemoveGame.Settings>
         };
     }
 
-    protected override int Execute(CommandContext context, Settings settings, CancellationToken cancellationToken)
+    protected override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
     {
         var targetGameMode = settings.TargetGameModeIsAuto ? GameMode.Auto : GameMode.Manual;
 
-        var actionStatus = DbFactory.GameLibrary.DeleteGame(targetGameMode, settings.GameIdx - 1);
+        var actionStatus = DbFactory.GameLibrary.DeleteGame(targetGameMode, settings.GameIdx);
 
-        Console.WriteLine(actionStatus.HasSucceeded
-                              ? $"Deleted game called '{actionStatus.DeletedGameTitle}'."
-                              : $"Failed to delete game. Reason: '{actionStatus.FailureReason}'");
+        // Notify running Agent over IPC with the specific Game ID
+        try
+        {
+            var notified = targetGameMode == GameMode.Auto
+                ? await IpcClient.SendAutoManualGameSignalAsync(IpcTarget.GameWatchGameMonitorAgent, actionStatus.DeletedGameId, cancellationToken)
+                : await IpcClient.SendRemoveManualGameSignalAsync(IpcTarget.GameWatchGameMonitorAgent, actionStatus.DeletedGameId, cancellationToken);
+
+            if (!notified)
+            {
+                AnsiConsole.MarkupLine("[yellow]⚠ Note:[/] Background agent is not running. Game removed from database.");
+            }
+        }
+        catch (Exception)
+        {
+            AnsiConsole.MarkupLine("[yellow]⚠ Note:[/] Failed to ping background agent. Game removed from DB successfully.");
+        }
 
         return 0;
     }

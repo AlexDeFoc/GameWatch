@@ -1,126 +1,116 @@
-﻿using System.ComponentModel;
+﻿using System;
+using System.ComponentModel;
 using System.Threading;
-using GameWatch.Client.Cli.Dto.GameRecords;
-using GameWatch.Client.Cli.Helpers;
+using System.Threading.Tasks;
+using GameWatch.Core.Dto.GameRecords;
+using GameWatch.Core.Helpers;
+using GameWatch.Core.Ipc;
 using Spectre.Console;
 using Spectre.Console.Cli;
+
 // ReSharper disable UnusedAutoPropertyAccessor.Global
 // ReSharper disable ClassNeverInstantiated.Global
 
 namespace GameWatch.Client.Cli.Cmds;
 
-public sealed class AddAutoGameFromProcess : Command<AddAutoGameFromProcess.Settings>
+public sealed class AddAutoGameFromProcess : AsyncCommand<AddAutoGameFromProcess.Settings>
 {
     public class Settings : CommandSettings
     {
         [CommandOption("-t|--title <TITLE>", isRequired: true)]
         [Description("Title of the game record.")]
-        public required string GameRecordTitle { get; init; }
+        public required string Title { get; init; }
 
         [CommandOption("--pid <PROCESS_ID>", isRequired: true)]
-        [Description("ID of the target active process. TIP: Can be gathered from 'list procs'")]
+        [Description("ID of the target active process\n    TIP: Can be gathered from 'list procs'")]
         public required int ProcessPid { get; init; }
 
         [CommandOption("-p|--playtime <SECONDS>")]
         [Description("Initial game record playtime in seconds")]
         [DefaultValue(0)]
-        public int GameRecordPlayTime { get; init; }
+        public int PlayTimeSeconds { get; init; }
 
-        [CommandOption("--regex-win-title <REGEX_PATTERN>")]
-        [Description("Regex patter to which to match the process window title against")]
-        public string? WindowTitleRegexPattern { get; init; }
+        [CommandOption("--match-title")]
+        [Description("Match against the process window title")]
+        public bool MatchWindowTitle { get; init; }
 
-        [CommandOption("--regex-fp <REGEX_PATTERN>")]
-        [Description("Regex patter to which to match the process filepath against")]
-        public string? FilePathRegexPattern { get; init; }
+        [CommandOption("--match-path")]
+        [Description("Match against the process file path")]
+        public bool MatchFilePath { get; init; }
 
-        [CommandOption("--match-win-title")]
-        [Description("Should when monitoring match against the process window title")]
-        public bool ShouldMatchAgainstWindowTitle { get; init; }
+        [CommandOption("--title-pattern <REGEX>")]
+        [Description("Regex pattern to match against the process window title")]
+        public string? WindowTitlePattern { get; init; }
 
-        [CommandOption("--match-fp")]
-        [Description("Should when monitoring match against the process filepath")]
-        public bool ShouldMatchAgainstFilePath { get; init; }
-
-        [CommandOption("--regex-match-win-title")]
-        [Description("Should when monitoring match the process window title against a regex pattern")]
-        public bool ShouldMatchWindowTitleAgainstRegexPattern { get; init; }
-
-        [CommandOption("--regex-match-fp")]
-        [Description("Should when monitoring match the process filepath against a regex pattern")]
-        public bool ShouldMatchFilePathAgainstRegexPattern { get; init; }
+        [CommandOption("--path-pattern <REGEX>")]
+        [Description("Regex pattern to match against the process file path")]
+        public string? FilePathPattern { get; init; }
     }
 
     protected override ValidationResult Validate(CommandContext context, Settings settings)
     {
-        if (settings is { ShouldMatchWindowTitleAgainstRegexPattern: true, WindowTitleRegexPattern: not null })
+        if (settings.WindowTitlePattern != null && !RegexHandler.IsValidPattern(settings.WindowTitlePattern))
         {
-            if (!RegexHandler.ValidatePattern(settings.WindowTitleRegexPattern))
-            {
-                return ValidationResult.Error("Regex string provided for Process Window Title matching, is invalid regex syntax.");
-            }
+            return ValidationResult.Error("Window Title Pattern: invalid regex syntax.");
         }
 
-        // ReSharper disable once InvertIf
-        if (settings is { ShouldMatchFilePathAgainstRegexPattern: true, FilePathRegexPattern: not null })
+        if (settings.FilePathPattern != null && !RegexHandler.IsValidPattern(settings.FilePathPattern))
         {
-            if (!RegexHandler.ValidatePattern(settings.FilePathRegexPattern))
-            {
-                return ValidationResult.Error("Regex string provided for Process FilePath matching, is invalid regex syntax.");
-            }
+            return ValidationResult.Error("File Path Pattern: invalid regex syntax.");
         }
 
-        return settings switch
-        {
-            { ShouldMatchAgainstWindowTitle: true, ShouldMatchWindowTitleAgainstRegexPattern: true } => ValidationResult.Error("Cannot match against the full window title string while attempting to match partially using a regex pattern. These flags are mutually exclusive!"),
-            { ShouldMatchAgainstFilePath: true, ShouldMatchFilePathAgainstRegexPattern: true } => ValidationResult.Error("Cannot match against the full filepath string while attempting to match partially using a regex pattern. These flags are mutually exclusive!"),
-            { ShouldMatchWindowTitleAgainstRegexPattern: true, WindowTitleRegexPattern: null } => ValidationResult.Error("Cannot request to match the process window title against a regex pattern without providing the actual regex pattern string."),
-            { ShouldMatchFilePathAgainstRegexPattern: true, FilePathRegexPattern: null } => ValidationResult.Error("Cannot request to match the process filepath against a regex pattern without providing the actual regex pattern string."),
-            _ => ValidationResult.Success()
-        };
+        return ValidationResult.Success();
     }
 
-    protected override int Execute(CommandContext context, Settings settings, CancellationToken cancellationToken)
+    protected override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
     {
-        var matchAgainstAllAvailableProcessProperties = settings is { ShouldMatchAgainstWindowTitle: false, ShouldMatchAgainstFilePath: false, ShouldMatchWindowTitleAgainstRegexPattern: false, ShouldMatchFilePathAgainstRegexPattern: false };
-
         var ourProc = ProcessFinder.GetOurProcFromPid(settings.ProcessPid);
-
-        AutoGameRecord gameRecord = new() {Title = settings.GameRecordTitle, PlayTime = settings.GameRecordPlayTime};
-
-        if (matchAgainstAllAvailableProcessProperties)
+        if (ourProc == null)
         {
-            gameRecord.ProcessWindowTitle = ourProc.WindowTitle;
-            gameRecord.ProcessFilePath = ourProc.FilePath;
-            gameRecord.ShouldMatchAgainstProcessWindowTitle = true;
-            gameRecord.ShouldMatchAgainstProcessFilePath = true;
+            AnsiConsole.MarkupLine($"[red]Error:[/] Could not locate process with PID [bold]{settings.ProcessPid}[/].");
+            return 1;
         }
 
-        if (settings.ShouldMatchAgainstWindowTitle)
-        {
-            gameRecord.ProcessWindowTitle = ourProc.WindowTitle;
-            gameRecord.ShouldMatchAgainstProcessWindowTitle = true;
-        }
+        var gameRecord = new AutoGame { Title = settings.Title, PlayTimeSeconds = settings.PlayTimeSeconds };
 
-        if (settings.ShouldMatchAgainstFilePath)
+        if (settings is { MatchWindowTitle: false, MatchFilePath: false, WindowTitlePattern: null, FilePathPattern: null })
         {
             gameRecord.ProcessFilePath = ourProc.FilePath;
-            gameRecord.ShouldMatchAgainstProcessFilePath = true;
+            gameRecord.ProcessWindowTitle = ourProc.WindowTitle;
         }
-
-        if (settings.ShouldMatchWindowTitleAgainstRegexPattern)
+        else
         {
-            gameRecord.ShouldMatchProcessWindowTitleAgainstRegexPattern = true;
-            gameRecord.WindowTitleRegexPattern = settings.WindowTitleRegexPattern;
+            if (settings.MatchWindowTitle)
+            {
+                gameRecord.ProcessWindowTitle = ourProc.WindowTitle;
+            }
+
+            if (settings.MatchFilePath)
+            {
+                gameRecord.ProcessFilePath = ourProc.FilePath;
+            }
         }
 
-        if (settings.ShouldMatchFilePathAgainstRegexPattern)
-        {
-            gameRecord.ShouldMatchProcessFilePathAgainstRegexPattern = true;
-            gameRecord.FilePathRegexPattern = settings.FilePathRegexPattern;
-        }
+        gameRecord.ProcessWindowTitlePattern = settings.WindowTitlePattern;
+        gameRecord.ProcessFilePathPattern = settings.FilePathPattern;
 
+        // Add rule to DB
         DbFactory.GameLibrary.AddGame(gameRecord);
+        AnsiConsole.MarkupLine($"[green]✓[/] Successfully added auto-game rule for [bold]{settings.Title}[/].");
+
+        // Notify running Agent over IPC to reload rules instantly
+        try
+        {
+            var notified = await IpcClient.SendRefreshSignalAsync(IpcTarget.GameWatchGameMonitorAgent, cancellationToken);
+            if (!notified)
+            {
+                AnsiConsole.MarkupLine("[yellow]⚠ Note:[/] Background agent is not running. Rules will load on next agent start.");
+            }
+        }
+        catch (Exception)
+        {
+            AnsiConsole.MarkupLine("[yellow]⚠ Note:[/] Failed to ping background agent. Rules saved to DB successfully.");
+        }
 
         return 0;
     }

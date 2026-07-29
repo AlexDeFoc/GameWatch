@@ -1,0 +1,83 @@
+﻿using System;
+using System.IO;
+using System.IO.Pipes;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace GameWatch.Core.Ipc;
+
+public static class IpcClient
+{
+    private const int ConnectTimeoutMs = 500; // 500ms timeout keeps Client snappy
+
+    private static string GetIpcTargetPipeName(IpcTarget target)
+    {
+        return target switch
+        {
+            IpcTarget.GameWatchGameMonitorAgent => IpcConstants.GameMonitorAgentPipeName,
+            _ => throw new NotImplementedException()
+        };
+    }
+
+    private static async Task<bool> SendCommandAsync(IpcTarget target, string command, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await using var client = new NamedPipeClientStream(serverName: ".",
+                                                               pipeName: GetIpcTargetPipeName(target),
+                                                               direction: PipeDirection.Out,
+                                                               options: PipeOptions.Asynchronous);
+
+            // Connect with a strict timeout so the Client doesn't hang if agent host is stopped
+            await client.ConnectAsync(ConnectTimeoutMs, cancellationToken);
+
+            await using var writer = new StreamWriter(client, Encoding.UTF8, leaveOpen: true);
+            await writer.WriteLineAsync(command.AsMemory(), cancellationToken);
+            await writer.FlushAsync(cancellationToken);
+
+            return true;
+        }
+        catch (Exception ex) when (ex is TimeoutException or IOException or OperationCanceledException)
+        {
+            // Agent is either not running, busy, or shut down
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Sends a refresh signal to the running background Agent.
+    /// Returns true if delivered successfully; false if the Agent host is offline or unreachable.
+    /// </summary>
+    public static async Task<bool> SendRefreshSignalAsync(IpcTarget target, CancellationToken cancellationToken)
+    {
+        return await SendCommandAsync(target, IpcConstants.CommandRefreshAutoGamesList, cancellationToken);
+    }
+
+    /// <summary>
+    /// Sends toggle manual game signal to the running background Agent.
+    /// Returns true if delivered successfully; false if the Agent host is offline or unreachable.
+    /// </summary>
+    public static async Task<bool> SendToggleManualGameSignalAsync(IpcTarget target, int gameIdx, CancellationToken cancellationToken)
+    {
+        return await SendCommandAsync(target, $"{IpcConstants.CommandToggleManualGame} {gameIdx}", cancellationToken);
+    }
+
+    /// <summary>
+    /// Sends remove manual game signal to the running background Agent.
+    /// Returns true if delivered successfully; false if the Agent host is offline or unreachable.
+    /// </summary>
+    public static async Task<bool> SendRemoveManualGameSignalAsync(IpcTarget target, int gameIdx, CancellationToken cancellationToken)
+    {
+        return await SendCommandAsync(target, $"{IpcConstants.CommandRemoveManualGame} {gameIdx}", cancellationToken);
+    }
+
+    /// <summary>
+    /// Sends remove auto game signal to the running background Agent.
+    /// Returns true if delivered successfully; false if the Agent host is offline or unreachable.
+    /// </summary>
+    public static async Task<bool> SendAutoManualGameSignalAsync(IpcTarget target, int gameIdx, CancellationToken cancellationToken)
+    {
+        return await SendCommandAsync(target, $"{IpcConstants.CommandRemoveAutoGame} {gameIdx}", cancellationToken);
+    }
+}

@@ -1,11 +1,10 @@
 ﻿using System;
 using System.Threading;
-using GameWatch.Client.Cli.Helpers;
+using GameWatch.Core.Helpers;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
 // ReSharper disable UnusedAutoPropertyAccessor.Global
-
 // ReSharper disable ClassNeverInstantiated.Global
 
 namespace GameWatch.Client.Cli.Cmds;
@@ -48,13 +47,14 @@ public sealed class ListGames : Command<ListGames.Settings>
                 Console.WriteLine("--- Manual games ---");
                 foreach (var game in manualGames)
                 {
-                    Console.WriteLine($"{game.TablePositionIdx + 1}. {TimeSpan.FromSeconds(game.GameRecordPlayTime)} - {game.GameRecordTitle}");
+                    Console.WriteLine($"{game.Idx}. {TimeSpan.FromSeconds(game.PlayTimeSeconds)} - {game.Title}");
                 }
             }
         }
 
         if (shouldDisplayBothGamesModes || (!shouldDisplayBothGamesModes && settings.ShouldDisplayAutoGames))
         {
+            // ReSharper disable once ConvertIfStatementToSwitchStatement
             if (settings.ShouldBeVerbose)
             {
                 var autoGames = DbFactory.GameLibrary.GetAutoGamesWithDetails();
@@ -69,7 +69,7 @@ public sealed class ListGames : Command<ListGames.Settings>
 
                     foreach (var game in autoGames)
                     {
-                        Console.WriteLine($"{game.TablePositionIdx + 1}. {TimeSpan.FromSeconds(game.GameRecordPlayTime)} - {game.GameRecordTitle}");
+                        Console.WriteLine($"{game.Idx}. {TimeSpan.FromSeconds(game.PlayTimeSeconds)} - {game.Title}");
 
                         Console.WriteLine("   Matching rules:");
 
@@ -85,17 +85,17 @@ public sealed class ListGames : Command<ListGames.Settings>
                             Console.WriteLine($"         Value: {game.ProcessFilePath}");
                         }
 
-                        if (game.WindowTitleRegexPattern != null)
+                        if (game.ProcessWindowTitlePattern != null)
                         {
                             Console.WriteLine("      Window Title: regex pattern");
-                            Console.WriteLine($"         Value: {game.WindowTitleRegexPattern}");
+                            Console.WriteLine($"         Value: {game.ProcessWindowTitlePattern}");
                         }
 
                         // ReSharper disable once InvertIf
-                        if (game.FilePathRegexPattern != null)
+                        if (game.ProcessFilePathPattern != null)
                         {
                             Console.WriteLine("      FilePath: regex pattern");
-                            Console.WriteLine($"         Value: {game.FilePathRegexPattern}");
+                            Console.WriteLine($"         Value: {game.ProcessFilePathPattern}");
                         }
                     }
                 }
@@ -114,7 +114,7 @@ public sealed class ListGames : Command<ListGames.Settings>
 
                     foreach (var game in autoGames)
                     {
-                        Console.WriteLine($"{game.TablePositionIdx + 1}. {TimeSpan.FromSeconds(game.GameRecordPlayTime)} - {game.GameRecordTitle}");
+                        Console.WriteLine($"{game.Idx}. {TimeSpan.FromSeconds(game.PlayTimeSeconds)} - {game.Title}");
                     }
                 }
             }

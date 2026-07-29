@@ -1,13 +1,12 @@
 ﻿using System;
 using System.ComponentModel;
 using System.Threading;
-using GameWatch.Client.Cli.Dto;
-using GameWatch.Client.Cli.Helpers;
+using GameWatch.Core.Dto;
+using GameWatch.Core.Helpers;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
 // ReSharper disable UnusedAutoPropertyAccessor.Global
-
 // ReSharper disable ClassNeverInstantiated.Global
 
 namespace GameWatch.Client.Cli.Cmds;
