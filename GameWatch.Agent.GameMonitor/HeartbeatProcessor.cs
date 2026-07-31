@@ -50,7 +50,7 @@ public sealed class HeartbeatProcessor(AgentState state, ILogger<HeartbeatProces
         {
             try
             {
-                DbFactory.GameLibrary.IncrementPlayTime(mode, [gameId], seconds);
+                DbFactory.GameLibrary.IncrementPlayTime(mode, gameId, seconds);
 
                 if (logger.IsEnabled(LogLevel.Information))
                     logger.LogInformation("[HEARTBEAT] Updated {Mode} Game (GameId: {GameId}) (+{Seconds}s)", mode, gameId, seconds);

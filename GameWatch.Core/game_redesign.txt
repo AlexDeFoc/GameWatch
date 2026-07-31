@@ -1,0 +1,136 @@
+﻿(tick = 5 seconds passed)
+(tmp = inside a method)
+
+have existing a List<AutoGame> LoadedAutoGames
+have existing a Dictionary<int procPID, AutoGame> ActiveAutoGames
+have existing a List<ManualGame> ActiveManualGames
+have existing a tmp Dictionary<int procPid, OurProc> AvailableProcs
+have existing a tmp Dictionary<ActiveGame> RecentlyInactiveAutoGames
+have existing a tmp List<int gameId> GamesToSkipCheckingWhenMonitoring
+have existing a tmp Dictionary<int gameId, int elapsedPlayTime>
+                            RecentlyInactiveAutoGamesElapsedPlayTime
+
+manual game contains: GameId, Title, PlayTimeSeconds
+auto game contains: GameId, Title, ...
+
+auto game restrictions:
+- one PID per game, when we add a game, we impose that condition
+
+manual game behavior:
+- on toggle (starting):
+  - add to ActiveManualGames
+  - give new value to time snapshot (UtcNow)
+- on toggle (stopping):
+  - compute elapsed time
+  - save to disk elapsed time
+  - remove from ActiveManualGames
+
+auto game behavior:
+- on add:
+  - remove from db
+  - request GameMonitorAgent for a refresh
+  - Agent reloads games from db into LoadedAutoGames
+- on remove:
+  - remove from db
+  - request GameMonitorAgent for a refresh
+  - Agent reloads games from db into LoadedAutoGames
+- on edit:
+  - edit in db
+  - request GameMonitorAgent for a refresh
+  - Agent reloads games from db into LoadedAutoGames
+
+on each tick end actions:
+- load AvailableProcs using ProcFinder
+- perform 'remove inactives' step
+- perform 'search match' step
+
+'remove inactives' step:
+- foreach PID_KEY in ActiveAutoGames
+if false AvailableProcs.Contains(PID_KEY)
+add ActiveAutoGames.At(PID_KEY)
+into RecentlyInactiveAutoGames
+then remove ActiveAutoGames.At(PID_KEY)
+- after loop, perform 'save recent inactives' step
+
+'save recent inactives' step:
+- foreach GAME in RecentlyInactiveAutoGames
+get elapsed playtime and store into
+RecentlyInactiveAutoGamesElapsedPlayTime.At(GAME.GameId)
+
+- pass RecentlyInactiveAutoGamesElapsedPlayTime dict
+to DbFactory IncrementPlayTime function, which will
+for each matching GameId (dict key), sets the PlayTimeSeconds
+column to the value from the dict value
+
+'search match' step:
+- perform 'skip actives' step
+- perform 'perform actual search match' step
+
+'skip actives' step:
+- foreach kvp PID_GAME in AutoGames:
+- set PID = PID_GAME.Key
+- set GAME = PID_GAME.Value
+if true AvailableProcs.Contains(PID)
+do GamesToSkipCheckingWhenMonitoring.Add(GAME.GameId);
+
+'perform actual search match' step:
+- set GAMES_CHECKED = 0
+- foreach GAME in LoadedAutoGames:
+- blazing fast check: break if GAMES_CHECKED == LoadedAutoGames.Count
+else GAMES_CHECK++
+- set FINISHED_SEARCHING_GAME to false
+- inner foreach kvp PID_PROC in AvailableProcs:
+  - check break if true FINISHED_SEARCHING_GAME
+  - set PID = PID_PROC.Key
+  - set PROC = PID_PROC.Value
+  - check if true GAME.MatchWindowTitle != null && GAME.MatchFilePath == null
+    - check if GAME.WindowTitlePattern == null
+      - if true:
+        - check if true GAME.MatchWindowTitle == PROC.WindowTitle
+          - do ActiveAutoGames.Add(PID, GAME)
+          - set FINISHED_SEARCHING_GAME true
+      - if false:
+        - check if true IsRegexMatch(GAME.WindowTitlePattern,
+                                     GAME.MatchWindowTitle)
+          - do ActiveAutoGames.Add(PID, GAME)
+          - set FINISHED_SEARCHING_GAME true
+  - check if true GAME.MatchFilePath != null && GAME.MatchWindowTitle == null
+    - check if GAME.FilePathPattern == null
+      - if true:
+        - check if true GAME.MatchFilePath == PROC.FilePath
+          - do ActiveAutoGames.Add(PID, GAME)
+          - set FINISHED_SEARCHING_GAME true
+      - if false:
+        - check if true IsRegexMatch(GAME.FilePathPattern,
+                                     GAME.MatchFilePath)
+          - do ActiveAutoGames.Add(PID, GAME)
+          - set FINISHED_SEARCHING_GAME true
+  - check if true GAME.MatchWindowTitle != null && GAME.MatchFilePath != null
+    - check if true GAME.WindowTitlePattern == null
+                 && GAME.FilePathPattern == null
+      - check if true GAME.MatchWindowTitle == PROC.WindowTitle
+                   && GAME.MatchFilePath == PROC.FilePath
+        - do ActiveAutoGames.Add(PID, GAME)
+        - set FINISHED_SEARCHING_GAME true
+    - check if true GAME.WindowTitlePattern != null
+                 && GAME.FilePathPattern != null
+      - check if true IsRegexMatch(GAME.WindowTitlePattern,
+                                   GAME.MatchWindowTitle)
+                   && IsRegexMatch(GAME.FilePathPattern,
+                                   GAME.MatchFilePath)
+        - do ActiveAutoGames.Add(PID, GAME)
+        - set FINISHED_SEARCHING_GAME true
+    - check if true GAME.WindowTitlePattern != null
+                 && GAME.FilePathPattern == null
+      - check if true IsRegexMatch(GAME.WindowTitlePattern,
+                                   GAME.MatchWindowTitle)
+                   && GAME.MatchFilePath == PROC.FilePath
+        - do ActiveAutoGames.Add(PID, GAME)
+        - set FINISHED_SEARCHING_GAME true
+    - check if true GAME.FilePathPattern != null
+                 && GAME.WindowTitlePattern == null
+      - check if true IsRegexMatch(GAME.FilePathPattern,
+                                   GAME.MatchFilePath)
+                   && GAME.MatchWindowTitle == PROC.WindowTitle
+        - do ActiveAutoGames.Add(PID, GAME)
+        - set FINISHED_SEARCHING_GAME true

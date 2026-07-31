@@ -54,7 +54,7 @@ public sealed class ResetGame : AsyncCommand<ResetGame.Settings>
 
         var gameId = gameIdGotten.Value;
 
-        DbFactory.GameLibrary.ResetGamePlayTime(targetGameMode, gameId);
+        DbFactory.GameLibrary.ResetGamePlayTime(targetGameMode, settings.GameIdx);
 
         // Notify running Agent over IPC with the specific Game ID
         try

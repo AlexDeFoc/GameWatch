@@ -101,7 +101,7 @@ public sealed class AddAutoGameFromProcess : AsyncCommand<AddAutoGameFromProcess
         // Notify running Agent over IPC to reload rules instantly
         try
         {
-            var notified = await IpcClient.SendRefreshSignalAsync(IpcTarget.GameWatchGameMonitorAgent, cancellationToken);
+            var notified = await IpcClient.SendRefreshSignalForAutoGamesListAsync(IpcTarget.GameWatchGameMonitorAgent, cancellationToken);
             if (!notified)
             {
                 AnsiConsole.MarkupLine("[yellow]⚠ Note:[/] Background agent is not running. Rules will load on next agent start.");

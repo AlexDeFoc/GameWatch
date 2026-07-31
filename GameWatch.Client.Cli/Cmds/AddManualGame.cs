@@ -31,13 +31,13 @@ public sealed class AddManualGame : AsyncCommand<AddManualGame.Settings>
     {
         var gameRecord = new ManualGame { Title = settings.Title, PlayTimeSeconds = settings.PlayTimeSeconds };
 
-        var gameIdx = DbFactory.GameLibrary.AddGame(gameRecord);
+        var gameId = DbFactory.GameLibrary.AddGame(gameRecord);
         AnsiConsole.MarkupLine($"[green]✓[/] Successfully added manual game [bold]{settings.Title}[/].");
 
-        // Notify running Agent over IPC with the specific Game Idx
+        // Notify running Agent over IPC with the specific Game Id
         try
         {
-            var notified = await IpcClient.SendToggleManualGameSignalAsync(IpcTarget.GameWatchGameMonitorAgent, gameIdx, cancellationToken);
+            var notified = await IpcClient.SendToggleManualGameSignalAsync(IpcTarget.GameWatchGameMonitorAgent, gameId, cancellationToken);
             if (!notified)
             {
                 AnsiConsole.MarkupLine("[yellow]⚠ Note:[/] Background agent is not running. Game added to database.");

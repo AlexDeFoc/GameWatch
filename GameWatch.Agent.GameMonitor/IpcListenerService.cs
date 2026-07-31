@@ -125,7 +125,7 @@ public sealed class IpcListenerService(AgentState state, ILogger<IpcListenerServ
                         var elapsed = (int)(DateTime.UtcNow - session.LastFlushedUtc).TotalSeconds;
                         if (elapsed > 0)
                         {
-                            DbFactory.GameLibrary.IncrementPlayTime(GameMode.Manual, [id], elapsed);
+                            DbFactory.GameLibrary.IncrementPlayTime(GameMode.Manual, id, elapsed);
                         }
 
                         if (logger.IsEnabled(LogLevel.Information))

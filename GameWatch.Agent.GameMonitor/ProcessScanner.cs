@@ -55,7 +55,7 @@ public sealed class ProcessScanner(AgentState state, ILogger<ProcessScanner> log
             var elapsedSeconds = (int)(DateTime.UtcNow - session.LastFlushedUtc).TotalSeconds;
             if (elapsedSeconds > 0)
             {
-                DbFactory.GameLibrary.IncrementPlayTime(GameMode.Auto, [session.GameId], elapsedSeconds);
+                DbFactory.GameLibrary.IncrementPlayTime(GameMode.Auto, session.GameId, elapsedSeconds);
             }
 
             if (logger.IsEnabled(LogLevel.Information))

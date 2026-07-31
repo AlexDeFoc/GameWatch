@@ -1,9 +1,8 @@
 ﻿using System;
 using GameWatch.Core.Dto;
 using GameWatch.Core.Dto.GameRecords;
-using GameWatch.Core.Helpers;
 
-namespace GameWatch.Agent.GameMonitor;
+namespace GameWatch.Core.Helpers;
 
 public static class RuleMatcher
 {

@@ -47,6 +47,17 @@ public static class Program
                 });
             });
 
+            cfg.AddBranch("edit", edit =>
+            {
+                edit.SetDescription("Command for editing");
+                edit.AddBranch("game", game =>
+                {
+                    game.SetDescription("Command for editing game record properties");
+                    game.AddCommand<Cmds.EditManualGame>("manual").WithDescription("Command for editing manual game properties");
+                    game.AddCommand<Cmds.EditAutoGame>("auto").WithDescription("Command for editing auto game properties");
+                });
+            });
+
             cfg.AddCommand<Cmds.RemoveGame>("remove")
                .WithAlias("rm")
                .WithDescription("Remove a single game record from a certain game collection\n    Alias: rm");
@@ -59,14 +70,9 @@ public static class Program
                .WithAlias("rs")
                .WithDescription("Reset a single game record from a certain game collection\n    Alias: rs");
 
-            cfg.AddBranch("update", update =>
-            {
-                update.SetDescription("Update application binaries or preset databases\n    Alias: up");
-                update.AddCommand<Cmds.UpdateApp>("app")
-                      .WithDescription("Check for and install application updates");
-                update.AddCommand<Cmds.UpdatePresets>("presets")
-                      .WithDescription("Download the latest community game presets");
-            }).WithAlias("up");
+            cfg.AddCommand<Cmds.UpdateApp>("update")
+               .WithAlias("up")
+               .WithDescription("Check for and install application updates\n    Alias: up");
         });
 
         return app.Run(args);

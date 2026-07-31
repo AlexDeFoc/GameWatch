@@ -33,7 +33,7 @@ public static class IpcClient
     /// Sends a refresh signal to the running background Agent.
     /// Returns true if delivered successfully; false if the Agent host is offline or unreachable.
     /// </summary>
-    public static async Task<bool> SendRefreshSignalAsync(IpcTarget target, CancellationToken cancellationToken)
+    public static async Task<bool> SendRefreshSignalForAutoGamesListAsync(IpcTarget target, CancellationToken cancellationToken)
     {
         return await SendCommandAsync(target, IpcConstants.CommandRefreshAutoGamesList, cancellationToken);
     }

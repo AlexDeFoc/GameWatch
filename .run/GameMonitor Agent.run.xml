@@ -1,5 +1,5 @@
 ﻿<component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="GameMonitor Agent" type="DotNetProject" factoryName=".NET Project">
+  <configuration default="false" name="GameMonitor Agent" type="DotNetProject" factoryName=".NET Project" folderName="Dev">
     <option name="EXE_PATH" value="$PROJECT_DIR$/build/debug/GameWatch/Agents/GameMonitor/GameWatch.Agent.GameMonitor.exe" />
     <option name="PROGRAM_PARAMETERS" value="" />
     <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/GameWatch.Agent.GameMonitor" />
