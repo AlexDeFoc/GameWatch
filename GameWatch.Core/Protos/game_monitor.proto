@@ -1,0 +1,36 @@
+﻿syntax = "proto3";
+
+package gamewatch.ipc;
+
+option csharp_namespace = "GameWatch.Agent.GameMonitor.Ipc.Grpc";
+
+service IpcProcessor {
+  rpc ToggleManualGame (GameIdRequest) returns (IpcResponse);
+  rpc RemoveManualGame (GameIdRequest) returns (IpcResponse);
+  rpc RemoveAutoGame (GameIdRequest) returns (IpcResponse);
+  rpc RefreshAutoGamesList (EmptyRequest) returns (IpcResponse);
+  rpc ResetActiveManualGame (GameIdRequest) returns (IpcResponse);
+  rpc ResetActiveAutoGame (GameIdRequest) returns (IpcResponse);
+  rpc EditAutoGame (EditAutoGameRequest) returns (IpcResponse);
+
+  // Eviction endpoint <- used when to replace one agent instance with an older one
+  rpc EvictAgent (EvictRequest) returns (IpcResponse);
+}
+
+message EvictRequest {}
+
+message EmptyRequest {}
+
+message EditAutoGameRequest {
+  int32 game_idx = 1;
+  bool was_game_active = 2;
+}
+
+message GameIdRequest {
+  int32 game_id = 1;
+}
+
+message IpcResponse {
+  bool success = 1;
+  string message = 2;
+}

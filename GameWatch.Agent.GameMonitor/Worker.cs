@@ -15,10 +15,13 @@ public sealed class Worker(
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        state.LoadedAutoGames = DbFactory.GameLibrary.GetAutoGamesWithDetailsWithIdInsteadOfPosIdx();
+        if (logger.IsEnabled(LogLevel.Information))
+            logger.LogInformation("ℹ️ Agent started. Loading important stuff...");
+
+        state.LoadedAutoGames.ReplaceAll(DbFactory.GameLibrary.GetAutoGames());
 
         if (logger.IsEnabled(LogLevel.Information))
-            logger.LogInformation("[Agent] Initialized with {Count} auto-game rule(s) from SQLite.", state.LoadedAutoGames.Count);
+            logger.LogInformation("✅️ Loaded auto games from db. Found={count} games", state.LoadedAutoGames.Count);
 
         using var timer = new PeriodicTimer(TimeSpan.FromSeconds(5));
 
@@ -26,32 +29,36 @@ public sealed class Worker(
         {
             while (!stoppingToken.IsCancellationRequested && await timer.WaitForNextTickAsync(stoppingToken))
             {
-                // 1. IPC Refresh check
+                // Check if refresh auto games signal was triggered
                 if (state.GameListRefreshToken.IsCancellationRequested)
                 {
                     if (logger.IsEnabled(LogLevel.Information))
-                        logger.LogInformation("[Agent] Refresh requested via IPC. Reloading auto-game rules...");
-                    state.LoadedAutoGames = DbFactory.GameLibrary.GetAutoGamesWithDetailsWithIdInsteadOfPosIdx();
+                        logger.LogInformation("ℹ️ Reloading auto games from db...");
+                    state.LoadedAutoGames.ReplaceAll(DbFactory.GameLibrary.GetAutoGames());
+                    logger.LogInformation("✅ Finished reloading auto games from db...");
                     state.ResetGameListRefresh();
                 }
 
-                // 2. Scan active process starts/stops (handles immediate stop flushes)
+                // Perform tasks upon tick finish (5 seconds)
                 scanner.Scan();
 
-                // 3. Flush 60s increments for sessions that reached the threshold
+                // Flush 60s increments for sessions that reached the threshold
                 heartbeatProcessor.FlushHeartbeats(forceFlushAll: false);
             }
         }
         finally
         {
-            // 4. Graceful Shutdown: force flush remaining seconds for ALL active sessions
-            if (logger.IsEnabled(LogLevel.Information))
-                logger.LogInformation("[Agent] Shutdown requested. Performing final partial flush...");
+            // Graceful Shutdown: force flush remaining seconds for ALL active sessions IF NEEDED
+            if (!state.ActiveAutoGames.IsEmpty || !state.ActiveManualGames.IsEmpty)
+            {
+                if (logger.IsEnabled(LogLevel.Information))
+                    logger.LogInformation("ℹ️ Agent shutdown requested. Performing final partial flush...");
 
-            heartbeatProcessor.FlushHeartbeats(forceFlushAll: true);
+                heartbeatProcessor.FlushHeartbeats(forceFlushAll: true);
 
-            if (logger.IsEnabled(LogLevel.Information))
-                logger.LogInformation("[Agent] Playtime saved successfully. Host shutting down.");
+                if (logger.IsEnabled(LogLevel.Information))
+                    logger.LogInformation("✅ All games saved.");
+            }
         }
     }
 }

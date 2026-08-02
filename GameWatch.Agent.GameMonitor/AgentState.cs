@@ -1,19 +1,20 @@
 ﻿using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Threading;
-using GameWatch.Core.Dto.GameRecords;
+using GameWatch.Core;
+using GameWatch.Core.Dto;
+using GameWatch.Core.GameRecords;
 
 namespace GameWatch.Agent.GameMonitor;
 
 public sealed class AgentState
 {
-    public List<AutoGame> LoadedAutoGames { get; set; } = [];
+    public ConcurrentDictionary<GameId, Pid> ActiveAutoGamesPids { get; } = [];
 
-    // Key = Process PID, Value = Active Tracked Session
-    public ConcurrentDictionary<int, TrackedSession> ActiveAutoGames { get; } = new();
+    public ConcurrentList<AutoGame> LoadedAutoGames { get; } = [];
 
-    // Key = Game ID, Value = Active Tracked Session
-    public ConcurrentDictionary<int, TrackedSession> ActiveManualGames { get; } = new();
+    public ConcurrentDictionary<Pid, TrackingSessions.Auto> ActiveAutoGames { get; } = [];
+
+    public ConcurrentDictionary<GameId, TrackingSessions.Manual> ActiveManualGames { get; } = [];
 
     private CancellationTokenSource _gameListRefreshCts = new();
     public CancellationToken GameListRefreshToken => _gameListRefreshCts.Token;

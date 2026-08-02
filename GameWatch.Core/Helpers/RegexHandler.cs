@@ -20,7 +20,7 @@ public static class RegexHandler
         }
     }
 
-    public static bool IsMatch(string valueToCheck, string pattern)
+    public static bool IsMatch(string pattern, string valueToCheck)
     {
         try
         {

@@ -2,10 +2,9 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using Dapper;
 using GameWatch.Core.Dto;
-using GameWatch.Core.Dto.GameRecords;
+using GameWatch.Core.GameRecords;
 using Microsoft.Data.Sqlite;
 
 // ReSharper disable RedundantAnonymousTypePropertyName
@@ -20,12 +19,19 @@ public static class DbFactory
         private static string _dbPath = null!;
         private static string _connString = null!;
 
-        private static List<int> _manualGamesTableIds = [];
-        private static List<int> _autoGamesTableIds = [];
+        private static List<GameId> _manualGamesTableIds = [];
+        private static List<GameId> _autoGamesTableIds = [];
 
         /// <summary>Call this once at application startup.</summary>
         public static void InitializeDatabase(string relativePathToUserDataFolder)
         {
+            // Configure Dapper
+            // Register this once at application startup
+            SqlMapper.AddTypeHandler(new DapperHelpers.GameIdTypeHandler());
+            SqlMapper.AddTypeHandler(new DapperHelpers.GameIdxTypeHandler());
+            SqlMapper.AddTypeHandler(new DapperHelpers.PidTypeHandler());
+            SqlMapper.AddTypeHandler(new DapperHelpers.ElapsedTimeTypeHandler());
+
             // Init variables
             _dbFolderPath = PathResolver.ResolveRelativePath(relativePathToUserDataFolder);
             _dbPath = Path.Join(_dbFolderPath, "GameLibrary.db");
@@ -50,18 +56,18 @@ public static class DbFactory
             const string createTableSql = """
                                           CREATE TABLE IF NOT EXISTS ManualGames (
                                               Id INTEGER PRIMARY KEY,
-                                              Title TEXT NOT NULL,
-                                              PlayTimeSeconds INTEGER NOT NULL
+                                              Name TEXT NOT NULL,
+                                              PlayTimeSec INTEGER NOT NULL DEFAULT 0
                                           ) STRICT;
 
                                           CREATE TABLE IF NOT EXISTS AutoGames (
                                               Id INTEGER PRIMARY KEY,
-                                              Title TEXT NOT NULL,
-                                              PlayTimeSeconds INTEGER NOT NULL,
-                                              ProcessWindowTitle TEXT,
-                                              ProcessFilePath TEXT,
-                                              ProcessWindowTitlePattern TEXT,
-                                              ProcessFilePathPattern TEXT
+                                              Name TEXT NOT NULL,
+                                              PlayTimeSec INTEGER NOT NULL DEFAULT 0,
+                                              WindowTitle TEXT,
+                                              FilePath TEXT,
+                                              WindowRule TEXT,
+                                              PathRule TEXT
                                           ) STRICT;
                                           """;
 
@@ -80,24 +86,24 @@ public static class DbFactory
                                                    ORDER BY Id ASC;
                                                    """;
 
-            _manualGamesTableIds = conn.Query<int>(readManualGameTableIdsSql, transaction: tran).ToList();
-            _autoGamesTableIds = conn.Query<int>(readAutoGameTableIdsSql, transaction: tran).ToList();
+            _manualGamesTableIds = conn.Query<int>(readManualGameTableIdsSql, transaction: tran).Select(v => new GameId(v)).ToList();
+            _autoGamesTableIds = conn.Query<int>(readAutoGameTableIdsSql, transaction: tran).Select(v => new GameId(v)).ToList();
 
             tran.Commit();
         }
 
-        public static int AddGame(ManualGame gameRecord)
+        public static GameId AddGame(ManualGame gameRecord)
         {
             using var conn = CreateConnection();
             using var tran = conn.BeginTransaction();
 
             const string sqlAction = """
-                                     INSERT INTO ManualGames(Title, PlayTimeSeconds)
-                                     VALUES (@Title, @PlayTimeSeconds);
+                                     INSERT INTO ManualGames(Name, PlayTimeSec)
+                                     VALUES (@Name, @PlayTimeSec);
                                      SELECT last_insert_rowid();
                                      """;
 
-            var gameId = conn.ExecuteScalar<int>(sqlAction, gameRecord, transaction: tran);
+            var gameId = conn.ExecuteScalar<GameId>(sqlAction, gameRecord, transaction: tran);
             tran.Commit();
 
             _manualGamesTableIds.Add(gameId);
@@ -112,24 +118,24 @@ public static class DbFactory
 
             const string sqlAction = """
                                      INSERT INTO AutoGames(
-                                         Title,
-                                         PlayTimeSeconds,
-                                         ProcessWindowTitle,
-                                         ProcessFilePath,
-                                         ProcessWindowTitlePattern,
-                                         ProcessFilePathPattern
+                                         Name,
+                                         PlayTimeSec,
+                                         WindowTitle,
+                                         FilePath,
+                                         WindowRule,
+                                         PathRule
                                      )
                                      VALUES (
-                                         @Title,
-                                         @PlayTimeSeconds,
-                                         @ProcessWindowTitle,
-                                         @ProcessFilePath,
-                                         @ProcessWindowTitlePattern,
-                                         @ProcessFilePathPattern;
+                                         @Name,
+                                         @PlayTimeSec,
+                                         @WindowTitle,
+                                         @FilePath,
+                                         @WindowRule,
+                                         @PathRule);
                                      SELECT last_insert_rowid();
                                      """;
 
-            var gameId = conn.ExecuteScalar<int>(sqlAction, gameRecord, transaction: tran);
+            var gameId = conn.ExecuteScalar<GameId>(sqlAction, gameRecord, transaction: tran);
             tran.Commit();
 
             _autoGamesTableIds.Add(gameId);
@@ -138,11 +144,12 @@ public static class DbFactory
         public static List<ManualGame> GetManualGames()
         {
             using var conn = CreateConnection();
+
             const string sql = """
                                SELECT
-                                   ROW_NUMBER() OVER (ORDER BY Id ASC) AS Idx,
-                                   Title,
-                                   PlayTimeSeconds
+                                   Id,
+                                   Name,
+                                   PlayTimeSec
                                FROM ManualGames
                                ORDER BY Id ASC;
                                """;
@@ -155,7 +162,7 @@ public static class DbFactory
             {
                 // 1. Reset any overflowing rows in the DB
                 using var tran = conn.BeginTransaction();
-                const string fixSql = "UPDATE ManualGames SET PlayTimeSeconds = 0 WHERE PlayTimeSeconds > 2147483647;";
+                const string fixSql = "UPDATE ManualGames SET PlayTimeSec = 0 WHERE PlayTimeSec > 2147483647;";
                 conn.Execute(fixSql, transaction: tran);
                 tran.Commit();
 
@@ -164,18 +171,19 @@ public static class DbFactory
             }
         }
 
-        public static List<AutoGame> GetAutoGamesWithDetails()
+        public static List<AutoGame> GetAutoGames()
         {
             using var conn = CreateConnection();
+
             const string sql = """
                                SELECT
-                                   ROW_NUMBER() OVER (ORDER BY Id ASC) AS Idx,
-                                   Title,
-                                   PlayTimeSeconds,
-                                   ProcessWindowTitle,
-                                   ProcessFilePath,
-                                   ProcessWindowTitlePattern,
-                                   ProcessFilePathPattern
+                                   Id,
+                                   Name,
+                                   PlayTimeSec,
+                                   WindowTitle,
+                                   FilePath,
+                                   WindowRule,
+                                   PathRule
                                FROM AutoGames
                                ORDER BY Id ASC;
                                """;
@@ -188,7 +196,7 @@ public static class DbFactory
             {
                 // 1. Reset any overflowing rows in the DB
                 using var tran = conn.BeginTransaction();
-                const string fixSql = "UPDATE AutoGames SET PlayTimeSeconds = 0 WHERE PlayTimeSeconds > 2147483647;";
+                const string fixSql = "UPDATE AutoGames SET PlayTimeSec = 0 WHERE PlayTimeSec > 2147483647;";
                 conn.Execute(fixSql, transaction: tran);
                 tran.Commit();
 
@@ -197,89 +205,29 @@ public static class DbFactory
             }
         }
 
-        public static List<AutoGame> GetAutoGamesWithDetailsWithIdInsteadOfPosIdx()
-        {
-            using var conn = CreateConnection();
-            const string sql = """
-                               SELECT
-                                   Id AS Idx,
-                                   Title,
-                                   PlayTimeSeconds,
-                                   ProcessWindowTitle,
-                                   ProcessFilePath,
-                                   ProcessWindowTitlePattern,
-                                   ProcessFilePathPattern
-                               FROM AutoGames
-                               ORDER BY Id ASC;
-                               """;
-            try
-            {
-                return conn.Query<AutoGame>(sql).ToList();
-            }
-            catch (Exception ex) when (ex is OverflowException || ex.InnerException is OverflowException)
-            {
-                // 1. Reset any overflowing rows in the DB
-                using var tran = conn.BeginTransaction();
-                const string fixSql = "UPDATE AutoGames SET PlayTimeSeconds = 0 WHERE PlayTimeSeconds > 2147483647;";
-                conn.Execute(fixSql, transaction: tran);
-                tran.Commit();
-
-                // 2. Retry the query
-                return conn.Query<AutoGame>(sql).ToList();
-            }
-        }
-
-        public static List<AutoGame> GetAutoGamesSimplified()
-        {
-            using var conn = CreateConnection();
-            const string sql = """
-                               SELECT
-                                   ROW_NUMBER() OVER (ORDER BY Id ASC) AS Idx,
-                                   Title,
-                                   PlayTimeSeconds 
-                               FROM AutoGames
-                               ORDER BY Id ASC;
-                               """;
-            try
-            {
-                return conn.Query<AutoGame>(sql).ToList();
-            }
-            catch (Exception ex) when (ex is OverflowException || ex.InnerException is OverflowException)
-            {
-                // 1. Reset any overflowing rows in the DB
-                using var tran = conn.BeginTransaction();
-                const string fixSql = "UPDATE AutoGames SET PlayTimeSeconds = 0 WHERE PlayTimeSeconds > 2147483647;";
-                conn.Execute(fixSql, transaction: tran);
-                tran.Commit();
-
-                // 2. Retry the query
-                return conn.Query<AutoGame>(sql).ToList();
-            }
-        }
-
-        public static DeleteGameActionStatus DeleteGame(GameMode targetGameMode, int posIdx)
+        public static DeleteGameActionStatus DeleteGame(GameMode targetGameMode, GameIdx pos)
         {
             var targetGamesTableIds = targetGameMode == GameMode.Auto ? _autoGamesTableIds : _manualGamesTableIds;
 
-            if (posIdx <= 0 || posIdx > targetGamesTableIds.Count)
+            if (pos.V <= 0 || pos.V > targetGamesTableIds.Count)
             {
                 return new DeleteGameActionStatus(
                     HasSucceeded: false,
-                    DeletedGameId: 0,
+                    DeletedGameId: GameId.Zero,
                     DeletedGameTitle: string.Empty,
-                    FailureReason: $"Invalid position index {posIdx}. Position index must be 1 or greater.");
+                    FailureReason: "⛔ Provided game index is out of range. Ignoring command...");
             }
 
             using var conn = CreateConnection();
             using var tran = conn.BeginTransaction();
 
             var tableName = GetTableName(targetGameMode);
-            var gameId = targetGamesTableIds[posIdx - 1];
+            var gameId = targetGamesTableIds[pos.V - 1];
 
             try
             {
                 var selectSql = $"""
-                                 SELECT Title
+                                 SELECT Name
                                  FROM {tableName}
                                  WHERE Id = @Id;
                                  """;
@@ -290,9 +238,9 @@ public static class DbFactory
                 {
                     return new DeleteGameActionStatus(
                         HasSucceeded: false,
-                        DeletedGameId: 0,
+                        DeletedGameId: GameId.Zero,
                         DeletedGameTitle: string.Empty,
-                        FailureReason: $"No record found at position index {posIdx} in {tableName}.");
+                        FailureReason: $"⛔ No game found to delete at Idx={pos.V} in Table={tableName}. Ignoring command...");
                 }
 
                 // Delete using primary key directly
@@ -301,7 +249,7 @@ public static class DbFactory
 
                 tran.Commit();
 
-                targetGamesTableIds.RemoveAt(posIdx - 1);
+                targetGamesTableIds.RemoveAt(pos.V - 1);
 
                 return new DeleteGameActionStatus(
                     HasSucceeded: true,
@@ -313,15 +261,14 @@ public static class DbFactory
             {
                 return new DeleteGameActionStatus(
                     HasSucceeded: false,
-                    DeletedGameId: 0,
+                    DeletedGameId: GameId.Zero,
                     DeletedGameTitle: string.Empty,
-                    FailureReason: $"Database error: {ex.Message}");
+                    FailureReason: $"⛔ Database error msg: {ex.Message}. Ignoring command...");
             }
         }
 
         public static DeleteAllGamesActionStatus DeleteAllGames(GameMode targetGameMode)
         {
-            // TODO: impl way of telling user that the db doesn't have anything to delete when .count is empty
             using var conn = CreateConnection();
             using var tran = conn.BeginTransaction();
 
@@ -330,7 +277,11 @@ public static class DbFactory
             try
             {
                 var deleteSql = $"DELETE FROM {tableName};";
-                conn.Execute(deleteSql, transaction: tran);
+                var rowsAffected = conn.Execute(deleteSql, transaction: tran);
+
+                if (rowsAffected == 0)
+                    return new DeleteAllGamesActionStatus(HasSucceeded: false,
+                                                          FailureReason: "ℹ️ No games found which to delete, ignoring command...");
 
                 tran.Commit();
 
@@ -346,13 +297,13 @@ public static class DbFactory
             {
                 return new DeleteAllGamesActionStatus(
                     HasSucceeded: false,
-                    FailureReason: $"Database error: {ex.Message}");
+                    FailureReason: $"⛔ Database error msg: {ex.Message}. Ignoring command...");
             }
         }
 
-        public static void IncrementPlayTime(GameMode gameMode, int? gameId, int secondsToAdd = 60)
+        public static void IncrementPlayTime(GameMode gameMode, Dictionary<GameId, ElapsedTime> gamesToUpdate)
         {
-            if (gameId == null)
+            if (gamesToUpdate.Count == 0)
                 return;
 
             var tableName = GetTableName(gameMode);
@@ -362,7 +313,30 @@ public static class DbFactory
 
             var sql = $"""
                        UPDATE {tableName}
-                       SET PlayTimeSeconds = PlayTimeSeconds + @SecondsToAdd
+                       SET PlayTimeSec = PlayTimeSec + @SecondsToAdd
+                       WHERE Id = @Id
+                       """;
+
+            var parameters = gamesToUpdate.Select(kvp => new
+                                                         {
+                                                             Id = kvp.Key,
+                                                             SecondsToAdd = kvp.Value
+                                                         });
+
+            conn.Execute(sql, parameters, transaction: tran);
+            tran.Commit();
+        }
+
+        public static void IncrementPlayTime(GameMode gameMode, GameId gameId, int secondsToAdd = 60)
+        {
+            var tableName = GetTableName(gameMode);
+
+            using var conn = CreateConnection();
+            using var tran = conn.BeginTransaction();
+
+            var sql = $"""
+                       UPDATE {tableName}
+                       SET PlayTimeSec = PlayTimeSec + @SecondsToAdd
                        WHERE Id = @Id
                        """;
 
@@ -370,12 +344,12 @@ public static class DbFactory
             tran.Commit();
         }
 
-        public static void ResetGamePlayTime(GameMode gameMode, int gameIdx)
+        public static void ResetGamePlayTime(GameMode gameMode, GameIdx gameIdx)
         {
             var tableName = GetTableName(gameMode);
             var targetGamesTableIds = gameMode == GameMode.Auto ? _autoGamesTableIds : _manualGamesTableIds;
 
-            if (gameIdx <= 0 || gameIdx > targetGamesTableIds.Count)
+            if (gameIdx.V <= 0 || gameIdx.V > targetGamesTableIds.Count)
                 return;
 
             using var conn = CreateConnection();
@@ -383,63 +357,65 @@ public static class DbFactory
 
             var sql = $"""
                        UPDATE {tableName}
-                       SET PlayTimeSeconds = 0
-                       WHERE Id = @Id
+                       SET PlayTimeSec = 0
+                       WHERE Id = @Id;
                        """;
 
-            conn.Execute(sql, new { Id = targetGamesTableIds[gameIdx - 1] }, transaction: tran);
+            conn.Execute(sql, new { Id = targetGamesTableIds[gameIdx.V - 1] }, transaction: tran);
             tran.Commit();
         }
 
-        public static ChangeGamePropertyResult ChangeGameProperty(GameMode gameMode, int gameIdx,
-                                                                  string? title = null,
-                                                                  int? playTimeSeconds = null,
-                                                                  string? procWindowTitle = null,
-                                                                  string? procFilePath = null,
-                                                                  string? windowTitlePattern = null,
-                                                                  string? filePathPattern = null)
+        public static ChangeGamePropertyResult ChangeGameProperty(GameMode gameMode,
+                                                                  GameIdx gameIdx,
+                                                                  string? name = null,
+                                                                  ElapsedTime? playTimeSec = null,
+                                                                  string? windowTitle = null,
+                                                                  string? filePath = null,
+                                                                  string? windowRule = null,
+                                                                  string? pathRule = null)
         {
-            var gameId = GetGameIdByPosition(gameMode, gameIdx);
+            var gameId = GetGameIdByIdx(gameMode, gameIdx);
 
             if (gameId == null)
-                return new ChangeGamePropertyResult(HasSucceeded: false, FailureReason: "Game index out of range");
+                return new ChangeGamePropertyResult(HasSucceeded: false, FailureReason: "⛔ Provided index is out of range. Ignoring command...");
 
             var setClauses = new List<string>();
             var parameters = new DynamicParameters();
             parameters.Add("GameId", gameId.Value);
 
-            if (title != null)
+            if (name != null)
             {
-                setClauses.Add("Title = @Title");
-                parameters.Add("Title", title);
+                setClauses.Add("Name = @Name");
+                parameters.Add("Name", name);
             }
 
-            if (playTimeSeconds != null)
+            if (playTimeSec != null)
             {
-                setClauses.Add("PlayTimeSeconds = @PlayTimeSeconds");
-                parameters.Add("PlayTimeSeconds", playTimeSeconds);
+                setClauses.Add("PlayTimeSec = @PlayTimeSec");
+                parameters.Add("PlayTimeSec", playTimeSec.Value);
             }
 
             if (gameMode == GameMode.Auto)
             {
-                setClauses.Add("ProcessWindowTitle = @ProcessWindowTitle");
-                setClauses.Add("ProcessFilePath = @ProcessFilePath");
-                setClauses.Add("ProcessWindowTitlePattern = @ProcessWindowTitlePattern");
-                setClauses.Add("ProcessFilePathPattern = @ProcessFilePathPattern");
-                parameters.Add("ProcessWindowTitle", procWindowTitle);
-                parameters.Add("ProcessFilePath", procFilePath);
-                parameters.Add("ProcessWindowTitlePattern", windowTitlePattern);
-                parameters.Add("ProcessFilePathPattern", filePathPattern);
+                setClauses.Add("WindowTitle = @WindowTitle");
+                setClauses.Add("FilePath = @FilePath");
+                setClauses.Add("WindowRule = @WindowRule");
+                setClauses.Add("PathRule = @PathRule");
+
+                parameters.Add("WindowTitle", windowTitle);
+                parameters.Add("FilePath", filePath);
+                parameters.Add("WindowRule", windowRule);
+                parameters.Add("PathRule", pathRule);
             }
 
             if (setClauses.Count == 0)
-                return new ChangeGamePropertyResult(HasSucceeded: false, FailureReason: "Nothing to update");
+                return new ChangeGamePropertyResult(HasSucceeded: false, FailureReason: "ℹ️ Nothing to update, ignoring command...");
 
             var tableName = GetTableName(gameMode);
             var updateSql = $"""
                              UPDATE {tableName}
                              SET {string.Join(", ", setClauses)}
-                             WHERE Id = @GameId
+                             WHERE Id = @GameId;
                              """;
 
             using var conn = CreateConnection();
@@ -453,22 +429,66 @@ public static class DbFactory
             }
             catch (Exception ex)
             {
-                return new ChangeGamePropertyResult(HasSucceeded: false, FailureReason: $"Db error: {ex.Message}");
+                return new ChangeGamePropertyResult(HasSucceeded: false, FailureReason: $"⛔ Database error: {ex.Message}");
             }
         }
 
-        public static int? GetGameIdByPosition(GameMode mode, int posIdx)
+        public static GetAutoGameByIdxResult GetAutoGameByIdx(GameIdx idx)
+        {
+            var id = GetGameIdByIdx(GameMode.Auto, idx);
+
+            if (id == null)
+                return new GetAutoGameByIdxResult(HasSucceeded: false,
+                                                  Game: null,
+                                                  FailureReason: "⛔ Provided index is out of range. Ignoring command...");
+
+            using var conn = CreateConnection();
+            const string sql = """
+                               SELECT
+                                   Id,
+                                   Name,
+                                   PlayTimeSec,
+                                   WindowTitle,
+                                   FilePath,
+                                   WindowRule,
+                                   PathRule
+                               FROM AutoGames
+                               WHERE Id = @Id;
+                               """;
+
+            try
+            {
+                var game = conn.QueryFirstOrDefault<AutoGame>(sql, new { Id = id });
+
+                if (game == null)
+                    return new GetAutoGameByIdxResult(HasSucceeded: false,
+                                                      Game: null,
+                                                      FailureReason: "⛔ Failed to find game inside the database. Ignoring command...");
+
+                return new GetAutoGameByIdxResult(HasSucceeded: true,
+                                                  Game: game,
+                                                  FailureReason: string.Empty);
+            }
+            catch (Exception ex)
+            {
+                return new GetAutoGameByIdxResult(HasSucceeded: false,
+                                                  Game: null,
+                                                  FailureReason: $"⛔ Database error msg: {ex.Message}. Ignoring command...");
+            }
+        }
+
+        public static GameId? GetGameIdByIdx(GameMode mode, GameIdx pos)
         {
             var targetGamesTableIds = mode == GameMode.Auto ? _autoGamesTableIds : _manualGamesTableIds;
-            if (posIdx <= 0 || posIdx > targetGamesTableIds.Count) return null;
-            return targetGamesTableIds[posIdx - 1];
+            if (pos.V <= 0 || pos.V > targetGamesTableIds.Count) return null;
+            return targetGamesTableIds[pos.V - 1];
         }
 
         private static string GetTableName(GameMode gameMode) => gameMode switch
         {
             GameMode.Manual => "ManualGames",
             GameMode.Auto => "AutoGames",
-            _ => throw new ArgumentOutOfRangeException(nameof(gameMode), gameMode, "Unsupported game mode.")
+            _ => throw new ArgumentOutOfRangeException(nameof(gameMode), gameMode, "Unsupported Game mode.")
         };
 
         /// <summary>Call this every time we want to perform a db action.</summary>
@@ -488,10 +508,12 @@ public static class DbFactory
             return conn;
         }
 
-        public record DeleteGameActionStatus(bool HasSucceeded, int DeletedGameId, string DeletedGameTitle, string FailureReason);
+        public record DeleteGameActionStatus(bool HasSucceeded, GameId DeletedGameId, string DeletedGameTitle, string FailureReason);
 
         public record DeleteAllGamesActionStatus(bool HasSucceeded, string FailureReason);
 
         public record ChangeGamePropertyResult(bool HasSucceeded, string FailureReason);
+
+        public record GetAutoGameByIdxResult(bool HasSucceeded, AutoGame? Game, string FailureReason);
     }
 }

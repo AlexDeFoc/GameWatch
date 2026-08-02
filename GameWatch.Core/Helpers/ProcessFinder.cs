@@ -22,6 +22,49 @@ public static class ProcessFinder
 
     private static readonly List<string> ExcludedSystemDirectories = InitializeSystemDirectories();
 
+    public static Dictionary<int, OurProc> GetDictOfAvailableProcesses()
+    {
+        var result = new Dictionary<int, OurProc>();
+        var procs = Process.GetProcesses().ToList();
+
+        foreach (var proc in procs)
+        {
+            try
+            {
+                // 1. Fast check: If it doesn't have a window handle or title, drop it
+                if (proc.MainWindowHandle == IntPtr.Zero || string.IsNullOrWhiteSpace(proc.MainWindowTitle))
+                    continue;
+
+                // Slow check: Only read MainModule for the ~5-10 processes that passed the window check
+                // This completely eliminates Access Denied exceptions on system processes
+                var filePath = proc.MainModule?.FileName;
+                if (string.IsNullOrEmpty(filePath))
+                    continue;
+
+                // 3. System path check: filter against cached system paths
+                if (IsSystemProcess(filePath))
+                    continue;
+
+                result.Add(proc.Id,
+                           new OurProc(
+                               Pid: proc.Id,
+                               WindowTitle: proc.MainWindowTitle,
+                               FilePath: filePath));
+            }
+            catch
+            {
+                // Ignore processes that closed mid-check or restricted by OS
+            }
+            finally
+            {
+                // Dispose OS handle to prevent leaks
+                proc.Dispose();
+            }
+        }
+
+        return result;
+    }
+
     public static List<OurProc> GetListOfAvailableProcesses()
     {
         var result = new List<OurProc>();

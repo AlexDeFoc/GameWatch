@@ -11,15 +11,15 @@ using Spectre.Console.Cli;
 
 namespace GameWatch.Client.Cli.Cmds;
 
-public sealed class ClearGames : Command<ClearGames.Settings>
+public sealed class DeleteAllGames : Command<DeleteAllGames.Settings>
 {
     public class Settings : CommandSettings
     {
-        [CommandOption("-m|--manual-game")]
+        [CommandOption("-m|--manual-Game")]
         [Description("Delete all games from manual collection")]
         public bool TargetGameModeIsManual { get; init; }
 
-        [CommandOption("-a|--auto-game")]
+        [CommandOption("-a|--auto-Game")]
         [Description("Delete all games from auto collection")]
         public bool TargetGameModeIsAuto { get; init; }
     }
@@ -28,7 +28,7 @@ public sealed class ClearGames : Command<ClearGames.Settings>
     {
         return settings switch
         {
-            { TargetGameModeIsAuto: false, TargetGameModeIsManual: false } => ValidationResult.Error("Must provide at least one game mode flag to let the app determine what game collection to clear."),
+            { TargetGameModeIsAuto: false, TargetGameModeIsManual: false } => ValidationResult.Error("Must provide at least one Game mode flag to let the app determine what Game collection to clear."),
             _ => ValidationResult.Success()
         };
     }
@@ -40,8 +40,8 @@ public sealed class ClearGames : Command<ClearGames.Settings>
             var actionStatus = DbFactory.GameLibrary.DeleteAllGames(GameMode.Auto);
 
             Console.WriteLine(actionStatus.HasSucceeded
-                                  ? "Deleted all auto games."
-                                  : $"Failed to delete all games from auto games collection. Reason: '{actionStatus.FailureReason}'");
+                                  ? "✅ Deleted all auto games."
+                                  : actionStatus.FailureReason);
         }
 
         // ReSharper disable once InvertIf
@@ -51,7 +51,7 @@ public sealed class ClearGames : Command<ClearGames.Settings>
 
             Console.WriteLine(actionStatus.HasSucceeded
                                   ? "Deleted all manual games."
-                                  : $"Failed to delete all games from manual games collection. Reason: '{actionStatus.FailureReason}'");
+                                  : actionStatus.FailureReason);
         }
 
         return 0;

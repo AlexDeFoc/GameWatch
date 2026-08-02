@@ -2,6 +2,8 @@
 using System.ComponentModel;
 using System.Threading;
 using System.Threading.Tasks;
+using GameWatch.Agent.GameMonitor;
+using GameWatch.Core.Agents.GameMonitor;
 using GameWatch.Core.Dto;
 using GameWatch.Core.Helpers;
 using GameWatch.Core.Ipc;
@@ -18,15 +20,15 @@ public sealed class RemoveGame : AsyncCommand<RemoveGame.Settings>
     public class Settings : CommandSettings
     {
         [CommandOption("-i|--idx <GAME_INDEX>", isRequired: true)]
-        [Description("The game index. TIP: Can be gathered from 'list games'")]
+        [Description("The Game index. TIP: Can be gathered from 'list games'")]
         public required int GameIdx { get; init; }
 
-        [CommandOption("-m|--manual-game")]
-        [Description("Delete game from manual collection")]
+        [CommandOption("-m|--manual-Game")]
+        [Description("Delete Game from manual collection")]
         public bool TargetGameModeIsManual { get; init; }
 
-        [CommandOption("-a|--auto-game")]
-        [Description("Delete game from auto collection")]
+        [CommandOption("-a|--auto-Game")]
+        [Description("Delete Game from auto collection")]
         public bool TargetGameModeIsAuto { get; init; }
     }
 
@@ -34,8 +36,8 @@ public sealed class RemoveGame : AsyncCommand<RemoveGame.Settings>
     {
         return settings switch
         {
-            { TargetGameModeIsAuto: false, TargetGameModeIsManual: false } => ValidationResult.Error("Must provide at least one game mode flag to let the app determine from which collection to delete the game."),
-            { TargetGameModeIsAuto: true, TargetGameModeIsManual: true } => ValidationResult.Error("Cannot delete a game from both game collections because the provided id will most certainly mean a different game in both collections."),
+            { TargetGameModeIsAuto: false, TargetGameModeIsManual: false } => ValidationResult.Error("Must provide at least one Game mode flag to let the app determine from which collection to delete the Game."),
+            { TargetGameModeIsAuto: true, TargetGameModeIsManual: true } => ValidationResult.Error("Cannot delete a Game from both Game collections because the provided id will most certainly mean a different Game in both collections."),
             _ => ValidationResult.Success()
         };
     }
@@ -44,23 +46,31 @@ public sealed class RemoveGame : AsyncCommand<RemoveGame.Settings>
     {
         var targetGameMode = settings.TargetGameModeIsAuto ? GameMode.Auto : GameMode.Manual;
 
-        var actionStatus = DbFactory.GameLibrary.DeleteGame(targetGameMode, settings.GameIdx);
+        var actionStatus = DbFactory.GameLibrary.DeleteGame(targetGameMode, new GameIdx(settings.GameIdx));
 
-        // Notify running Agent over IPC with the specific Game ID
+        if (!actionStatus.HasSucceeded)
+        {
+            Console.WriteLine(actionStatus.FailureReason);
+
+            return 1;
+        }
+
         try
         {
             var notified = targetGameMode == GameMode.Auto
-                ? await IpcClient.SendRemoveAutoManualGameSignalAsync(IpcTarget.GameWatchGameMonitorAgent, actionStatus.DeletedGameId, cancellationToken)
+                ? await IpcClient.SendRemoveAutoGameSignalAsync(IpcTarget.GameWatchGameMonitorAgent, actionStatus.DeletedGameId, cancellationToken)
                 : await IpcClient.SendRemoveManualGameSignalAsync(IpcTarget.GameWatchGameMonitorAgent, actionStatus.DeletedGameId, cancellationToken);
 
-            if (!notified)
-            {
-                AnsiConsole.MarkupLine("[yellow]⚠ Note:[/] Background agent is not running. Game removed from database.");
-            }
+            if (notified) return 0;
+
+            Console.WriteLine("⚠️ Game Monitor Agent is not running. No problem, the database file was updated anyways.");
         }
         catch (Exception)
         {
-            AnsiConsole.MarkupLine("[yellow]⚠ Note:[/] Failed to ping background agent. Game removed from DB successfully.");
+            Console.WriteLine("⚠️ Failed to communicate with the Game Monitor Agent." +
+                              "Failed notify the agent to remove the Game from active games list;" +
+                              "this may cause the Game to be saved to the database even if you just deleted it," +
+                              "in that case close the Game then delete the Game record from the app.");
         }
 
         return 0;

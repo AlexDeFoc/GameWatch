@@ -15,51 +15,83 @@ public sealed class HeartbeatProcessor(AgentState state, ILogger<HeartbeatProces
     public void FlushHeartbeats(bool forceFlushAll = false)
     {
         var now = DateTime.UtcNow;
-        FlushSessionGroup(state.ActiveAutoGames.Values, GameMode.Auto, now, forceFlushAll);
-        FlushSessionGroup(state.ActiveManualGames.Values, GameMode.Manual, now, forceFlushAll);
+        FlushAutoGames(state.ActiveAutoGames.Values, now, forceFlushAll);
+        FlushManualGames(state.ActiveManualGames.Values, now, forceFlushAll);
     }
 
-    private void FlushSessionGroup(IEnumerable<TrackedSession> sessions, GameMode mode, DateTime now, bool forceFlushAll)
+    private void FlushAutoGames(IEnumerable<TrackingSessions.Auto> gameSessions, DateTime utcNow, bool forceFlushAll)
     {
-        var gamesToFlush = new Dictionary<int, int>(); // GameId -> Seconds to add
+        var gamesToFlush = new Dictionary<GameId, ElapsedTime>();
 
-        foreach (var session in sessions)
+        foreach (var s in gameSessions)
         {
-            var elapsedSeconds = (int)(now - session.LastFlushedUtc).TotalSeconds;
-
-            if (forceFlushAll)
+            var elapsed = (int)(utcNow - s.LastTimeFlushedPlayTime).TotalSeconds;
+            switch (elapsed)
             {
-                if (elapsedSeconds > 0)
-                {
-                    gamesToFlush[session.GameId] = gamesToFlush.GetValueOrDefault(session.GameId) + elapsedSeconds;
-                    session.LastFlushedUtc = now;
-                }
-            }
-            else if (elapsedSeconds >= 60)
-            {
-                // Flush 60-second chunks
-                var chunks = elapsedSeconds / 60;
-                var secondsToFlush = chunks * 60;
-
-                gamesToFlush[session.GameId] = gamesToFlush.GetValueOrDefault(session.GameId) + secondsToFlush;
-                session.LastFlushedUtc = session.LastFlushedUtc.AddSeconds(secondsToFlush);
+                case <= 0:
+                case < 60 when !forceFlushAll:
+                    continue;
+                default:
+                    // Flush if forced, or if at least 60 seconds have passed
+                    gamesToFlush[s.Game.Id] = new ElapsedTime(elapsed);
+                    s.LastTimeFlushedPlayTime = utcNow;
+                    break;
             }
         }
 
-        foreach (var (gameId, seconds) in gamesToFlush)
+        try
         {
-            try
-            {
-                DbFactory.GameLibrary.IncrementPlayTime(mode, gameId, seconds);
+            DbFactory.GameLibrary.IncrementPlayTime(GameMode.Auto, gamesToFlush);
 
-                if (logger.IsEnabled(LogLevel.Information))
-                    logger.LogInformation("[HEARTBEAT] Updated {Mode} Game (GameId: {GameId}) (+{Seconds}s)", mode, gameId, seconds);
-            }
-            catch (Exception ex)
+            if (!logger.IsEnabled(LogLevel.Information)) return;
+
+            foreach (var (gameId, elapsed) in gamesToFlush)
             {
-                if (logger.IsEnabled(LogLevel.Error))
-                    logger.LogError(ex, "[HEARTBEAT ERROR] Failed to flush playtime for {Mode} Game Id {GameId}", mode, gameId);
+                logger.LogInformation("{timestamp} ℹ️ Activity: Auto Game Id={id} Elapsed={elapsed}s", utcNow.TimeOfDay, gameId, elapsed);
             }
+        }
+        catch (Exception ex)
+        {
+            if (logger.IsEnabled(LogLevel.Error))
+                logger.LogError(ex, "⛔ Failed to flush playtime for Active auto games");
+        }
+    }
+
+    private void FlushManualGames(IEnumerable<TrackingSessions.Manual> gameSessions, DateTime utcNow, bool forceFlushAll)
+    {
+        var gamesToFlush = new Dictionary<GameId, ElapsedTime>();
+
+        foreach (var s in gameSessions)
+        {
+            var elapsed = (int)(utcNow - s.LastTimeFlushedPlayTime).TotalSeconds;
+            switch (elapsed)
+            {
+                case <= 0:
+                case < 60 when !forceFlushAll:
+                    continue;
+                default:
+                    // Flush if forced, or if at least 60 seconds have passed
+                    gamesToFlush[s.Id] = new ElapsedTime(elapsed);
+                    s.LastTimeFlushedPlayTime = utcNow;
+                    break;
+            }
+        }
+
+        try
+        {
+            DbFactory.GameLibrary.IncrementPlayTime(GameMode.Manual, gamesToFlush);
+
+            if (!logger.IsEnabled(LogLevel.Information)) return;
+
+            foreach (var (gameId, elapsed) in gamesToFlush)
+            {
+                logger.LogInformation("{timestamp} ℹ️ Activity: Manual Game Id={id} Elapsed={elapsed}s", utcNow.TimeOfDay, gameId, elapsed);
+            }
+        }
+        catch (Exception ex)
+        {
+            if (logger.IsEnabled(LogLevel.Error))
+                logger.LogError(ex, "⛔ Failed to flush playtime for active manual games");
         }
     }
 }

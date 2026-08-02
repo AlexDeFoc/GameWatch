@@ -1,0 +1,4 @@
+﻿- ability to migrate manual games to auto games
+- have in the client a table in memory of all games (or even better in the DbFactory, a look up table) like this Idx | Id for very fast access without having the need to find what the id is if we know the index!
+-- add for simpler setup (our own rowid, load max id found when we start and just keep incrtementing cuz we have autoincrement)
+- upload to microsoft store too but remove option to update

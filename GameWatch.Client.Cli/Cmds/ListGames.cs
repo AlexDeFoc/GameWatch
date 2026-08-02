@@ -47,74 +47,69 @@ public sealed class ListGames : Command<ListGames.Settings>
                 Console.WriteLine("--- Manual games ---");
                 foreach (var game in manualGames)
                 {
-                    Console.WriteLine($"{game.Idx}. {TimeSpan.FromSeconds(game.PlayTimeSeconds)} - {game.Title}");
+                    Console.WriteLine($"{game.Id}. {TimeSpan.FromSeconds(game.PlayTimeSec.V)} - {game.Name}");
                 }
             }
         }
 
         if (shouldDisplayBothGamesModes || (!shouldDisplayBothGamesModes && settings.ShouldDisplayAutoGames))
         {
-            // ReSharper disable once ConvertIfStatementToSwitchStatement
-            if (settings.ShouldBeVerbose)
+            var autoGames = DbFactory.GameLibrary.GetAutoGames();
+
+            if (autoGames.Count > 0)
             {
-                var autoGames = DbFactory.GameLibrary.GetAutoGamesWithDetails();
+                if (shouldDisplayBothGamesModes)
+                    Console.WriteLine();
 
-                if (autoGames.Count > 0)
+                gamesHaveBeenDisplayed = true;
+                Console.WriteLine("--- Auto games ---");
+
+                switch (settings.ShouldBeVerbose)
                 {
-                    if (shouldDisplayBothGamesModes)
-                        Console.WriteLine();
-
-                    gamesHaveBeenDisplayed = true;
-                    Console.WriteLine("--- Auto games ---");
-
-                    foreach (var game in autoGames)
+                    case true:
                     {
-                        Console.WriteLine($"{game.Idx}. {TimeSpan.FromSeconds(game.PlayTimeSeconds)} - {game.Title}");
-
-                        Console.WriteLine("   Matching rules:");
-
-                        if (game.ProcessWindowTitle != null)
+                        foreach (var game in autoGames)
                         {
-                            Console.WriteLine("      Window Title: exact match");
-                            Console.WriteLine($"         Value: {game.ProcessWindowTitle}");
+                            Console.WriteLine($"{game.Id}. {TimeSpan.FromSeconds(game.PlayTimeSec.V)} - {game.Name}");
+
+                            Console.WriteLine("   Matching rules:");
+
+                            if (game.WindowTitle != null)
+                            {
+                                Console.WriteLine("      Window Title: should match fully");
+                                Console.WriteLine($"         Value: {game.WindowTitle}");
+                            }
+
+                            if (game.FilePath != null)
+                            {
+                                Console.WriteLine("      File Path: should match fully");
+                                Console.WriteLine($"         Value: {game.FilePath}");
+                            }
+
+                            if (game.WindowRule != null)
+                            {
+                                Console.WriteLine("      Window Title: should match using pattern");
+                                Console.WriteLine($"         Value: {game.WindowRule}");
+                            }
+
+                            // ReSharper disable once InvertIf
+                            if (game.PathRule != null)
+                            {
+                                Console.WriteLine("      File Path: should match using pattern");
+                                Console.WriteLine($"         Value: {game.PathRule}");
+                            }
                         }
 
-                        if (game.ProcessFilePath != null)
-                        {
-                            Console.WriteLine("      FilePath: exact match");
-                            Console.WriteLine($"         Value: {game.ProcessFilePath}");
-                        }
-
-                        if (game.ProcessWindowTitlePattern != null)
-                        {
-                            Console.WriteLine("      Window Title: regex pattern");
-                            Console.WriteLine($"         Value: {game.ProcessWindowTitlePattern}");
-                        }
-
-                        // ReSharper disable once InvertIf
-                        if (game.ProcessFilePathPattern != null)
-                        {
-                            Console.WriteLine("      FilePath: regex pattern");
-                            Console.WriteLine($"         Value: {game.ProcessFilePathPattern}");
-                        }
+                        break;
                     }
-                }
-            }
-            else if (!settings.ShouldBeVerbose)
-            {
-                var autoGames = DbFactory.GameLibrary.GetAutoGamesSimplified();
-
-                if (autoGames.Count > 0)
-                {
-                    if (shouldDisplayBothGamesModes)
-                        Console.WriteLine();
-
-                    gamesHaveBeenDisplayed = true;
-                    Console.WriteLine("--- Auto games ---");
-
-                    foreach (var game in autoGames)
+                    case false:
                     {
-                        Console.WriteLine($"{game.Idx}. {TimeSpan.FromSeconds(game.PlayTimeSeconds)} - {game.Title}");
+                        foreach (var game in autoGames)
+                        {
+                            Console.WriteLine($"{game.Id}. {TimeSpan.FromSeconds(game.PlayTimeSec.V)} - {game.Name}");
+                        }
+
+                        break;
                     }
                 }
             }
@@ -122,7 +117,7 @@ public sealed class ListGames : Command<ListGames.Settings>
 
         if (!gamesHaveBeenDisplayed)
         {
-            Console.WriteLine("No games found");
+            Console.WriteLine("ℹ️ No games found which to list");
         }
 
         return 0;

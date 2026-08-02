@@ -5,7 +5,7 @@ have existing a List<AutoGame> LoadedAutoGames
 have existing a Dictionary<int procPID, AutoGame> ActiveAutoGames
 have existing a List<ManualGame> ActiveManualGames
 have existing a tmp Dictionary<int procPid, OurProc> AvailableProcs
-have existing a tmp Dictionary<ActiveGame> RecentlyInactiveAutoGames
+have existing a tmp List<ActiveGame> RecentlyInactiveAutoGames
 have existing a tmp List<int gameId> GamesToSkipCheckingWhenMonitoring
 have existing a tmp Dictionary<int gameId, int elapsedPlayTime>
                             RecentlyInactiveAutoGamesElapsedPlayTime
@@ -13,6 +13,7 @@ have existing a tmp Dictionary<int gameId, int elapsedPlayTime>
 manual game contains: GameId, Title, PlayTimeSeconds
 auto game contains: GameId, Title, ...
 
+TODO:
 auto game restrictions:
 - one PID per game, when we add a game, we impose that condition
 
@@ -27,7 +28,7 @@ manual game behavior:
 
 auto game behavior:
 - on add:
-  - remove from db
+  - add to db
   - request GameMonitorAgent for a refresh
   - Agent reloads games from db into LoadedAutoGames
 - on remove:

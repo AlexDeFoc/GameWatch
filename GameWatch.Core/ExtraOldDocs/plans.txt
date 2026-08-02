@@ -1,0 +1,31 @@
+﻿-- fix in edit relating to auto games:
+--- what happends is:
+* it says it refreshes list of games but it actually keeps that pid, and so even if it just skins scanning cuz of that pid
+and so when i change the rules to what to match against, it will continue then to keep tracking even if the original pid
+now is gone (the app is exitted) and so when i open the newly app which should get matched it doesn't change anything if i start or stop it.
+Gets fixed ONLY if i restart the agent and that will just reload fresh game list and start monitoring the new app
+
+* also pls remove the need for pid, just make the performance distance hit, just to make it easier for the user
+
+* also add command aliases a for add, g for game, m for manual, a for auto. and also add "fast commands" which allow user to do fast cmds
+like instead of add game manual or a g m they can just do agm
+
+* figure out why cmd aliases don't get displayed along side the full command (spectre issue/bug?)
+
+- implement code for any client (in core) to create game presets with constants, and if it doesnt exist file then just create, else leave it (on github we will update the app that way we update the presets)
+
+- impl cmd: edit
+- impl cmd: add auto game from preset
+
+- rewrite all communication with the user a.k.a rewrite all strings + logging levels (error, warning, info)
+
+
+
+
+
+--- add ipc command such that the agent can shutdown when requested.
+
+
+
+--- utilize the auto games and manual games id lists to check for their counts if == 0 instead of attempting to do more
+costly things. This way we can avoid doing work while knowing if we are gonna find nothing anyways!

@@ -2,6 +2,8 @@
 using System.ComponentModel;
 using System.Threading;
 using System.Threading.Tasks;
+using GameWatch.Agent.GameMonitor;
+using GameWatch.Core.Agents.GameMonitor;
 using GameWatch.Core.Dto;
 using GameWatch.Core.Helpers;
 using GameWatch.Core.Ipc;
@@ -18,15 +20,15 @@ public sealed class ResetGame : AsyncCommand<ResetGame.Settings>
     public class Settings : CommandSettings
     {
         [CommandOption("-i|--idx <GAME_INDEX>", isRequired: true)]
-        [Description("The game index. TIP: Can be gathered from 'list games'")]
+        [Description("The Game index. TIP: Can be gathered from 'list games'")]
         public required int GameIdx { get; init; }
 
-        [CommandOption("-m|--manual-game")]
-        [Description("Delete game from manual collection")]
+        [CommandOption("-m|--manual-Game")]
+        [Description("Delete Game from manual collection")]
         public bool TargetGameModeIsManual { get; init; }
 
-        [CommandOption("-a|--auto-game")]
-        [Description("Delete game from auto collection")]
+        [CommandOption("-a|--auto-Game")]
+        [Description("Delete Game from auto collection")]
         public bool TargetGameModeIsAuto { get; init; }
     }
 
@@ -34,8 +36,8 @@ public sealed class ResetGame : AsyncCommand<ResetGame.Settings>
     {
         return settings switch
         {
-            { TargetGameModeIsAuto: false, TargetGameModeIsManual: false } => ValidationResult.Error("Must provide at least one game mode flag to let the app determine from which collection to delete the game."),
-            { TargetGameModeIsAuto: true, TargetGameModeIsManual: true } => ValidationResult.Error("Cannot delete a game from both game collections because the provided id will most certainly mean a different game in both collections."),
+            { TargetGameModeIsAuto: false, TargetGameModeIsManual: false } => ValidationResult.Error("Must provide at least one Game mode flag to let the app determine from which collection to delete the Game."),
+            { TargetGameModeIsAuto: true, TargetGameModeIsManual: true } => ValidationResult.Error("Cannot delete a Game from both Game collections because the provided id will most certainly mean a different Game in both collections."),
             _ => ValidationResult.Success()
         };
     }
@@ -44,33 +46,29 @@ public sealed class ResetGame : AsyncCommand<ResetGame.Settings>
     {
         var targetGameMode = settings.TargetGameModeIsAuto ? GameMode.Auto : GameMode.Manual;
 
-        var gameIdGotten = DbFactory.GameLibrary.GetGameIdByPosition(targetGameMode, settings.GameIdx);
+        var gameId = DbFactory.GameLibrary.GetGameIdByIdx(GameMode.Manual, new GameIdx(settings.GameIdx));
 
-        if (gameIdGotten == null)
+        if (gameId == null)
         {
-            AnsiConsole.MarkupLine("[red]⛔ Failure Reason:[/] Index provided is out of range.");
+            Console.WriteLine("⛔ Provided Game index is out of range. Ignoring command...");
             return 1;
         }
 
-        var gameId = gameIdGotten.Value;
+        DbFactory.GameLibrary.ResetGamePlayTime(targetGameMode, new GameIdx(settings.GameIdx));
 
-        DbFactory.GameLibrary.ResetGamePlayTime(targetGameMode, settings.GameIdx);
-
-        // Notify running Agent over IPC with the specific Game ID
         try
         {
             var notified = targetGameMode == GameMode.Auto
-                ? await IpcClient.SendResetActiveAutoGameSignalAsync(IpcTarget.GameWatchGameMonitorAgent, gameId, cancellationToken)
-                : await IpcClient.SendResetActiveManualGameSignalAsync(IpcTarget.GameWatchGameMonitorAgent, gameId, cancellationToken);
+                ? await IpcClient.SendResetActiveAutoGameSignalAsync(IpcTarget.GameWatchGameMonitorAgent, gameId.Value, cancellationToken)
+                : await IpcClient.SendResetActiveManualGameSignalAsync(IpcTarget.GameWatchGameMonitorAgent, gameId.Value, cancellationToken);
 
-            if (!notified)
-            {
-                AnsiConsole.MarkupLine("[yellow]⚠ Note:[/] Background agent is not running. Game reset.");
-            }
+            if (notified) return 0;
+
+            Console.WriteLine("⚠️ Game Monitor Agent is not running. No problem, the database file was updated anyways.");
         }
         catch (Exception)
         {
-            AnsiConsole.MarkupLine("[yellow]⚠ Note:[/] Failed to ping background agent. Game reset successfully.");
+            Console.WriteLine("⚠ Failed to communicate with the Game Monitor Agent. Failed notify the agent to reset the 60 second interval. Though the database file was updated anyways.");
         }
 
         return 0;

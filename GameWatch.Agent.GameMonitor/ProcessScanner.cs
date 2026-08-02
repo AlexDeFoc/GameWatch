@@ -11,57 +11,53 @@ public sealed class ProcessScanner(AgentState state, ILogger<ProcessScanner> log
 {
     public void Scan()
     {
-        var candidates = ProcessFinder.GetListOfAvailableProcesses();
-        var currentPids = new HashSet<int>(candidates.Select(c => c.Pid));
+        // Idx = GameId
+        List<TrackingSessions.Auto> recentlyInactiveAutoGames = [];
+        var availableProcs = ProcessFinder.GetDictOfAvailableProcesses();
 
-        // 1. Detect process start
-        foreach (var candidate in candidates.Where(c => !state.ActiveAutoGames.ContainsKey(c.Pid)))
+        // 'remove inactives' step:
+        // perform 'remove inactives' step:
+        foreach (var pid in state.ActiveAutoGames.Keys)
         {
-            foreach (var rule in state.LoadedAutoGames.Where(rule => RuleMatcher.IsMatch(candidate, rule)))
-            {
-                var isAlreadyTracked = state.ActiveAutoGames.Values.Any(session => session.GameId == rule.Idx);
-                if (isAlreadyTracked)
-                {
-                    break;
-                }
+            if (availableProcs.ContainsKey(pid.V)) continue;
 
-                var session = new TrackedSession
-                              {
-                                  GameId = rule.Idx,
-                                  Mode = GameMode.Auto,
-                                  LastFlushedUtc = DateTime.UtcNow
-                              };
-
-                if (state.ActiveAutoGames.TryAdd(candidate.Pid, session))
-                {
-                    if (logger.IsEnabled(LogLevel.Information))
-                    {
-                        logger.LogInformation("[GAME STARTED] Auto Game '{Title}' (GameId: {GameId}, PID: {Pid})",
-                                              rule.Title, rule.Idx, candidate.Pid);
-                    }
-                }
-
-                break; // Process matched a rule, move to next process
-            }
+            if (!state.ActiveAutoGames.TryRemove(pid, out var session)) continue;
+            state.ActiveAutoGamesPids.TryRemove(session.Game.Id, out _);
+            recentlyInactiveAutoGames.Add(session);
         }
 
-        // 2. Detect process stop & flush remained time immediately
-        var stoppedPids = state.ActiveAutoGames.Keys.Where(pid => !currentPids.Contains(pid)).ToList();
-
-        foreach (var pid in stoppedPids)
+        // perform 'save recent inactives' step:
+        foreach (var session in recentlyInactiveAutoGames)
         {
-            if (!state.ActiveAutoGames.TryRemove(pid, out var session)) continue;
+            var elapsed = (int)(DateTime.UtcNow - session.LastTimeFlushedPlayTime).TotalSeconds;
+            if (elapsed <= 0) continue;
 
-            var elapsedSeconds = (int)(DateTime.UtcNow - session.LastFlushedUtc).TotalSeconds;
-            if (elapsedSeconds > 0)
-            {
-                DbFactory.GameLibrary.IncrementPlayTime(GameMode.Auto, session.GameId, elapsedSeconds);
-            }
+            DbFactory.GameLibrary.IncrementPlayTime(GameMode.Auto, session.Game.Id, elapsed);
 
             if (logger.IsEnabled(LogLevel.Information))
+                logger.LogInformation("ℹ️ Auto Game Id={id} Name='{name}' has stopped. Elapsed={elapsed}s", session.Game.Id, session.Game.Name, elapsed);
+        }
+
+        // 'search match' step:
+        // perform 'skip actives' step:
+        var gameIdsToSkipCheckingWhenMonitoring = (from kvp in state.ActiveAutoGames
+                                                   where availableProcs.ContainsKey(kvp.Key.V)
+                                                   select kvp.Value.Game.Id).ToList();
+
+        // 'perform actual search match' step:
+        foreach (var game in state.LoadedAutoGames.Where(game => !gameIdsToSkipCheckingWhenMonitoring.Contains(game.Id)))
+        {
+            foreach (var (pid, proc) in availableProcs)
             {
-                logger.LogInformation("[GAME STOPPED] Auto Game (GameId: {GameId}, PID: {Pid}) - Flushed remaining +{Seconds}s",
-                                      session.GameId, pid, elapsedSeconds);
+                if (!RuleMatcher.IsMatch(proc, game)) continue;
+
+                var newSession = new TrackingSessions.Auto { Game = game };
+                var gamePid = new Pid(pid);
+                state.ActiveAutoGames.TryAdd(gamePid, newSession);
+                state.ActiveAutoGamesPids.TryAdd(game.Id, gamePid);
+
+                if (logger.IsEnabled(LogLevel.Information))
+                    logger.LogInformation("ℹ️ Auto Game Id={id} Name='{name}' has started.", game.Id, game.Name);
             }
         }
     }

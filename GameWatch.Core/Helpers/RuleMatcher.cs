@@ -1,39 +1,39 @@
 ﻿using System;
 using GameWatch.Core.Dto;
-using GameWatch.Core.Dto.GameRecords;
 
 namespace GameWatch.Core.Helpers;
 
 public static class RuleMatcher
 {
-    public static bool IsMatch(OurProc candidate, AutoGame rule)
+    public static bool IsMatch(OurProc proc, GameRecords.AutoGame game)
     {
-        if (rule is { ProcessWindowTitle: not null, ProcessWindowTitlePattern: null })
+        var hasTitleExact = game.WindowTitle != null;
+        var hasTitleRule = game.WindowRule != null;
+        var hasPathExact = game.FilePath != null;
+        var hasPathRule = game.PathRule != null;
+
+        // Rule version cannot coexist with exact match version for the same field
+        if ((hasTitleExact && hasTitleRule) || (hasPathExact && hasPathRule))
         {
-            if (!string.Equals(candidate.WindowTitle, rule.ProcessWindowTitle, StringComparison.Ordinal))
-                return false;
+            throw new NotImplementedException();
         }
 
-        if (rule is { ProcessFilePath: not null, ProcessFilePathPattern: null })
+        // Must have at least 1 rule configured
+        if (!hasTitleExact && !hasTitleRule && !hasPathExact && !hasPathRule)
         {
-            if (!string.Equals(candidate.FilePath, rule.ProcessFilePath, ProcessFinder.PathComparison))
-                return false;
+            throw new NotImplementedException();
         }
 
-        if (rule.ProcessWindowTitlePattern != null)
-        {
-            if (!RegexHandler.IsMatch(candidate.WindowTitle, rule.ProcessWindowTitlePattern))
-                return false;
-        }
+        var titleMatches = (!hasTitleExact && !hasTitleRule) ||
+                            (hasTitleExact
+                                ? game.WindowTitle == proc.WindowTitle
+                                : RegexHandler.IsMatch(game.WindowRule!, proc.WindowTitle));
 
-        // ReSharper disable once InvertIf
-        if (rule.ProcessFilePathPattern != null)
-        {
-            if (!RegexHandler.IsMatch(candidate.FilePath, rule.ProcessFilePathPattern))
-                return false;
-        }
+        var pathMatches = (!hasPathExact && !hasPathRule) ||
+                           (hasPathExact
+                               ? game.FilePath == proc.FilePath
+                               : RegexHandler.IsMatch(game.PathRule!, proc.FilePath));
 
-        // Will always have a rule to match against
-        return true;
+        return titleMatches && pathMatches;
     }
 }

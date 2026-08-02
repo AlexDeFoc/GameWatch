@@ -1,5 +1,6 @@
 ﻿using System.Threading;
 using Spectre.Console.Cli;
+
 // ReSharper disable ClassNeverInstantiated.Global
 
 namespace GameWatch.Client.Cli.Cmds;
