@@ -7,15 +7,11 @@ public static class PathResolver
 {
     public static string ResolveRelativePath(string relativePath)
     {
-        var baseDir = AppContext.BaseDirectory;
+        var exePath = Environment.ProcessPath;
+        string exeFolder = !string.IsNullOrEmpty(exePath)
+            ? Path.GetDirectoryName(exePath)!
+            : AppContext.BaseDirectory;
 
-        // 2. Fall back to current working directory if BaseDirectory isn't rooted
-        if (!Path.IsPathFullyQualified(baseDir))
-        {
-            baseDir = Directory.GetCurrentDirectory();
-        }
-
-        var combined = Path.Combine(baseDir, relativePath);
-        return Path.GetFullPath(combined);
+        return Path.GetFullPath(Path.Combine(exeFolder, relativePath));
     }
 }

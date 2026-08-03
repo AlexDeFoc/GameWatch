@@ -35,6 +35,7 @@ public static class DbFactory
             // Init variables
             _dbFolderPath = PathResolver.ResolveRelativePath(relativePathToUserDataFolder);
             _dbPath = Path.Join(_dbFolderPath, "GameLibrary.db");
+
             _connString = $"Data Source={_dbPath}";
 
             // Ensure directory exists before attempting to open the database file

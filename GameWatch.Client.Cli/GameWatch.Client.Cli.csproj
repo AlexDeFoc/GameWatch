@@ -11,18 +11,7 @@
         <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     </PropertyGroup>
 
-    <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
-      <OutputPath>C:\Users\alex\Documents\Dev\Projects\GameWatch\build\debug\GameWatch\Clients\Cli\</OutputPath>
-    </PropertyGroup>
-
-    <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
-      <OutputPath>C:\Users\alex\Documents\Dev\Projects\GameWatch\build\release\GameWatch\Clients\Cli</OutputPath>
-    </PropertyGroup>
-
     <ItemGroup>
-      <PackageReference Include="Dapper" Version="2.1.79" />
-      <PackageReference Include="GrpcDotNetNamedPipes" Version="3.1.0" />
-      <PackageReference Include="Microsoft.Data.Sqlite" Version="11.0.0-preview.6.26359.118" />
       <PackageReference Include="Spectre.Console.Cli" Version="0.55.0" />
     </ItemGroup>
 

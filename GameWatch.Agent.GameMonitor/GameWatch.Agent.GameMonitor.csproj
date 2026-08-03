@@ -11,20 +11,20 @@
         <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     </PropertyGroup>
 
-    <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
-      <OutputPath>C:\Users\alex\Documents\Dev\Projects\GameWatch\build\debug\GameWatch\Agents\GameMonitor\</OutputPath>
-    </PropertyGroup>
-
-    <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
-      <OutputPath>C:\Users\alex\Documents\Dev\Projects\GameWatch\build\release\GameWatch\Agents\GameMonitor\</OutputPath>
-    </PropertyGroup>
-
     <ItemGroup>
-        <PackageReference Include="GrpcDotNetNamedPipes" Version="3.1.0" />
         <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.10"/>
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\GameWatch.Core\GameWatch.Core.csproj" />
+        <ProjectReference Include="..\GameWatch.Core\GameWatch.Core.csproj" />
     </ItemGroup>
+
+    <ItemGroup>
+        <!-- 1. Bundle appsettings files into the Single-File executable -->
+        <Content Update="appsettings*.json" ExcludeFromSingleFile="false" />
+
+        <!-- 2. Prevent MSBuild from copying loose appsettings files into the output directory on Publish -->
+        <Content Update="appsettings*.json" CopyToPublishDirectory="Never" />
+    </ItemGroup>
+
 </Project>

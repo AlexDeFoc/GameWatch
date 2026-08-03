@@ -1,7 +1,7 @@
 .idea/
+.run/
 obj/
 bin/
-output/
+out/
 GameWatch.sln.DotSettings
 GameWatch.sln.DotSettings.user
-!LICENSE
