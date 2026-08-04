@@ -7,9 +7,8 @@ var scriptFolderPath = Path.GetDirectoryName(GetScriptFilePath())!;
 
 var scriptNames = new List<string>
 {
-    "clean_cli_client.cs",
-    "clean_game_monitor_agent.cs",
-    "clean_archives.cs"
+    "package_cli_client.cs",
+    "package_game_monitor_agent.cs"
 };
 
 // Execute each script sequentially

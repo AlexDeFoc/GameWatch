@@ -4,7 +4,7 @@ using System.Runtime.CompilerServices;
 var scriptFolderPath = Path.GetDirectoryName(GetScriptFilePath())!;
 var rootDir = Path.GetFullPath("../../../..", scriptFolderPath);
 
-var portableBaseDir = Path.Combine(rootDir, "out", "ship", "portable", "apple", "GameWatch", "Agents", "GameMonitor");
+var portableBaseDir = Path.Combine(rootDir, "out", "ship", "component", "apple", "Agents", "GameMonitor");
 
 ForceDeleteDirectory(portableBaseDir);
 Directory.CreateDirectory(portableBaseDir);

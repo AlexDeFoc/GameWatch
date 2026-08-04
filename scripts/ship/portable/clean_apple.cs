@@ -5,7 +5,9 @@ var scriptFolderPath = Path.GetDirectoryName(GetScriptFilePath())!;
 var rootDir = Path.GetFullPath("../../..", scriptFolderPath);
 
 var portableBaseDir = Path.Combine(rootDir, "out", "ship", "portable", "apple", "GameWatch");
+var archiveFile = Path.Combine(rootDir, "out", "ship", "portable", "archives", "GameWatch.Cli.Apple.Portable.Package.zip");
 
+ForceDeleteFile(archiveFile)
 ForceDeleteDirectory(portableBaseDir);
 Directory.CreateDirectory(portableBaseDir);
 

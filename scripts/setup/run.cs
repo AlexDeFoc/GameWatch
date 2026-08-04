@@ -32,6 +32,8 @@ string[] componentOnly = [
     Path.Combine("Clients", "Cli")
 ];
 
+Directory.CreateDirectory(Path.Combine(outDir, "ship", "portable", "archives"));
+
 foreach (var os in platforms)
 {
     // Portable target layout: out/ship/portable/{os}/GameWatch/...
