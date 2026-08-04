@@ -4,8 +4,8 @@ using System.Runtime.CompilerServices;
 var scriptFolderPath = Path.GetDirectoryName(GetScriptFilePath())!;
 var rootDir = Path.GetFullPath("../../..", scriptFolderPath);
 
-var portableBaseDir = Path.Combine(rootDir, "out", "ship", "portable", "macOS_arm64", "GameWatch");
-var archiveFile = Path.Combine(rootDir, "out", "ship", "portable", "archives", "GameWatch.CliSuite-macOS-arm64.zip");
+var portableBaseDir = Path.Combine(rootDir, "out", "ship", "macOS_arm64", "GameWatch");
+var archiveFile = Path.Combine(rootDir, "out", "ship", "archives", "GameWatch.CliSuite-macOS-arm64.zip");
 
 ForceDeleteFile(archiveFile);
 ForceDeleteDirectory(portableBaseDir);

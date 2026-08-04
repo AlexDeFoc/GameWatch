@@ -20,7 +20,7 @@ foreach (var component in devComponents)
     Directory.CreateDirectory(Path.Combine(outDir, "dev", config, component));
 }
 
-// 2. Setup shipping folders (portable & component across OS platforms)
+// 2. Setup shipping folders (portable across OS platforms)
 string[] platforms = ["windows_x64", "linux_x64", "macOS_x64", "macOS_arm64"];
 string[] portableComponents = [
     Path.Combine("Agents", "GameMonitor"),
@@ -28,14 +28,14 @@ string[] portableComponents = [
     "UserData"
 ];
 
-Directory.CreateDirectory(Path.Combine(outDir, "ship", "portable", "archives"));
+Directory.CreateDirectory(Path.Combine(outDir, "ship", "archives"));
 
 foreach (var os in platforms)
 {
     // Portable target layout: out/ship/portable/{os}/GameWatch/...
     foreach (var comp in portableComponents)
     {
-        Directory.CreateDirectory(Path.Combine(outDir, "ship", "portable", os, "GameWatch", comp));
+        Directory.CreateDirectory(Path.Combine(outDir, "ship", os, "GameWatch", comp));
     }
 }
 

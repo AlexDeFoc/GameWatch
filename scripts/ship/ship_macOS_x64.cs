@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 var scriptFolderPath = Path.GetDirectoryName(GetScriptFilePath())!;
 var rootDir = Path.GetFullPath("../../..", scriptFolderPath);
 
-var portableBaseDir = Path.Combine(rootDir, "out", "ship", "portable", "macOS_x64", "GameWatch");
+var portableBaseDir = Path.Combine(rootDir, "out", "ship", "macOS_x64", "GameWatch");
 
 var components = new (string ProjectName, string SubPath)[]
 {

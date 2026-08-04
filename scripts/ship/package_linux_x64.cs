@@ -6,11 +6,11 @@ using System.Runtime.CompilerServices;
 var scriptFolderPath = Path.GetDirectoryName(GetScriptFilePath())!;
 var rootDir = Path.GetFullPath("../../..", scriptFolderPath);
 
-var shipComponentDir = Path.Combine(rootDir, "out", "ship", "portable", "linux_x64");
+var shipComponentDir = Path.Combine(rootDir, "out", "ship", "linux_x64");
 var shippedDir = Path.Combine(shipComponentDir, "GameWatch");
 
-var archiveOutputDir = Path.Combine(rootDir, "out", "ship", "portable", "archives");
-var archivePath = Path.Combine(archiveOutputDir, "GameWatch.CliSuite.Linux-x64.zip");
+var archiveOutputDir = Path.Combine(rootDir, "out", "ship", "archives");
+var archivePath = Path.Combine(archiveOutputDir, "GameWatch.CliSuite-Linux-x64.zip");
 
 CompressFolderWithSubfolder(shippedDir, shipComponentDir, archivePath);
 
