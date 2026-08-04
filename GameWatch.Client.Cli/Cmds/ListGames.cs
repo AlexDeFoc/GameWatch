@@ -1,77 +1,90 @@
 ﻿using System;
-using System.Threading;
+using System.CommandLine;
 using GameWatch.Core.Helpers;
-using Spectre.Console;
-using Spectre.Console.Cli;
-
-// ReSharper disable UnusedAutoPropertyAccessor.Global
-// ReSharper disable ClassNeverInstantiated.Global
 
 namespace GameWatch.Client.Cli.Cmds;
 
-public sealed class ListGames : Command<ListGames.Settings>
+public static class ListGames
 {
-    public class Settings : CommandSettings
+    public static Command Build()
     {
-        [CommandOption("-v|--verbose")]
-        public bool ShouldBeVerbose { get; init; }
-
-        [CommandOption("-m|--manual-only")]
-        public bool ShouldDisplayManualGames { get; init; }
-
-        [CommandOption("-a|--auto-only")]
-        public bool ShouldDisplayAutoGames { get; init; }
-    }
-
-    protected override ValidationResult Validate(CommandContext context, Settings settings)
-    {
-        return settings switch
+        var verboseOption = new Option<bool>("--verbose", "-v")
         {
-            { ShouldDisplayAutoGames: true, ShouldDisplayManualGames: true } => ValidationResult.Error("--manual-only and --auto-only are mutually exclusive flags."),
-            _ => ValidationResult.Success()
+            Description = "List games with additional detailed matching rule metadata."
         };
-    }
 
-    protected override int Execute(CommandContext context, Settings settings, CancellationToken cancellationToken)
-    {
-        var shouldDisplayBothGamesModes = settings is { ShouldDisplayAutoGames: false, ShouldDisplayManualGames: false };
-        var gamesHaveBeenDisplayed = false;
-
-        if (shouldDisplayBothGamesModes || (!shouldDisplayBothGamesModes && settings.ShouldDisplayManualGames))
+        var manualOnlyOption = new Option<bool>("--manual-only", "-m")
         {
-            var manualGames = DbFactory.GameLibrary.GetManualGames();
+            Description = "Display only manual game records."
+        };
 
-            if (manualGames.Count > 0)
+        var autoOnlyOption = new Option<bool>("--auto-only", "-a")
+        {
+            Description = "Display only auto game records."
+        };
+
+        var cmd = new Command("games", "List all or filtered games in the library")
+        {
+            verboseOption,
+            manualOnlyOption,
+            autoOnlyOption
+        };
+
+        cmd.Aliases.Add("g");
+
+
+        cmd.Validators.Add(result =>
+        {
+            var isManual = result.GetValue(manualOnlyOption);
+            var isAuto = result.GetValue(autoOnlyOption);
+
+            if (isManual && isAuto)
             {
-                gamesHaveBeenDisplayed = true;
-                Console.WriteLine("--- Manual games ---");
-                foreach (var game in manualGames)
+                result.AddError("⛔ --manual-only and --auto-only are mutually exclusive flags.");
+            }
+        });
+
+        cmd.SetAction(parseResult =>
+        {
+            var verbose = parseResult.GetValue(verboseOption);
+            var manualOnly = parseResult.GetValue(manualOnlyOption);
+            var autoOnly = parseResult.GetValue(autoOnlyOption);
+
+            var shouldDisplayBothGameModes = !manualOnly && !autoOnly;
+            var gamesHaveBeenDisplayed = false;
+
+            if (shouldDisplayBothGameModes || manualOnly)
+            {
+                var manualGames = DbFactory.GameLibrary.GetManualGames();
+
+                if (manualGames.Count > 0)
                 {
-                    Console.WriteLine($"{game.Id}. {TimeSpan.FromSeconds(game.PlayTimeSec.V)} - {game.Name}");
+                    gamesHaveBeenDisplayed = true;
+                    Console.WriteLine("--- Manual games ---");
+                    foreach (var game in manualGames)
+                    {
+                        Console.WriteLine($"{game.Id}. {TimeSpan.FromSeconds(game.PlayTimeSec.V)} - {game.Name}");
+                    }
                 }
             }
-        }
 
-        if (shouldDisplayBothGamesModes || (!shouldDisplayBothGamesModes && settings.ShouldDisplayAutoGames))
-        {
-            var autoGames = DbFactory.GameLibrary.GetAutoGames();
-
-            if (autoGames.Count > 0)
+            if (shouldDisplayBothGameModes || autoOnly)
             {
-                if (shouldDisplayBothGamesModes)
-                    Console.WriteLine();
+                var autoGames = DbFactory.GameLibrary.GetAutoGames();
 
-                gamesHaveBeenDisplayed = true;
-                Console.WriteLine("--- Auto games ---");
-
-                switch (settings.ShouldBeVerbose)
+                if (autoGames.Count > 0)
                 {
-                    case true:
+                    if (shouldDisplayBothGameModes && gamesHaveBeenDisplayed)
+                        Console.WriteLine();
+
+                    gamesHaveBeenDisplayed = true;
+                    Console.WriteLine("--- Auto games ---");
+
+                    if (verbose)
                     {
                         foreach (var game in autoGames)
                         {
                             Console.WriteLine($"{game.Id}. {TimeSpan.FromSeconds(game.PlayTimeSec.V)} - {game.Name}");
-
                             Console.WriteLine("   Matching rules:");
 
                             if (game.WindowTitle != null)
@@ -92,34 +105,31 @@ public sealed class ListGames : Command<ListGames.Settings>
                                 Console.WriteLine($"         Value: {game.WindowRule}");
                             }
 
-                            // ReSharper disable once InvertIf
                             if (game.PathRule != null)
                             {
                                 Console.WriteLine("      File Path: should match using pattern");
                                 Console.WriteLine($"         Value: {game.PathRule}");
                             }
                         }
-
-                        break;
                     }
-                    case false:
+                    else
                     {
                         foreach (var game in autoGames)
                         {
                             Console.WriteLine($"{game.Id}. {TimeSpan.FromSeconds(game.PlayTimeSec.V)} - {game.Name}");
                         }
-
-                        break;
                     }
                 }
             }
-        }
 
-        if (!gamesHaveBeenDisplayed)
-        {
-            Console.WriteLine("ℹ️ No games found which to list");
-        }
+            if (!gamesHaveBeenDisplayed)
+            {
+                Console.WriteLine("ℹ️ No games found which to list");
+            }
 
-        return 0;
+            return 0;
+        });
+
+        return cmd;
     }
 }

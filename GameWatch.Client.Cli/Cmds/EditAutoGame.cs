@@ -1,183 +1,194 @@
 ﻿using System;
-using System.ComponentModel;
+using System.CommandLine;
 using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using GameWatch.Agent.GameMonitor;
 using GameWatch.Core.Agents.GameMonitor;
 using GameWatch.Core.Dto;
 using GameWatch.Core.Helpers;
 using GameWatch.Core.Ipc;
-using Spectre.Console.Cli;
-
-// ReSharper disable ClassNeverInstantiated.Global
-// ReSharper disable UnusedAutoPropertyAccessor.Global
 
 namespace GameWatch.Client.Cli.Cmds;
 
-public sealed class EditAutoGame : AsyncCommand<EditAutoGame.Settings>
+public static class EditAutoGame
 {
-    public class Settings : CommandSettings
+    public static Command Build()
     {
-        [CommandOption("-i|--idx <GAME_INDEX>", isRequired: true)]
-        [Description("The Game index. TIP: Can be gathered from 'list games'")]
-        public required int GameIdx { get; init; }
-
-        [CommandOption("-n|--name <NAME>")]
-        [Description("New name for the Game record")]
-        public string? Name { get; init; }
-
-        [CommandOption("--pid <PROCESS_ID>")]
-        [Description("The process id of a different game. If not specified will use the original game process.")]
-        public int? DifferentPid { get; init; }
-
-        [CommandOption("-p|--playtime <SECONDS>")]
-        [Description("Forced Game record playtime in seconds")]
-        public int? PlayTimeSeconds { get; init; }
-
-        [CommandOption("--match-title")]
-        [Description("Match against the process window title")]
-        public bool MatchWindowTitle { get; init; }
-
-        [CommandOption("--match-path")]
-        [Description("Match against the process file path")]
-        public bool MatchFilePath { get; init; }
-
-        [CommandOption("--title-rule <REGEX_PATTERN>")]
-        [Description("Regex pattern to match against the process window title")]
-        public string? WindowTitleRule { get; init; }
-
-        [CommandOption("--path-rule <REGEX_PATTERN>")]
-        [Description("Regex pattern to match against the process file path")]
-        public string? FilePathRule { get; init; }
-
-        [CommandOption("--clear-title")]
-        [Description("Stop matching against the process window title")]
-        public bool ClearWindowTitle { get; init; }
-
-        [CommandOption("--clear-path")]
-        [Description("Stop matching against the process file path")]
-        public bool ClearFilePath { get; init; }
-
-        [CommandOption("--clear-title-rule")]
-        [Description("Stop matching the process window title against the regex pattern")]
-        public bool ClearTitleRule { get; init; }
-
-        [CommandOption("--clear-path-rule")]
-        [Description("Stop matching the process file path against the regex pattern")]
-        public bool ClearPathRule { get; init; }
-    }
-
-    protected override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
-    {
-        var gameIdx = new GameIdx(settings.GameIdx);
-        var (hasSucceeded, game, failureReason) = DbFactory.GameLibrary.GetAutoGameByIdx(gameIdx);
-        var wasGameActive = false;
-
-        if (!hasSucceeded || game == null)
+        var idxOption = new Option<int>("--index", "-i")
         {
-            Console.WriteLine(failureReason);
-            return 1;
-        }
+            Description = "The game index from (see 'list games')",
+            Required = true
+        };
 
-        switch (settings)
+        var nameOption = new Option<string>("--name", "-n")
         {
-            // Validate
-            case { MatchWindowTitle: true, WindowTitleRule: not null }:
-                Console.WriteLine("⛔ Matching fully and partially against the window title is not allowed. Ignoring command...");
-                return 1;
-            case { MatchFilePath: true, FilePathRule: not null }:
-                Console.WriteLine("⛔ Matching fully and partially against the file path is not allowed. Ignoring command...");
-                return 1;
-            case { MatchWindowTitle: true, ClearTitleRule: false } when game.WindowRule != null:
-                Console.WriteLine("⛔ Matching fully and partially against the window title is not allowed, without clearing the window title pattern/rule first! Ignoring command...");
-                return 1;
-            case { MatchFilePath: true, ClearPathRule: false } when game.PathRule != null:
-                Console.WriteLine("⛔ Matching fully and partially against the file path is not allowed, without clearing the file path pattern/rule first! Ignoring command...");
-                return 1;
-            case { WindowTitleRule: not null, ClearWindowTitle: false } when game.WindowTitle != null:
-                Console.WriteLine("⛔ Matching fully and partially against the window title is not allowed, without clearing the window title fully match first! Ignoring command...");
-                return 1;
-            case { FilePathRule: not null, ClearFilePath: false } when game.FilePath != null:
-                Console.WriteLine("⛔ Matching fully and partially against the file path is not allowed, without clearing the file path fully match first! Ignoring command...");
-                return 1;
-        }
+            Description = "New name for the game"
+        };
 
-        // Rest of work
-        var gameName = settings.Name ?? game.Name;
-        var gamePlayTimeSec = settings.PlayTimeSeconds == null ? game.PlayTimeSec : new ElapsedTime(settings.PlayTimeSeconds.Value);
-        var gameWindowRule = settings.WindowTitleRule ?? (settings.ClearTitleRule ? null : game.WindowRule);
-        var gamePathRule = settings.FilePathRule ?? (settings.ClearPathRule ? null : game.PathRule);
-
-        OurProc? matchingProc = null;
-        if (settings.MatchWindowTitle || settings.MatchFilePath)
+        var playTimeOption = new Option<int?>("--playtime", "-p")
         {
-            wasGameActive = true;
+            Description = "Set game playtime"
+        };
 
-            if (settings.DifferentPid == null)
+        var pidOption = new Option<int?>("--pid")
+        {
+            Description = "Target process PID from (see 'list procs'). Provide only when you are targeting a different process then the original one"
+        };
+
+        var ruleWindowExactOption = new Option<bool>("--rule-window-exact", "-we")
+        {
+            Description = "Match rule: Require exact match on the target process window title"
+        };
+
+        var ruleWindowPatternOption = new Option<string>("--rule-window-pattern", "-wp")
+        {
+            Description = "Match rule: Pattern/regex to match against the process window title",
+        };
+
+        var rulePathExactOption = new Option<bool>("--rule-path-exact", "-pe")
+        {
+            Description = "Match rule: Require exact match on the target process executable path"
+        };
+
+        var rulePathPatternOption = new Option<string>("--rule-path-pattern", "-pp")
+        {
+            Description = "Match rule: Pattern/regex to match against the target process executable path"
+        };
+
+        var cmd = new Command("auto", "Edit auto game")
+        {
+            idxOption,
+            nameOption,
+            playTimeOption,
+            pidOption,
+            ruleWindowExactOption,
+            ruleWindowPatternOption,
+            rulePathExactOption,
+            rulePathPatternOption
+        };
+        cmd.Aliases.Add("a");
+
+        cmd.Validators.Add(result =>
+        {
+            var ruleWindowExact = result.GetValue(ruleWindowExactOption);
+            var ruleWindowPattern = result.GetValue(ruleWindowPatternOption);
+
+            if (ruleWindowExact && ruleWindowPattern is not null)
             {
-                var procList = ProcessFinder.GetListOfAvailableProcesses();
-                matchingProc = procList.FirstOrDefault(proc => RuleMatcher.IsMatch(proc, game));
-            }
-            else
-            {
-                matchingProc = ProcessFinder.GetOurProcFromPid(settings.DifferentPid.Value);
+                result.AddError("⛔ Cannot specify both exact match and a title pattern. These options are mutually exclusive");
             }
 
-            if (matchingProc == null)
+            var rulePathExact = result.GetValue(rulePathExactOption);
+            var rulePathPattern = result.GetValue(rulePathPatternOption);
+
+            if (rulePathExact && rulePathPattern is not null)
             {
-                Console.WriteLine("⛔ Target Game is not active! Before editing it to match against its Window Title or File Path, open the Game first. Ignoring command...");
+                result.AddError("⛔ Cannot specify both exact match and a exe path pattern. These options are mutually exclusive");
+            }
+
+            var pid = result.GetRequiredValue(pidOption);
+
+            if (pid is null) return;
+
+            var proc = ProcessFinder.GetOurProcFromPid(new Pid(pid.Value));
+
+            if (proc is null)
+            {
+                result.AddError("⛔ Cannot find process with provided PID");
+            }
+        });
+
+        cmd.SetAction(async (result, cancellationToken) =>
+        {
+            var idx = new GameIdx(result.GetValue(idxOption));
+            var (hasSucceeded, game, failureReason) = DbFactory.GameLibrary.GetAutoGameByIdx(idx);
+
+            if (!hasSucceeded || game == null)
+            {
+                Console.WriteLine(failureReason);
                 return 1;
             }
-        }
 
-        var procWindowTitle = settings.ClearWindowTitle
-            ? null
-            : settings.MatchWindowTitle
-                ? matchingProc!.WindowTitle
-                : game.WindowTitle;
+            var pid = result.GetValue(pidOption);
+            var ruleWindowExact = result.GetValue(ruleWindowExactOption);
+            var rulePathExact = result.GetValue(rulePathExactOption);
+            var ruleWindowPattern = result.GetValue(ruleWindowPatternOption);
+            var rulePathPattern = result.GetValue(rulePathPatternOption);
+            var playTimeGotten = result.GetValue(playTimeOption);
 
-        var procFilePath = settings.ClearFilePath
-            ? null
-            : settings.MatchFilePath
-                ? matchingProc!.FilePath
-                : game.FilePath;
+            var gameName = result.GetValue(nameOption) ?? game.Name;
+            var gamePlayTime = playTimeGotten is null ? game.PlayTimeSec : new ElapsedTime(playTimeGotten.Value);
+            OurProc? targetProc = null;
 
-        var result = DbFactory.GameLibrary.ChangeGameProperty(GameMode.Auto,
-                                                              new GameIdx(settings.GameIdx),
-                                                              name: gameName,
-                                                              playTimeSec: gamePlayTimeSec,
-                                                              windowTitle: procWindowTitle,
-                                                              filePath: procFilePath,
-                                                              windowRule: gameWindowRule,
-                                                              pathRule: gamePathRule
-        );
+            if (ruleWindowExact || rulePathExact)
+            {
+                targetProc = pid is null
+                    ? ProcessFinder.GetListOfAvailableProcesses().FirstOrDefault(proc => RuleMatcher.IsMatch(proc, game))
+                    : ProcessFinder.GetOurProcFromPid(new Pid(pid.Value));
 
-        if (!result.HasSucceeded)
-        {
-            Console.WriteLine(result.FailureReason);
+                if (targetProc is null)
+                {
+                    Console.WriteLine("⛔ Cannot set the matching rule to be window title exact or exe path exact without the game being active!");
+                    return 1;
+                }
+            }
 
-            return 1;
-        }
+            var shouldClearWindowTitle = ruleWindowPattern is not null && game.WindowTitle is not null;
+            var shouldClearFilePath = rulePathPattern is not null && game.FilePath is not null;
 
-        try
-        {
-            var notified = await IpcClient.SendEditAutoGameSignalAsync(IpcTarget.GameWatchGameMonitorAgent, gameIdx, wasGameActive, cancellationToken);
+            var procWindowTitle = shouldClearWindowTitle
+                ? null
+                : ruleWindowExact
+                    ? targetProc!.WindowTitle
+                    : game.WindowTitle;
 
-            if (!notified)
-                Console.WriteLine("⚠️ Game Monitor Agent is not running. " +
-                                  "Only issue is that the edited added game won't probably get automatically monitored, " +
-                                  "unless you start the agent. Though the database file was updated anyways.");
+            var procFilePath = shouldClearFilePath
+                ? null
+                : rulePathExact
+                    ? targetProc!.FilePath
+                    : game.FilePath;
 
-            Console.WriteLine("✅ Game edited successfully");
-        }
-        catch (Exception)
-        {
-            Console.WriteLine("⚠ Failed to communicate with the Game Monitor Agent. " +
-                              "Failed notify the agent to refresh the auto games list. " +
-                              "This can cause your game to not be able to be automatically monitored, so please restart the agent!");
-        }
+            var status = DbFactory.GameLibrary.ChangeGameProperty(GameMode.Auto,
+                                                                  idx,
+                                                                  gameName,
+                                                                  gamePlayTime,
+                                                                  procWindowTitle,
+                                                                  procFilePath,
+                                                                  ruleWindowPattern,
+                                                                  rulePathPattern
+            );
 
-        return 0;
+            if (!status.HasSucceeded)
+            {
+                Console.WriteLine(status.FailureReason);
+                return 1;
+            }
+
+            const IpcTarget target = IpcTarget.GameWatchGameMonitorAgent;
+            try
+            {
+                var notified = await IpcClient.SendEditAutoGameSignalAsync(target, idx, cancellationToken);
+
+                if (!notified)
+                {
+                    Console.WriteLine("⚠ Unable to communicate with the GameWatch background service. Please ensure the agent is running.");
+                    return 1;
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                Console.WriteLine("⚠ Operation canceled.");
+                return 1;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"⛔ Unhandled exception during IPC call to target '{nameof(target)}': {ex}");
+                return 1;
+            }
+
+            Console.WriteLine($"✅ Game with Name='{gameName}' edited successfully");
+
+            return 0;
+        });
+
+        return cmd;
     }
 }

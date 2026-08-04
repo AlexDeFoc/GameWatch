@@ -1,6 +1,4 @@
-﻿// ReSharper disable UnusedAutoPropertyAccessor.Global
-
-using GameWatch.Core.Dto;
+﻿using GameWatch.Core.Dto;
 
 namespace GameWatch.Core.GameRecords;
 

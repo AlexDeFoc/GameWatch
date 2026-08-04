@@ -127,7 +127,7 @@ public sealed class IpcProcessorImpl(
         return Task.FromResult(new IpcResponse { Success = true });
     }
 
-    public override Task<IpcResponse> EditAutoGame(EditAutoGameRequest request, ServerCallContext context)
+    public override Task<IpcResponse> EditAutoGame(GameIdxRequest request, ServerCallContext context)
     {
         var idx = new GameIdx(request.GameIdx);
         var idOpt = DbFactory.GameLibrary.GetGameIdByIdx(GameMode.Auto, idx);

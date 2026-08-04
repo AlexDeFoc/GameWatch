@@ -7,9 +7,10 @@ var scriptFolderPath = Path.GetDirectoryName(GetScriptFilePath())!;
 
 var scriptNames = new List<string>
 {
-    "ship_windows.cs",
-    "ship_linux.cs",
-    "ship_apple.cs"
+    "ship_windows_x64.cs",
+    "ship_linux_x64.cs",
+    "ship_macOS_x64.cs",
+    "ship_macOS_arm64.cs"
 };
 
 // Execute each script sequentially

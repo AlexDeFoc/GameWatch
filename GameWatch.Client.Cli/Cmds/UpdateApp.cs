@@ -1,16 +1,23 @@
-﻿using System.Threading;
-using Spectre.Console.Cli;
-
-// ReSharper disable ClassNeverInstantiated.Global
+﻿using System;
+using System.CommandLine;
+using System.Threading.Tasks;
 
 namespace GameWatch.Client.Cli.Cmds;
 
-public sealed class UpdateApp : Command<UpdateApp.Settings>
+public static class UpdateApp
 {
-    public class Settings : CommandSettings;
-
-    protected override int Execute(CommandContext context, Settings settings, CancellationToken cancellationToken)
+    public static Command Build()
     {
-        throw new System.NotImplementedException();
+        var dryOption = new Option<bool>("--dry", "-d")
+        {
+            Description = "Forces command to only check for available updates without attempting to update the app"
+        };
+
+        var cmd = new Command("update", "Check for available updates & update app if possible") { dryOption };
+        cmd.Aliases.Add("up");
+
+        cmd.SetAction(_ => Task.FromException<int>(new NotImplementedException()));
+
+        return cmd;
     }
 }

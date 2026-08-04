@@ -7,9 +7,10 @@ var scriptFolderPath = Path.GetDirectoryName(GetScriptFilePath())!;
 
 var scriptNames = new List<string>
 {
-    "clean_windows.cs",
-    "clean_linux.cs",
-    "clean_apple.cs"
+    "clean_windows_x64.cs",
+    "clean_linux_x64.cs",
+    "clean_macOS_x64.cs",
+    "clean_macOS_arm64.cs"
 };
 
 // Execute each script sequentially

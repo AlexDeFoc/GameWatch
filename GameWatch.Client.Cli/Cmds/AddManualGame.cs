@@ -1,41 +1,47 @@
 ﻿using System;
-using System.ComponentModel;
-using System.Threading;
-using System.Threading.Tasks;
+using System.CommandLine;
 using GameWatch.Core.Dto;
 using GameWatch.Core.GameRecords;
 using GameWatch.Core.Helpers;
-using GameWatch.Core.Ipc;
-using Spectre.Console;
-using Spectre.Console.Cli;
-
-// ReSharper disable ClassNeverInstantiated.Global
-// ReSharper disable UnusedAutoPropertyAccessor.Global
 
 namespace GameWatch.Client.Cli.Cmds;
 
-public sealed class AddManualGame : Command<AddManualGame.Settings>
+public static class AddManualGame
 {
-    public class Settings : CommandSettings
+    public static Command Build()
     {
-        [CommandOption("-n|--name <NAME>", isRequired: true)]
-        [Description("Name of the Game record")]
-        public required string Name { get; init; }
+        var nameOption = new Option<string>("--name", "-n")
+        {
+            Description = "The name of the game record",
+            Required = true
+        };
 
-        [CommandOption("-p|--playtime <SECONDS>")]
-        [Description("Initial Game record playtime in seconds")]
-        [DefaultValue(0)]
-        public int PlayTimeSeconds { get; init; }
-    }
+        var playTimeOption = new Option<int>("--playtime", "-p")
+        {
+            Description = "Set initial playtime"
+        };
 
-    protected override int Execute(CommandContext context, Settings settings, CancellationToken cancellationToken)
-    {
-        var gameRecord = new ManualGame { Name = settings.Name, PlayTimeSec = new ElapsedTime(settings.PlayTimeSeconds) };
+        var cmd = new Command("manual", "Command for adding manual game")
+        {
+            nameOption,
+            playTimeOption
+        };
+        cmd.Aliases.Add("m");
 
-        DbFactory.GameLibrary.AddGame(gameRecord);
+        cmd.SetAction(result =>
+        {
+            var name = result.GetRequiredValue(nameOption);
+            var initialPlayTime = result.GetValue(playTimeOption);
 
-        Console.WriteLine("✅ Manual game added to database");
+            var gameRecord = new ManualGame { Name = name, PlayTimeSec = new ElapsedTime(initialPlayTime) };
 
-        return 0;
+            DbFactory.GameLibrary.AddGame(gameRecord);
+
+            Console.WriteLine("✅ Manual game added to database");
+
+            return 0;
+        });
+
+        return cmd;
     }
 }

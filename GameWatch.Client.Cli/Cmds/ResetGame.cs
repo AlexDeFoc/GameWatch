@@ -1,76 +1,139 @@
 ﻿using System;
-using System.ComponentModel;
-using System.Threading;
-using System.Threading.Tasks;
-using GameWatch.Agent.GameMonitor;
+using System.CommandLine;
 using GameWatch.Core.Agents.GameMonitor;
 using GameWatch.Core.Dto;
 using GameWatch.Core.Helpers;
 using GameWatch.Core.Ipc;
-using Spectre.Console;
-using Spectre.Console.Cli;
-
-// ReSharper disable UnusedAutoPropertyAccessor.Global
-// ReSharper disable ClassNeverInstantiated.Global
 
 namespace GameWatch.Client.Cli.Cmds;
 
-public sealed class ResetGame : AsyncCommand<ResetGame.Settings>
+public static class ResetGame
 {
-    public class Settings : CommandSettings
+    public static Command Build()
     {
-        [CommandOption("-i|--idx <GAME_INDEX>", isRequired: true)]
-        [Description("The Game index. TIP: Can be gathered from 'list games'")]
-        public required int GameIdx { get; init; }
-
-        [CommandOption("-m|--manual-Game")]
-        [Description("Delete Game from manual collection")]
-        public bool TargetGameModeIsManual { get; init; }
-
-        [CommandOption("-a|--auto-Game")]
-        [Description("Delete Game from auto collection")]
-        public bool TargetGameModeIsAuto { get; init; }
-    }
-
-    protected override ValidationResult Validate(CommandContext context, Settings settings)
-    {
-        return settings switch
+        var idxOption = new Option<int>("--index", "-i")
         {
-            { TargetGameModeIsAuto: false, TargetGameModeIsManual: false } => ValidationResult.Error("Must provide at least one Game mode flag to let the app determine from which collection to delete the Game."),
-            { TargetGameModeIsAuto: true, TargetGameModeIsManual: true } => ValidationResult.Error("Cannot delete a Game from both Game collections because the provided id will most certainly mean a different Game in both collections."),
-            _ => ValidationResult.Success()
+            Description = "The game index from (see 'list games')",
+            Required = true
         };
-    }
 
-    protected override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
-    {
-        var targetGameMode = settings.TargetGameModeIsAuto ? GameMode.Auto : GameMode.Manual;
-
-        var gameId = DbFactory.GameLibrary.GetGameIdByIdx(GameMode.Manual, new GameIdx(settings.GameIdx));
-
-        if (gameId == null)
+        var manualOption = new Option<bool>("--manual", "-m")
         {
-            Console.WriteLine("⛔ Provided Game index is out of range. Ignoring command...");
-            return 1;
-        }
+            Description = "Index corresponds to a manual game"
+        };
 
-        DbFactory.GameLibrary.ResetGamePlayTime(targetGameMode, new GameIdx(settings.GameIdx));
-
-        try
+        var autoOption = new Option<bool>("--auto", "-a")
         {
-            var notified = targetGameMode == GameMode.Auto
-                ? await IpcClient.SendResetActiveAutoGameSignalAsync(IpcTarget.GameWatchGameMonitorAgent, gameId.Value, cancellationToken)
-                : await IpcClient.SendResetActiveManualGameSignalAsync(IpcTarget.GameWatchGameMonitorAgent, gameId.Value, cancellationToken);
+            Description = "Index corresponds to an auto game"
+        };
 
-            if (notified) return 0;
-
-            Console.WriteLine("⚠️ Game Monitor Agent is not running. No problem, the database file was updated anyways.");
-        }
-        catch (Exception)
+        var cmd = new Command("reset", "Reset game properties")
         {
-            Console.WriteLine("⚠ Failed to communicate with the Game Monitor Agent. Failed notify the agent to reset the 60 second interval. Though the database file was updated anyways.");
-        }
+            idxOption,
+            manualOption,
+            autoOption
+        };
+        cmd.Aliases.Add("rs");
 
-        return 0;
+        cmd.Validators.Add(result =>
+        {
+            var resetManual = result.GetValue(manualOption);
+            var resetAuto = result.GetValue(autoOption);
+
+            switch (resetManual)
+            {
+                case false when !resetAuto:
+                    result.AddError("⛔ Must specify whether to reset a manual or auto game");
+                    return;
+                case true when resetAuto:
+                    result.AddError("⛔ Cannot reset a manual and auto game with the same index");
+                    return;
+            }
+
+            var idx = result.GetRequiredValue(idxOption);
+
+            var gameMode = resetManual ? GameMode.Manual : GameMode.Auto;
+            var r = DbFactory.GameLibrary.GetGameIdByIdx(gameMode, new GameIdx(idx));
+
+            if (r.HasValue) return;
+            result.AddError(gameMode is GameMode.Manual
+                                ? "⛔ Cannot find manual game with specified index"
+                                : "⛔ Cannot find auto game with specified index");
+        });
+
+        cmd.SetAction(async (result, cancellationToken) =>
+        {
+            var resetManual = result.GetValue(manualOption);
+            var gameMode = resetManual ? GameMode.Manual : GameMode.Auto;
+            var idxVal = result.GetRequiredValue(idxOption);
+            var idx = new GameIdx(idxVal);
+            var id = DbFactory.GameLibrary.GetGameIdByIdx(gameMode, idx);
+
+            if (!id.HasValue)
+            {
+                Console.WriteLine(gameMode is GameMode.Manual
+                                      ? "⛔ Cannot find manual game with specified index"
+                                      : "⛔ Cannot find auto game with specified index");
+                return 1;
+            }
+
+            DbFactory.GameLibrary.ResetGamePlayTime(gameMode, idx);
+
+            const IpcTarget target = IpcTarget.GameWatchGameMonitorAgent;
+            try
+            {
+                var notified = gameMode is GameMode.Manual
+                    ? await IpcClient.SendResetActiveManualGameSignalAsync(target, id.Value, cancellationToken)
+                    : await IpcClient.SendResetActiveAutoGameSignalAsync(target, id.Value, cancellationToken);
+
+                if (!notified)
+                {
+                    Console.WriteLine("⚠️ Unable to communicate with the GameWatch background service. Please ensure the agent is running.");
+                    return 1;
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                Console.WriteLine("⚠ Operation canceled.");
+                return 1;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"⛔ Unhandled exception during IPC call to target '{nameof(target)}': {ex}");
+                return 1;
+            }
+
+            if (gameMode is GameMode.Manual)
+            {
+                var requestResult = DbFactory.GameLibrary.GetManualGameByIdx(idx);
+
+                if (!requestResult.HasSucceeded || requestResult.Game is null)
+                {
+                    Console.WriteLine("⚠ Manual game reset, though we failed to grab game name");
+                    Console.WriteLine(requestResult.FailureReason);
+                    return 0;
+                }
+
+                Console.WriteLine($"✅ Game with Name='{requestResult.Game.Name}' reset");
+            }
+            else
+            {
+
+                var requestResult = DbFactory.GameLibrary.GetAutoGameByIdx(idx);
+
+                if (!requestResult.HasSucceeded || requestResult.Game is null)
+                {
+                    Console.WriteLine("⚠ Auto game reset, though we failed to grab game name");
+                    Console.WriteLine(requestResult.FailureReason);
+                    return 0;
+                }
+
+                Console.WriteLine($"✅ Game with Name='{requestResult.Game.Name}' reset");
+            }
+
+            return 0;
+        });
+
+        return cmd;
     }
 }

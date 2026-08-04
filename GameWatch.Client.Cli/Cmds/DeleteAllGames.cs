@@ -1,59 +1,71 @@
 ﻿using System;
-using System.ComponentModel;
-using System.Threading;
+using System.CommandLine;
 using GameWatch.Core.Dto;
 using GameWatch.Core.Helpers;
-using Spectre.Console;
-using Spectre.Console.Cli;
-
-// ReSharper disable UnusedAutoPropertyAccessor.Global
-// ReSharper disable ClassNeverInstantiated.Global
 
 namespace GameWatch.Client.Cli.Cmds;
 
-public sealed class DeleteAllGames : Command<DeleteAllGames.Settings>
+public static class DeleteAllGames
 {
-    public class Settings : CommandSettings
+    public static Command Build()
     {
-        [CommandOption("-m|--manual-Game")]
-        [Description("Delete all games from manual collection")]
-        public bool TargetGameModeIsManual { get; init; }
-
-        [CommandOption("-a|--auto-Game")]
-        [Description("Delete all games from auto collection")]
-        public bool TargetGameModeIsAuto { get; init; }
-    }
-
-    protected override ValidationResult Validate(CommandContext context, Settings settings)
-    {
-        return settings switch
+        var manualOption = new Option<bool>("--manual", "-m")
         {
-            { TargetGameModeIsAuto: false, TargetGameModeIsManual: false } => ValidationResult.Error("Must provide at least one Game mode flag to let the app determine what Game collection to clear."),
-            _ => ValidationResult.Success()
+            Description = "Delete all manual games"
         };
-    }
 
-    protected override int Execute(CommandContext context, Settings settings, CancellationToken cancellationToken)
-    {
-        if (settings.TargetGameModeIsAuto)
+        var autoOption = new Option<bool>("--auto", "-a")
         {
-            var actionStatus = DbFactory.GameLibrary.DeleteAllGames(GameMode.Auto);
+            Description = "Delete all auto games"
+        };
 
-            Console.WriteLine(actionStatus.HasSucceeded
-                                  ? "✅ Deleted all auto games."
-                                  : actionStatus.FailureReason);
-        }
-
-        // ReSharper disable once InvertIf
-        if (settings.TargetGameModeIsManual)
+        var cmd = new Command("clear", "Remove all games of a certain mode")
         {
-            var actionStatus = DbFactory.GameLibrary.DeleteAllGames(GameMode.Manual);
+            manualOption,
+            autoOption
+        };
+        cmd.Aliases.Add("cl");
 
-            Console.WriteLine(actionStatus.HasSucceeded
-                                  ? "Deleted all manual games."
-                                  : actionStatus.FailureReason);
-        }
+        cmd.SetAction(result =>
+        {
+            var clearManualGames = result.GetValue(manualOption);
+            var clearAutoGames = result.GetValue(autoOption);
 
-        return 0;
+            if (!clearAutoGames && !clearManualGames)
+            {
+                clearManualGames = true;
+                clearAutoGames = true;
+            }
+
+            DbFactory.GameLibrary.DeleteAllGamesActionStatus? status;
+            if (clearManualGames)
+            {
+                status = DbFactory.GameLibrary.DeleteAllGames(GameMode.Manual);
+
+                if (!status.HasSucceeded)
+                {
+                    Console.WriteLine(status.FailureReason);
+                    return 1;
+                }
+
+                Console.WriteLine("✅ Deleted all manual games");
+            }
+
+            if (!clearAutoGames) return 0;
+
+            status = DbFactory.GameLibrary.DeleteAllGames(GameMode.Auto);
+
+            if (!status.HasSucceeded)
+            {
+                Console.WriteLine(status.FailureReason);
+                return 1;
+            }
+
+            Console.WriteLine("✅ Deleted all auto games");
+
+            return 0;
+        });
+
+        return cmd;
     }
 }

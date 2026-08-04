@@ -1,27 +1,31 @@
 ﻿using System;
-using System.Threading;
-using Spectre.Console.Cli;
-
-// ReSharper disable ClassNeverInstantiated.Global
+using System.CommandLine;
 
 namespace GameWatch.Client.Cli.Cmds;
 
-public sealed class ListProcs : Command<ListProcs.Settings>
+public static class ListProcs
 {
-    public class Settings : CommandSettings;
-
-    protected override int Execute(CommandContext context, Settings settings, CancellationToken cancellationToken)
+    public static Command Build()
     {
-        var procs = Core.Helpers.ProcessFinder.GetListOfAvailableProcesses();
+        var cmd = new Command("procs", "List all active processes with properties" +
+                                       "that can be used to match against when monitoring auto games.");
+        cmd.Aliases.Add("p");
 
-        foreach (var proc in procs)
+        cmd.SetAction(_ =>
         {
-            Console.WriteLine($"Pid: {proc.Pid}");
-            Console.WriteLine($"Window Title: {proc.WindowTitle}");
-            Console.WriteLine($"File Path: {proc.FilePath}");
-            Console.WriteLine();
-        }
+            var procs = Core.Helpers.ProcessFinder.GetListOfAvailableProcesses();
 
-        return 0;
+            foreach (var proc in procs)
+            {
+                Console.WriteLine($"Pid: {proc.Pid}");
+                Console.WriteLine($"Window Title: {proc.WindowTitle}");
+                Console.WriteLine($"File Path: {proc.FilePath}");
+                Console.WriteLine();
+            }
+
+            return 0;
+        });
+
+        return cmd;
     }
 }

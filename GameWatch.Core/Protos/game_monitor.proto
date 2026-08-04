@@ -11,7 +11,7 @@ service IpcProcessor {
   rpc RefreshAutoGamesList (EmptyRequest) returns (IpcResponse);
   rpc ResetActiveManualGame (GameIdRequest) returns (IpcResponse);
   rpc ResetActiveAutoGame (GameIdRequest) returns (IpcResponse);
-  rpc EditAutoGame (EditAutoGameRequest) returns (IpcResponse);
+  rpc EditAutoGame (GameIdxRequest) returns (IpcResponse);
 
   // Eviction endpoint <- used when to replace one agent instance with an older one
   rpc EvictAgent (EvictRequest) returns (IpcResponse);
@@ -21,9 +21,8 @@ message EvictRequest {}
 
 message EmptyRequest {}
 
-message EditAutoGameRequest {
+message GameIdxRequest {
   int32 game_idx = 1;
-  bool was_game_active = 2;
 }
 
 message GameIdRequest {

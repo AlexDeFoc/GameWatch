@@ -1,51 +1,76 @@
 ﻿using System;
-using System.ComponentModel;
-using System.Threading;
+using System.CommandLine;
 using GameWatch.Core.Dto;
 using GameWatch.Core.Helpers;
-using Spectre.Console.Cli;
-
-// ReSharper disable ClassNeverInstantiated.Global
-// ReSharper disable UnusedAutoPropertyAccessor.Global
 
 namespace GameWatch.Client.Cli.Cmds;
 
-public sealed class EditManualGame : Command<EditManualGame.Settings>
+public static class EditManualGame
 {
-    public class Settings : CommandSettings
+    public static Command Build()
     {
-        [CommandOption("-i|--idx <GAME_INDEX>", isRequired: true)]
-        [Description("The Game index. TIP: Can be gathered from 'list games'")]
-        public required int GameIdx { get; init; }
-
-        [CommandOption("-n|--name <NAME>")]
-        [Description("New name for the Game record")]
-        public string? Name { get; init; }
-
-        [CommandOption("-p|--playtime <SECONDS>")]
-        [Description("Forced Game record playtime in seconds")]
-        public int? PlayTimeSeconds { get; init; }
-    }
-
-    protected override int Execute(CommandContext context, Settings settings, CancellationToken cancellationToken)
-    {
-        var result = DbFactory.GameLibrary.ChangeGameProperty(gameMode: GameMode.Manual,
-                                                              gameIdx: new GameIdx(settings.GameIdx),
-                                                              name: settings.Name,
-                                                              playTimeSec: settings.PlayTimeSeconds != null
-                                                                  ? new ElapsedTime(settings.PlayTimeSeconds.Value)
-                                                                  : null
-        );
-
-        if (!result.HasSucceeded)
+        var idxOption = new Option<int>("--index", "-i")
         {
-            Console.WriteLine(result.FailureReason);
+            Description = "The game index from (see 'list games')",
+            Required = true
+        };
 
-            return 1;
-        }
+        var nameOption = new Option<string>("--name", "-n")
+        {
+            Description = "New name for the game"
+        };
 
-        Console.WriteLine("✅ Game edited successfully");
+        var playTimeOption = new Option<int?>("--playtime", "-p")
+        {
+            Description = "Set game playtime"
+        };
 
-        return 0;
+        var cmd = new Command("manual", "Edit manual game")
+        {
+            idxOption,
+            nameOption,
+            playTimeOption
+        };
+        cmd.Aliases.Add("m");
+
+        cmd.SetAction(result =>
+        {
+            var idx = new GameIdx(result.GetRequiredValue(idxOption));
+            var name = result.GetValue(nameOption);
+            var playTime = result.GetValue(playTimeOption);
+
+            var nameForLogging = name;
+            if (name is null)
+            {
+                var gameQueryResult = DbFactory.GameLibrary.GetManualGameByIdx(idx);
+
+                if (gameQueryResult is { HasSucceeded: true, Game: not null })
+                {
+                    nameForLogging = gameQueryResult.Game.Name;
+                }
+            }
+
+            var status = DbFactory.GameLibrary.ChangeGameProperty(GameMode.Manual,
+                                                                  idx,
+                                                                  name,
+                                                                  playTime is null
+                                                                      ? null
+                                                                      : new ElapsedTime(playTime.Value)
+            );
+
+            if (!status.HasSucceeded)
+            {
+                Console.WriteLine(status.FailureReason);
+                return 1;
+            }
+
+            Console.WriteLine(nameForLogging is not null
+                                  ? $"✅ Game with Name='{nameForLogging}' edited successfully"
+                                  : "✅ Manual game edited successfully");
+
+            return 0;
+        });
+
+        return cmd;
     }
 }

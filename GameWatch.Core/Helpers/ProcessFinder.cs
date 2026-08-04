@@ -107,11 +107,11 @@ public static class ProcessFinder
         return result;
     }
 
-    public static OurProc? GetOurProcFromPid(int pid)
+    public static OurProc? GetOurProcFromPid(Pid pid)
     {
         try
         {
-            using var proc = Process.GetProcessById(pid);
+            using var proc = Process.GetProcessById(pid.V);
             var filePath = proc.MainModule?.FileName;
 
             if (string.IsNullOrEmpty(filePath) || string.IsNullOrEmpty(proc.MainWindowTitle))

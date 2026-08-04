@@ -21,7 +21,7 @@ foreach (var component in devComponents)
 }
 
 // 2. Setup shipping folders (portable & component across OS platforms)
-string[] platforms = ["windows", "linux", "apple"];
+string[] platforms = ["windows_x64", "linux_x64", "macOS_x64", "macOS_arm64"];
 string[] portableComponents = [
     Path.Combine("Agents", "GameMonitor"),
     Path.Combine("Clients", "Cli"),

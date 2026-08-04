@@ -10,9 +10,18 @@
         <FileVersion>1.0.0.0</FileVersion>
         <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     </PropertyGroup>
+    
+    <!-- For IDE intellisense -->
+    <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+        <OutputPath>../out/dev/dbg/Cients/Cli</OutputPath>
+    </PropertyGroup>
+
+    <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+        <OutputPath>../out/dev/rel/Cients/Cli</OutputPath>
+    </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="Spectre.Console.Cli" Version="0.55.0" />
+      <PackageReference Include="System.CommandLine" Version="2.0.10" />
     </ItemGroup>
 
     <ItemGroup>

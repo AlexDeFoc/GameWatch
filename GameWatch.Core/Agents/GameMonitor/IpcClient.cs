@@ -36,7 +36,7 @@ public static class IpcClient
             var response = await client.ResetActiveManualGameAsync(new GameIdRequest {GameId = gameId.V}, cancellationToken: cancellationToken);
             return response.Success;
         }
-        catch
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
             return false;
         }
@@ -50,7 +50,7 @@ public static class IpcClient
             var response = await client.ResetActiveAutoGameAsync(new GameIdRequest {GameId = gameId.V}, cancellationToken: cancellationToken);
             return response.Success;
         }
-        catch
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
             return false;
         }
@@ -64,7 +64,7 @@ public static class IpcClient
             var response = await client.RefreshAutoGamesListAsync(new EmptyRequest(), cancellationToken: cancellationToken);
             return response.Success;
         }
-        catch
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
             return false;
         }
@@ -78,9 +78,9 @@ public static class IpcClient
             var response = await client.ToggleManualGameAsync(new GameIdRequest { GameId = gameId.V }, cancellationToken: cancellationToken);
             return response.Success;
         }
-        catch
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            return false; // Agent offline or timed out
+            return false;
         }
     }
 
@@ -92,7 +92,7 @@ public static class IpcClient
             var response = await client.RemoveManualGameAsync(new GameIdRequest {GameId = gameId.V}, cancellationToken: cancellationToken);
             return response.Success;
         }
-        catch
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
             return false;
         }
@@ -106,21 +106,21 @@ public static class IpcClient
             var response = await client.RemoveAutoGameAsync(new GameIdRequest {GameId = gameId.V}, cancellationToken: cancellationToken);
             return response.Success;
         }
-        catch
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
             return false;
         }
     }
 
-    public static async Task<bool> SendEditAutoGameSignalAsync(IpcTarget target, GameIdx gameIdx, bool wasGameActive, CancellationToken cancellationToken)
+    public static async Task<bool> SendEditAutoGameSignalAsync(IpcTarget target, GameIdx gameIdx, CancellationToken cancellationToken)
     {
         try
         {
             var client = CreateClient(target);
-            var response = await client.EditAutoGameAsync(new EditAutoGameRequest { GameIdx = gameIdx.V, WasGameActive = wasGameActive }, cancellationToken: cancellationToken);
+            var response = await client.EditAutoGameAsync(new GameIdxRequest { GameIdx = gameIdx.V }, cancellationToken: cancellationToken);
             return response.Success;
         }
-        catch
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
             return false;
         }
@@ -134,9 +134,8 @@ public static class IpcClient
             var response = await client.EvictAgentAsync(new EvictRequest(), cancellationToken: cancellationToken);
             return response.Success;
         }
-        catch
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            // Throws if channel connection fails or times out (meaning no active agent was listening)
             return false;
         }
     }

@@ -1,16 +1,17 @@
 ﻿using System;
-using System.Threading;
-using Spectre.Console.Cli;
-// ReSharper disable ClassNeverInstantiated.Global
+using System.CommandLine;
+using System.Threading.Tasks;
 
 namespace GameWatch.Client.Cli.Cmds;
 
-public sealed class AddAutoGameFromPreset : Command<AddAutoGameFromPreset.Settings>
+public static class AddAutoGameFromPreset
 {
-    public class Settings : CommandSettings;
-
-    protected override int Execute(CommandContext context, Settings settings, CancellationToken cancellationToken)
+    public static Command Build()
     {
-        throw new NotImplementedException();
+        var cmd = new Command("preset", "Add auto game from a preset");
+
+        cmd.SetAction(_ => Task.FromException<int>(new NotImplementedException()));
+
+        return cmd;
     }
 }
