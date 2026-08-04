@@ -27,10 +27,6 @@ string[] portableComponents = [
     Path.Combine("Clients", "Cli"),
     "UserData"
 ];
-string[] componentOnly = [
-    Path.Combine("Agents", "GameMonitor"),
-    Path.Combine("Clients", "Cli")
-];
 
 Directory.CreateDirectory(Path.Combine(outDir, "ship", "portable", "archives"));
 
@@ -40,12 +36,6 @@ foreach (var os in platforms)
     foreach (var comp in portableComponents)
     {
         Directory.CreateDirectory(Path.Combine(outDir, "ship", "portable", os, "GameWatch", comp));
-    }
-
-    // Individual component target layout: out/ship/component/{os}/...
-    foreach (var comp in componentOnly)
-    {
-        Directory.CreateDirectory(Path.Combine(outDir, "ship", "component", os, comp));
     }
 }
 
