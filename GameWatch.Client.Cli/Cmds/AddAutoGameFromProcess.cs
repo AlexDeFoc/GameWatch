@@ -1,9 +1,9 @@
 ﻿using System;
 using System.CommandLine;
+using GameWatch.Core;
 using GameWatch.Core.Agents.GameMonitor;
 using GameWatch.Core.Dto;
 using GameWatch.Core.GameRecords;
-using GameWatch.Core.Helpers;
 using GameWatch.Core.Ipc;
 
 namespace GameWatch.Client.Cli.Cmds;
@@ -78,9 +78,15 @@ public static class AddAutoGameFromProcess
                 result.AddError("⛔ Cannot specify both exact match and a exe path pattern. These options are mutually exclusive");
             }
 
+            if (rulePathPattern is not null && !RegexProcessor.IsValidPattern(rulePathPattern))
+                result.AddError("⛔ Provided exe path match rule is not a valid regex pattern");
+
+            if (ruleWindowPattern is not null && !RegexProcessor.IsValidPattern(ruleWindowPattern))
+                result.AddError("⛔ Provided windows title match rule is not a valid regex pattern");
+
             var pid = result.GetRequiredValue(pidOption);
 
-            var proc = ProcessFinder.GetOurProcFromPid(new Pid(pid));
+            var proc = ProcGatherer.GetOurProcFromPid(new Pid(pid));
 
             if (proc is null)
             {
@@ -92,7 +98,7 @@ public static class AddAutoGameFromProcess
         {
             var pid = result.GetRequiredValue(pidOption);
 
-            var proc = ProcessFinder.GetOurProcFromPid(new Pid(pid));
+            var proc = ProcGatherer.GetOurProcFromPid(new Pid(pid));
 
             if (proc is null)
             {
@@ -137,7 +143,7 @@ public static class AddAutoGameFromProcess
                 }
             }
 
-            DbFactory.GameLibrary.AddGame(game);
+            DbMng.GameLibrary.AddGame(game);
 
             const IpcTarget target = IpcTarget.GameWatchGameMonitorAgent;
             try

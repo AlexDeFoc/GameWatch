@@ -4,7 +4,7 @@ using System.IO.Compression;
 using System.Runtime.CompilerServices;
 
 var scriptFolderPath = Path.GetDirectoryName(GetScriptFilePath())!;
-var rootDir = Path.GetFullPath("../../..", scriptFolderPath);
+var rootDir = Path.GetFullPath("../..", scriptFolderPath);
 
 var shipComponentDir = Path.Combine(rootDir, "out", "ship", "windows_x64");
 var shippedDir = Path.Combine(shipComponentDir, "GameWatch");

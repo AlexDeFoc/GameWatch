@@ -1,8 +1,8 @@
 ﻿using System.Text.RegularExpressions;
 
-namespace GameWatch.Core.Helpers;
+namespace GameWatch.Core;
 
-public static class RegexHandler
+public static class RegexProcessor
 {
     public static bool IsValidPattern(string pattern)
     {
@@ -24,7 +24,7 @@ public static class RegexHandler
     {
         try
         {
-            return Regex.IsMatch(valueToCheck, pattern);
+            return Regex.IsMatch(valueToCheck, pattern, RegexOptions.IgnoreCase);
         }
         catch
         {

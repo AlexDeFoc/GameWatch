@@ -1,7 +1,7 @@
 ﻿using System;
 using System.CommandLine;
+using GameWatch.Core;
 using GameWatch.Core.Dto;
-using GameWatch.Core.Helpers;
 
 namespace GameWatch.Client.Cli.Cmds;
 
@@ -37,10 +37,10 @@ public static class DeleteAllGames
                 clearAutoGames = true;
             }
 
-            DbFactory.GameLibrary.DeleteAllGamesActionStatus? status;
+            DbMng.GameLibrary.DeleteAllGamesActionStatus? status;
             if (clearManualGames)
             {
-                status = DbFactory.GameLibrary.DeleteAllGames(GameMode.Manual);
+                status = DbMng.GameLibrary.DeleteAllGames(GameMode.Manual);
 
                 if (!status.HasSucceeded)
                 {
@@ -53,7 +53,7 @@ public static class DeleteAllGames
 
             if (!clearAutoGames) return 0;
 
-            status = DbFactory.GameLibrary.DeleteAllGames(GameMode.Auto);
+            status = DbMng.GameLibrary.DeleteAllGames(GameMode.Auto);
 
             if (!status.HasSucceeded)
             {

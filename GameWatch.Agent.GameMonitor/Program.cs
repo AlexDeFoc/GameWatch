@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using GameWatch.Core;
 using GameWatch.Core.Agents.GameMonitor;
 using GameWatch.Core.Ipc;
 using Microsoft.Extensions.DependencyInjection;
@@ -23,7 +24,8 @@ public static class Program
         }
 
         // Step 2: Initialize DB
-        Core.Helpers.DbFactory.GameLibrary.InitializeDatabase("../../UserData");
+        DbMng.GameLibrary.InitializeDatabase("../../UserData");
+        DbMng.GameLibraryPresets.InitializeDatabase("../../AppData");
 
         var builder = Host.CreateApplicationBuilder(args);
 

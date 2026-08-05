@@ -2,6 +2,10 @@
 and also add "fast commands" which allow user to do fast cmds
 like instead of add game manual or a g m they can just do agm
 
-- implement code for any client (in core) to create game presets with constants, and if it doesnt exist file then just create, else leave it (on github we will update the app that way we update the presets)
-
-- impl cmd: add auto game from preset
+* limit to a certain interval instead of hoping we always hit 60s for agent (heartbeat)
+* add changable interval for agent (heartbeat)
+* move agent to WinExe
+* move agent logging to a sqlite3 db into Logs folder (Id, string TimeStamp, string Message)
+* add toggleble option so that we can disable agent logging
+* figure out way for versioning dbs
+* make update mechanic & installer

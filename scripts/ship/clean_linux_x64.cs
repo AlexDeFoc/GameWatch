@@ -2,7 +2,7 @@ using System.IO;
 using System.Runtime.CompilerServices;
 
 var scriptFolderPath = Path.GetDirectoryName(GetScriptFilePath())!;
-var rootDir = Path.GetFullPath("../../..", scriptFolderPath);
+var rootDir = Path.GetFullPath("../..", scriptFolderPath);
 
 var portableBaseDir = Path.Combine(rootDir, "out", "ship", "linux_x64", "GameWatch");
 var archiveFile = Path.Combine(rootDir, "out", "ship", "archives", "GameWatch.CliSuite-Linux-x64.zip");

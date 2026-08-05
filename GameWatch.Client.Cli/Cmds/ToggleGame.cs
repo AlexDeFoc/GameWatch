@@ -1,8 +1,8 @@
 ﻿using System;
 using System.CommandLine;
+using GameWatch.Core;
 using GameWatch.Core.Agents.GameMonitor;
 using GameWatch.Core.Dto;
-using GameWatch.Core.Helpers;
 using GameWatch.Core.Ipc;
 
 namespace GameWatch.Client.Cli.Cmds;
@@ -13,7 +13,7 @@ public static class ToggleGame
     {
         var idxOption = new Option<int>("--index", "-i")
         {
-            Description = "The Game index from (see 'list games')",
+            Description = "The Game index from (see 'list games -m')",
             Required = true
         };
 
@@ -24,7 +24,7 @@ public static class ToggleGame
         {
             var gameIdx = parseResult.GetValue(idxOption);
 
-            var gameId = DbFactory.GameLibrary.GetGameIdByIdx(GameMode.Manual, new GameIdx(gameIdx));
+            var gameId = DbMng.GameLibrary.GetGameIdByIdx(GameMode.Manual, new GameIdx(gameIdx));
 
             if (gameId == null)
             {

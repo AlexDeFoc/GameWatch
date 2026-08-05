@@ -1,7 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using GameWatch.Core.Helpers;
+using GameWatch.Core;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
@@ -18,7 +18,7 @@ public sealed class Worker(
         if (logger.IsEnabled(LogLevel.Information))
             logger.LogInformation("ℹ️ Agent started. Loading important stuff...");
 
-        state.LoadedAutoGames.ReplaceAll(DbFactory.GameLibrary.GetAutoGames());
+        state.LoadedAutoGames.ReplaceAll(DbMng.GameLibrary.GetAutoGames());
 
         if (logger.IsEnabled(LogLevel.Information))
             logger.LogInformation("✅️ Loaded auto games from db. Found={count} games", state.LoadedAutoGames.Count);
@@ -34,7 +34,7 @@ public sealed class Worker(
                 {
                     if (logger.IsEnabled(LogLevel.Information))
                         logger.LogInformation("ℹ️ Reloading auto games from db...");
-                    state.LoadedAutoGames.ReplaceAll(DbFactory.GameLibrary.GetAutoGames());
+                    state.LoadedAutoGames.ReplaceAll(DbMng.GameLibrary.GetAutoGames());
                     logger.LogInformation("✅ Finished reloading auto games from db...");
                     state.ResetGameListRefresh();
                 }

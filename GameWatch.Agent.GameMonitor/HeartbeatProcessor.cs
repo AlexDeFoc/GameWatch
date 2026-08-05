@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using GameWatch.Core;
 using GameWatch.Core.Dto;
-using GameWatch.Core.Helpers;
 using Microsoft.Extensions.Logging;
 
 namespace GameWatch.Agent.GameMonitor;
@@ -41,7 +41,7 @@ public sealed class HeartbeatProcessor(AgentState state, ILogger<HeartbeatProces
 
         try
         {
-            DbFactory.GameLibrary.IncrementPlayTime(GameMode.Auto, gamesToFlush);
+            DbMng.GameLibrary.IncrementPlayTime(GameMode.Auto, gamesToFlush);
 
             if (!logger.IsEnabled(LogLevel.Information)) return;
 
@@ -79,7 +79,7 @@ public sealed class HeartbeatProcessor(AgentState state, ILogger<HeartbeatProces
 
         try
         {
-            DbFactory.GameLibrary.IncrementPlayTime(GameMode.Manual, gamesToFlush);
+            DbMng.GameLibrary.IncrementPlayTime(GameMode.Manual, gamesToFlush);
 
             if (!logger.IsEnabled(LogLevel.Information)) return;
 

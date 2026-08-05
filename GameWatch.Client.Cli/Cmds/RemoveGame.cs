@@ -1,8 +1,8 @@
 ﻿using System;
 using System.CommandLine;
+using GameWatch.Core;
 using GameWatch.Core.Agents.GameMonitor;
 using GameWatch.Core.Dto;
-using GameWatch.Core.Helpers;
 using GameWatch.Core.Ipc;
 
 namespace GameWatch.Client.Cli.Cmds;
@@ -53,7 +53,7 @@ public static class RemoveGame
             var idx = result.GetRequiredValue(idxOption);
 
             var gameMode = removeManual ? GameMode.Manual : GameMode.Auto;
-            var r = DbFactory.GameLibrary.GetGameIdByIdx(gameMode, new GameIdx(idx));
+            var r = DbMng.GameLibrary.GetGameIdByIdx(gameMode, new GameIdx(idx));
 
             if (r.HasValue) return;
             result.AddError(gameMode is GameMode.Manual
@@ -67,7 +67,7 @@ public static class RemoveGame
             var gameMode = removeManual ? GameMode.Manual : GameMode.Auto;
             var idx = new GameIdx(result.GetRequiredValue(idxOption));
 
-            var (hasSucceeded, id, deletedGameTitle, failureReason) = DbFactory.GameLibrary.DeleteGame(gameMode, idx);
+            var (hasSucceeded, id, deletedGameTitle, failureReason) = DbMng.GameLibrary.DeleteGame(gameMode, idx);
 
             if (!hasSucceeded)
             {

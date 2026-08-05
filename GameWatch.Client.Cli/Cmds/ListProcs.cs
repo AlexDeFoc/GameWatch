@@ -1,5 +1,6 @@
 ﻿using System;
 using System.CommandLine;
+using GameWatch.Core;
 
 namespace GameWatch.Client.Cli.Cmds;
 
@@ -13,7 +14,7 @@ public static class ListProcs
 
         cmd.SetAction(_ =>
         {
-            var procs = Core.Helpers.ProcessFinder.GetListOfAvailableProcesses();
+            var procs = ProcGatherer.GetListOfAvailableProcesses();
 
             foreach (var proc in procs)
             {

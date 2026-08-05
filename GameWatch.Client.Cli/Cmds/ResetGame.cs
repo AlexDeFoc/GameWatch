@@ -1,8 +1,8 @@
 ﻿using System;
 using System.CommandLine;
+using GameWatch.Core;
 using GameWatch.Core.Agents.GameMonitor;
 using GameWatch.Core.Dto;
-using GameWatch.Core.Helpers;
 using GameWatch.Core.Ipc;
 
 namespace GameWatch.Client.Cli.Cmds;
@@ -53,7 +53,7 @@ public static class ResetGame
             var idx = result.GetRequiredValue(idxOption);
 
             var gameMode = resetManual ? GameMode.Manual : GameMode.Auto;
-            var r = DbFactory.GameLibrary.GetGameIdByIdx(gameMode, new GameIdx(idx));
+            var r = DbMng.GameLibrary.GetGameIdByIdx(gameMode, new GameIdx(idx));
 
             if (r.HasValue) return;
             result.AddError(gameMode is GameMode.Manual
@@ -67,7 +67,7 @@ public static class ResetGame
             var gameMode = resetManual ? GameMode.Manual : GameMode.Auto;
             var idxVal = result.GetRequiredValue(idxOption);
             var idx = new GameIdx(idxVal);
-            var id = DbFactory.GameLibrary.GetGameIdByIdx(gameMode, idx);
+            var id = DbMng.GameLibrary.GetGameIdByIdx(gameMode, idx);
 
             if (!id.HasValue)
             {
@@ -77,7 +77,7 @@ public static class ResetGame
                 return 1;
             }
 
-            DbFactory.GameLibrary.ResetGamePlayTime(gameMode, idx);
+            DbMng.GameLibrary.ResetGamePlayTime(gameMode, idx);
 
             const IpcTarget target = IpcTarget.GameWatchGameMonitorAgent;
             try
@@ -105,7 +105,7 @@ public static class ResetGame
 
             if (gameMode is GameMode.Manual)
             {
-                var requestResult = DbFactory.GameLibrary.GetManualGameByIdx(idx);
+                var requestResult = DbMng.GameLibrary.GetManualGameByIdx(idx);
 
                 if (!requestResult.HasSucceeded || requestResult.Game is null)
                 {
@@ -119,7 +119,7 @@ public static class ResetGame
             else
             {
 
-                var requestResult = DbFactory.GameLibrary.GetAutoGameByIdx(idx);
+                var requestResult = DbMng.GameLibrary.GetAutoGameByIdx(idx);
 
                 if (!requestResult.HasSucceeded || requestResult.Game is null)
                 {

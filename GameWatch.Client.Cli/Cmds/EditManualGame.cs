@@ -1,7 +1,7 @@
 ﻿using System;
 using System.CommandLine;
+using GameWatch.Core;
 using GameWatch.Core.Dto;
-using GameWatch.Core.Helpers;
 
 namespace GameWatch.Client.Cli.Cmds;
 
@@ -11,7 +11,7 @@ public static class EditManualGame
     {
         var idxOption = new Option<int>("--index", "-i")
         {
-            Description = "The game index from (see 'list games')",
+            Description = "The game index from (see 'list games -m')",
             Required = true
         };
 
@@ -42,7 +42,7 @@ public static class EditManualGame
             var nameForLogging = name;
             if (name is null)
             {
-                var gameQueryResult = DbFactory.GameLibrary.GetManualGameByIdx(idx);
+                var gameQueryResult = DbMng.GameLibrary.GetManualGameByIdx(idx);
 
                 if (gameQueryResult is { HasSucceeded: true, Game: not null })
                 {
@@ -50,7 +50,7 @@ public static class EditManualGame
                 }
             }
 
-            var status = DbFactory.GameLibrary.ChangeGameProperty(GameMode.Manual,
+            var status = DbMng.GameLibrary.ChangeGameProperty(GameMode.Manual,
                                                                   idx,
                                                                   name,
                                                                   playTime is null

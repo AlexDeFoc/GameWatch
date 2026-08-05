@@ -2,8 +2,8 @@
 using System.Linq;
 using System.Threading.Tasks;
 using GameWatch.Agent.GameMonitor.Ipc.Grpc;
+using GameWatch.Core;
 using GameWatch.Core.Dto;
-using GameWatch.Core.Helpers;
 using Grpc.Core;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -71,7 +71,7 @@ public sealed class IpcProcessorImpl(
             var elapsed = (int)(DateTime.UtcNow - session.LastTimeFlushedPlayTime).TotalSeconds;
             if (elapsed > 0)
             {
-                DbFactory.GameLibrary.IncrementPlayTime(GameMode.Manual, id, elapsed);
+                DbMng.GameLibrary.IncrementPlayTime(GameMode.Manual, id, elapsed);
             }
 
             if (logger.IsEnabled(LogLevel.Information))
@@ -130,7 +130,7 @@ public sealed class IpcProcessorImpl(
     public override Task<IpcResponse> EditAutoGame(GameIdxRequest request, ServerCallContext context)
     {
         var idx = new GameIdx(request.GameIdx);
-        var idOpt = DbFactory.GameLibrary.GetGameIdByIdx(GameMode.Auto, idx);
+        var idOpt = DbMng.GameLibrary.GetGameIdByIdx(GameMode.Auto, idx);
 
         if (idOpt == null)
         {
@@ -146,14 +146,14 @@ public sealed class IpcProcessorImpl(
             {
                 var elapsed = (int)(DateTime.UtcNow - prevSession.LastTimeFlushedPlayTime).TotalSeconds;
                 if (elapsed > 0)
-                    DbFactory.GameLibrary.IncrementPlayTime(GameMode.Auto, id, elapsed);
+                    DbMng.GameLibrary.IncrementPlayTime(GameMode.Auto, id, elapsed);
             }
 
             state.ActiveAutoGames.TryRemove(activePid, out _);
         }
 
         // Refresh auto games list
-        state.LoadedAutoGames.ReplaceAll(DbFactory.GameLibrary.GetAutoGames());
+        state.LoadedAutoGames.ReplaceAll(DbMng.GameLibrary.GetAutoGames());
 
         if (idx.V - 1 < 0 || idx.V - 1 >= state.LoadedAutoGames.Count)
         {
@@ -164,7 +164,7 @@ public sealed class IpcProcessorImpl(
         var targetGame = state.LoadedAutoGames.Get(idx.V - 1);
 
         // Re-evaluate running processes against updated rules
-        var procs = ProcessFinder.GetListOfAvailableProcesses();
+        var procs = ProcGatherer.GetListOfAvailableProcesses();
         var gamePidRaw = procs.FirstOrDefault(p => RuleMatcher.IsMatch(p, targetGame))?.Pid;
 
         if (gamePidRaw == null)

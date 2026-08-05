@@ -1,7 +1,7 @@
 ﻿using System;
 using GameWatch.Core.Dto;
 
-namespace GameWatch.Core.Helpers;
+namespace GameWatch.Core;
 
 public static class RuleMatcher
 {
@@ -27,12 +27,12 @@ public static class RuleMatcher
         var titleMatches = (!hasTitleExact && !hasTitleRule) ||
                             (hasTitleExact
                                 ? game.WindowTitle == proc.WindowTitle
-                                : RegexHandler.IsMatch(game.WindowRule!, proc.WindowTitle));
+                                : RegexProcessor.IsMatch(game.WindowRule!, proc.WindowTitle));
 
         var pathMatches = (!hasPathExact && !hasPathRule) ||
                            (hasPathExact
                                ? game.FilePath == proc.FilePath
-                               : RegexHandler.IsMatch(game.PathRule!, proc.FilePath));
+                               : RegexProcessor.IsMatch(game.PathRule!, proc.FilePath));
 
         return titleMatches && pathMatches;
     }

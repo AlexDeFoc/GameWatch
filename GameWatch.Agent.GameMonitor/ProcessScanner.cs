@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using GameWatch.Core;
 using GameWatch.Core.Dto;
-using GameWatch.Core.Helpers;
 using Microsoft.Extensions.Logging;
 
 namespace GameWatch.Agent.GameMonitor;
@@ -13,7 +13,7 @@ public sealed class ProcessScanner(AgentState state, ILogger<ProcessScanner> log
     {
         // Idx = GameId
         List<TrackingSessions.Auto> recentlyInactiveAutoGames = [];
-        var availableProcs = ProcessFinder.GetDictOfAvailableProcesses();
+        var availableProcs = ProcGatherer.GetDictOfAvailableProcesses();
 
         // 'remove inactives' step:
         // perform 'remove inactives' step:
@@ -32,7 +32,7 @@ public sealed class ProcessScanner(AgentState state, ILogger<ProcessScanner> log
             var elapsed = (int)(DateTime.UtcNow - session.LastTimeFlushedPlayTime).TotalSeconds;
             if (elapsed <= 0) continue;
 
-            DbFactory.GameLibrary.IncrementPlayTime(GameMode.Auto, session.Game.Id, elapsed);
+            DbMng.GameLibrary.IncrementPlayTime(GameMode.Auto, session.Game.Id, elapsed);
 
             if (logger.IsEnabled(LogLevel.Information))
                 logger.LogInformation("ℹ️ Auto Game Id={id} Name='{name}' has stopped. Elapsed={elapsed}s", session.Game.Id, session.Game.Name, elapsed);

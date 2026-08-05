@@ -1,9 +1,9 @@
 ﻿using System;
 using System.CommandLine;
 using System.Linq;
+using GameWatch.Core;
 using GameWatch.Core.Agents.GameMonitor;
 using GameWatch.Core.Dto;
-using GameWatch.Core.Helpers;
 using GameWatch.Core.Ipc;
 
 namespace GameWatch.Client.Cli.Cmds;
@@ -14,7 +14,7 @@ public static class EditAutoGame
     {
         var idxOption = new Option<int>("--index", "-i")
         {
-            Description = "The game index from (see 'list games')",
+            Description = "The game index from (see 'list games -a')",
             Required = true
         };
 
@@ -88,7 +88,7 @@ public static class EditAutoGame
 
             if (pid is null) return;
 
-            var proc = ProcessFinder.GetOurProcFromPid(new Pid(pid.Value));
+            var proc = ProcGatherer.GetOurProcFromPid(new Pid(pid.Value));
 
             if (proc is null)
             {
@@ -99,7 +99,7 @@ public static class EditAutoGame
         cmd.SetAction(async (result, cancellationToken) =>
         {
             var idx = new GameIdx(result.GetValue(idxOption));
-            var (hasSucceeded, game, failureReason) = DbFactory.GameLibrary.GetAutoGameByIdx(idx);
+            var (hasSucceeded, game, failureReason) = DbMng.GameLibrary.GetAutoGameByIdx(idx);
 
             if (!hasSucceeded || game == null)
             {
@@ -121,8 +121,8 @@ public static class EditAutoGame
             if (ruleWindowExact || rulePathExact)
             {
                 targetProc = pid is null
-                    ? ProcessFinder.GetListOfAvailableProcesses().FirstOrDefault(proc => RuleMatcher.IsMatch(proc, game))
-                    : ProcessFinder.GetOurProcFromPid(new Pid(pid.Value));
+                    ? ProcGatherer.GetListOfAvailableProcesses().FirstOrDefault(proc => RuleMatcher.IsMatch(proc, game))
+                    : ProcGatherer.GetOurProcFromPid(new Pid(pid.Value));
 
                 if (targetProc is null)
                 {
@@ -146,7 +146,7 @@ public static class EditAutoGame
                     ? targetProc!.FilePath
                     : game.FilePath;
 
-            var status = DbFactory.GameLibrary.ChangeGameProperty(GameMode.Auto,
+            var status = DbMng.GameLibrary.ChangeGameProperty(GameMode.Auto,
                                                                   idx,
                                                                   gameName,
                                                                   gamePlayTime,

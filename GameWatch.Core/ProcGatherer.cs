@@ -6,9 +6,9 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using GameWatch.Core.Dto;
 
-namespace GameWatch.Core.Helpers;
+namespace GameWatch.Core;
 
-public static class ProcessFinder
+public static class ProcGatherer
 {
     public static readonly StringComparison PathComparison =
         RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)
