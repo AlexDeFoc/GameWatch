@@ -18,6 +18,7 @@ public static class Program
     {
         DbMng.GameLibrary.InitializeDatabase("../../UserData");
         DbMng.GameLibraryPresets.InitializeDatabase("../../AppData");
+        DbMng.Settings.InitializeDatabase("../../AppData");
     }
 
     private static RootCommand BuildRootCommand()

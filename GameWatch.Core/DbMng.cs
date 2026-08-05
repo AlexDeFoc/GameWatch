@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using Dapper;
 using GameWatch.Core.Dto;
 using GameWatch.Core.GameRecords;
@@ -601,7 +602,6 @@ public static class DbMng
                                        PRAGMA synchronous = NORMAL;
                                        PRAGMA busy_timeout = 5000;
                                        PRAGMA temp_store = MEMORY;
-                                       PRAGMA foreign_keys = ON;
                                        """;
 
             conn.Execute(connPragmas);
@@ -646,9 +646,9 @@ public static class DbMng
         /// Initializes the database. Creates and populates defaults ONLY if the DB file does not exist.
         /// Existing databases are left 100% untouched to preserve user edits.
         /// </summary>
-        public static void InitializeDatabase(string relativePathToUserDataFolder)
+        public static void InitializeDatabase(string relativePathToAppDataFolder)
         {
-            _dbFolderPath = PathResolver.ResolveRelativePath(relativePathToUserDataFolder);
+            _dbFolderPath = PathResolver.ResolveRelativePath(relativePathToAppDataFolder);
             _dbPath = Path.Join(_dbFolderPath, "GameLibraryPresets.db");
             _readOnlyConnString = $"Data Source={_dbPath};Mode=ReadOnly;";
 
@@ -766,7 +766,7 @@ public static class DbMng
             }
         }
 
-        public static GameId? GetPresetIdByIdx(GameIdx pos)
+        private static GameId? GetPresetIdByIdx(GameIdx pos)
         {
             if (pos.V <= 0 || pos.V > _tableIds.Count) return null;
             return _tableIds[pos.V - 1];
@@ -875,6 +875,149 @@ public static class DbMng
         }
     }
 
+    public static class Settings
+    {
+        public static int GameMonitorAgentGamePlayTimeSaveThreshold
+        {
+            get => Interlocked.CompareExchange(ref field, 0, 0);
+            private set => Interlocked.Exchange(ref field, value);
+        }
+
+        private static string _dbFolderPath = null!;
+        private static string _dbPath = null!;
+        private static string _connString = null!;
+
+        /// <summary>Call this once at application startup.</summary>
+        public static void InitializeDatabase(string relativePathToAppDataFolder)
+        {
+            // Init variables
+            _dbFolderPath = PathResolver.ResolveRelativePath(relativePathToAppDataFolder);
+            _dbPath = Path.Join(_dbFolderPath, "Settings.db");
+            _connString = $"Data Source={_dbPath}";
+
+            if (!string.IsNullOrEmpty(_dbFolderPath) && !Directory.Exists(_dbFolderPath))
+                Directory.CreateDirectory(_dbFolderPath);
+
+            EnsureDatabaseCreatedAndSeeded();
+
+            // Init variables
+            // Gathering stage
+            using var conn = CreateConnection();
+
+            const string readGameMonitorAgentSettings = """
+                                                        SELECT
+                                                            GamePlayTimeSaveThreshold
+                                                        FROM GameMonitorAgent
+                                                        WHERE Id = @Id
+                                                        """;
+
+            var gameMonitorAgentSettings = conn.QueryFirstOrDefault<GameMonitorAgentSettingsDto>(readGameMonitorAgentSettings, new { Id = 1 });
+
+            if (gameMonitorAgentSettings is null
+                || gameMonitorAgentSettings.GamePlayTimeSaveThreshold < 1)
+            {
+                var defaults = GetGameMonitorAgentDefaults();
+                GameMonitorAgentGamePlayTimeSaveThreshold = defaults.GamePlayTimeSaveThreshold;
+            }
+            else
+            {
+                GameMonitorAgentGamePlayTimeSaveThreshold = gameMonitorAgentSettings.GamePlayTimeSaveThreshold;
+            }
+        }
+
+        private static void EnsureDatabaseCreatedAndSeeded()
+        {
+            using var conn = CreateConnection();
+
+            const string dbPragmasSql = """
+                                        PRAGMA journal_mode = WAL;
+                                        PRAGMA mmap_size = 134217728;
+                                        """;
+            conn.Execute(dbPragmasSql);
+
+            using var tran = conn.BeginTransaction();
+
+            const string createTableSql = """
+                                          CREATE TABLE IF NOT EXISTS GameMonitorAgent (
+                                              Id INTEGER PRIMARY KEY CHECK (Id = 1),
+                                              GamePlayTimeSaveThreshold INTEGER NOT NULL DEFAULT 60
+                                          ) STRICT;
+                                          """;
+            conn.Execute(createTableSql, transaction: tran);
+
+            const string insertIntoGameMonitorAgentSql = """
+                                                         INSERT INTO GameMonitorAgent (
+                                                             Id
+                                                             GamePlayTimeSaveThreshold
+                                                         )
+                                                         VALUES (
+                                                             1,
+                                                             @GamePlayTimeSaveThreshold
+                                                         )
+                                                         ON CONFLICT(Id) DO NOTHING;
+                                                         """;
+
+            conn.Execute(insertIntoGameMonitorAgentSql, GetGameMonitorAgentDefaults(), transaction: tran);
+
+            tran.Commit();
+        }
+
+        private static GameMonitorAgentSettingsDto GetGameMonitorAgentDefaults()
+        {
+            return new GameMonitorAgentSettingsDto
+            {
+                GamePlayTimeSaveThreshold = 60
+            };
+        }
+
+        public static void ResetGameMonitorAgentSettings(SqliteConnection conn, SqliteTransaction tran)
+        {
+            const string resetSql = """
+                                    INSERT INTO GameMonitorAgent (Id, GamePlayTimeSaveThreshold)
+                                    VALUES (1, @GamePlayTimeSaveThreshold)
+                                    ON CONFLICT(Id) DO UPDATE SET 
+                                        GamePlayTimeSaveThreshold = EXCLUDED.GamePlayTimeSaveThreshold;
+                                    """;
+
+            conn.Execute(resetSql, GetGameMonitorAgentDefaults(), transaction: tran);
+        }
+
+        private static string GetTableName(SettingsTarget target) => target switch
+        {
+            SettingsTarget.GameMonitorAgent => "GameMonitorAgent",
+            _ => throw new ArgumentOutOfRangeException(nameof(target), target, "Unsupported target.")
+        };
+
+        /// <summary>Call this every time we want to perform a db action.</summary>
+        private static SqliteConnection CreateConnection()
+        {
+            var conn = new SqliteConnection(_connString);
+            conn.Open();
+
+            const string connPragmas = """
+                                       PRAGMA synchronous = NORMAL;
+                                       PRAGMA busy_timeout = 5000;
+                                       PRAGMA temp_store = MEMORY;
+                                       """;
+
+            conn.Execute(connPragmas);
+            return conn;
+        }
+
+        private enum SettingsTarget
+        {
+            GameMonitorAgent
+        }
+
+        public sealed class GameMonitorAgentSettingsDto
+        {
+            public int Id { get; set; }
+            public int GamePlayTimeSaveThreshold { get; set; }
+        }
+    }
+
+    public record GetAutoGameByIdxResult(bool HasSucceeded, AutoGame? Game, string FailureReason);
+
     public sealed class AutoGameDto
     {
         public int Id { get; set; }
@@ -885,6 +1028,4 @@ public static class DbMng
         public string? WindowRule { get; set; }
         public string? PathRule { get; set; }
     }
-
-    public record GetAutoGameByIdxResult(bool HasSucceeded, AutoGame? Game, string FailureReason);
 }

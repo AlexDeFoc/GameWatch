@@ -9,8 +9,9 @@ namespace GameWatch.Agent.GameMonitor;
 public sealed class HeartbeatProcessor(AgentState state, ILogger<HeartbeatProcessor> logger)
 {
     /// <summary>
-    /// Checks all active sessions. Flushes 60s increments for sessions that reached the threshold,
-    /// or forces a full flush of all accumulated seconds during shutdown.
+    /// Checks all active sessions. Flushes 60s increments for auto sessions,
+    /// full accumulated time for manual sessions, or forces a full flush of all
+    /// accumulated seconds during shutdown.
     /// </summary>
     public void FlushHeartbeats(bool forceFlushAll = false)
     {
@@ -25,19 +26,31 @@ public sealed class HeartbeatProcessor(AgentState state, ILogger<HeartbeatProces
 
         foreach (var s in gameSessions)
         {
-            var elapsed = (int)(utcNow - s.LastTimeFlushedPlayTime).TotalSeconds;
-            switch (elapsed)
+            var elapsedSeconds = (int)(utcNow - s.LastTimeFlushedPlayTime).TotalSeconds;
+            if (elapsedSeconds <= 0) continue;
+
+            int secondsToFlush;
+
+            if (forceFlushAll)
             {
-                case <= 0:
-                case < 60 when !forceFlushAll:
-                    continue;
-                default:
-                    // Flush if forced, or if at least 60 seconds have passed
-                    gamesToFlush[s.Game.Id] = new ElapsedTime(elapsed);
-                    s.LastTimeFlushedPlayTime = utcNow;
-                    break;
+                secondsToFlush = elapsedSeconds;
+                s.LastTimeFlushedPlayTime = utcNow;
             }
+            else
+            {
+                // Cap flush to exactly 60 seconds
+                secondsToFlush = DbMng.Settings.GameMonitorAgentGamePlayTimeSaveThreshold;
+
+                if (elapsedSeconds < secondsToFlush) continue;
+
+                // Advance by 60s to keep any remaining seconds for the next tick
+                s.LastTimeFlushedPlayTime = s.LastTimeFlushedPlayTime.AddSeconds(secondsToFlush);
+            }
+
+            gamesToFlush[s.Game.Id] = new ElapsedTime(secondsToFlush);
         }
+
+        if (gamesToFlush.Count == 0) return;
 
         try
         {
@@ -63,19 +76,19 @@ public sealed class HeartbeatProcessor(AgentState state, ILogger<HeartbeatProces
 
         foreach (var s in gameSessions)
         {
-            var elapsed = (int)(utcNow - s.LastTimeFlushedPlayTime).TotalSeconds;
-            switch (elapsed)
-            {
-                case <= 0:
-                case < 60 when !forceFlushAll:
-                    continue;
-                default:
-                    // Flush if forced, or if at least 60 seconds have passed
-                    gamesToFlush[s.Id] = new ElapsedTime(elapsed);
-                    s.LastTimeFlushedPlayTime = utcNow;
-                    break;
-            }
+            var elapsedSeconds = (int)(utcNow - s.LastTimeFlushedPlayTime).TotalSeconds;
+            if (elapsedSeconds <= 0) continue;
+
+            if (!forceFlushAll && elapsedSeconds < DbMng.Settings.GameMonitorAgentGamePlayTimeSaveThreshold) continue;
+
+            // Manual games flush all accumulated seconds without capping
+            gamesToFlush[s.Id] = new ElapsedTime(elapsedSeconds);
+
+            // Advance by exact elapsed time to preserve fractional-second precision
+            s.LastTimeFlushedPlayTime = s.LastTimeFlushedPlayTime.AddSeconds(elapsedSeconds);
         }
+
+        if (gamesToFlush.Count == 0) return;
 
         try
         {

@@ -39,14 +39,17 @@ public sealed class ProcessScanner(AgentState state, ILogger<ProcessScanner> log
         }
 
         // 'search match' step:
-        // perform 'skip actives' step:
-        var gameIdsToSkipCheckingWhenMonitoring = (from kvp in state.ActiveAutoGames
-                                                   where availableProcs.ContainsKey(kvp.Key.V)
-                                                   select kvp.Value.Game.Id).ToList();
+        // 'create skip set' step:
+        var activeGameIds = state.ActiveAutoGames.Values
+                                 .Select(s => s.Game.Id)
+                                 .ToHashSet();
 
         // 'perform actual search match' step:
-        foreach (var game in state.LoadedAutoGames.Where(game => !gameIdsToSkipCheckingWhenMonitoring.Contains(game.Id)))
+        foreach (var game in state.LoadedAutoGames)
         {
+            if (activeGameIds.Contains(game.Id))
+                continue;
+
             foreach (var (pid, proc) in availableProcs)
             {
                 if (!RuleMatcher.IsMatch(proc, game)) continue;
@@ -58,6 +61,8 @@ public sealed class ProcessScanner(AgentState state, ILogger<ProcessScanner> log
 
                 if (logger.IsEnabled(LogLevel.Information))
                     logger.LogInformation("ℹ️ Auto Game Id={id} Name='{name}' has started.", game.Id, game.Name);
+
+                break;
             }
         }
     }

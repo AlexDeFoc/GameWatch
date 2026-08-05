@@ -26,6 +26,7 @@ public static class Program
         // Step 2: Initialize DB
         DbMng.GameLibrary.InitializeDatabase("../../UserData");
         DbMng.GameLibraryPresets.InitializeDatabase("../../AppData");
+        DbMng.Settings.InitializeDatabase("../../AppData");
 
         var builder = Host.CreateApplicationBuilder(args);
 

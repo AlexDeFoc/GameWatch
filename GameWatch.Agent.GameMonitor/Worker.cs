@@ -23,7 +23,8 @@ public sealed class Worker(
         if (logger.IsEnabled(LogLevel.Information))
             logger.LogInformation("✅️ Loaded auto games from db. Found={count} games", state.LoadedAutoGames.Count);
 
-        using var timer = new PeriodicTimer(TimeSpan.FromSeconds(5));
+        using var timer = new PeriodicTimer(TimeSpan.FromSeconds(1));
+        var secondsElapsed = 0;
 
         try
         {
@@ -39,10 +40,13 @@ public sealed class Worker(
                     state.ResetGameListRefresh();
                 }
 
-                // Perform tasks upon tick finish (5 seconds)
-                scanner.Scan();
+                secondsElapsed++;
+                if (secondsElapsed >= 5)
+                {
+                    scanner.Scan();
+                    secondsElapsed = 0;
+                }
 
-                // Flush 60s increments for sessions that reached the threshold
                 heartbeatProcessor.FlushHeartbeats(forceFlushAll: false);
             }
         }

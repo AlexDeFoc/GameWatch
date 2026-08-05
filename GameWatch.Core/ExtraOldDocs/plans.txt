@@ -2,10 +2,11 @@
 and also add "fast commands" which allow user to do fast cmds
 like instead of add game manual or a g m they can just do agm
 
-* limit to a certain interval instead of hoping we always hit 60s for agent (heartbeat)
-* add changable interval for agent (heartbeat)
+* DONE: limit to a certain interval instead of hoping we always hit 60s for agent (heartbeat)
+* DONE: add changeable interval for agent (heartbeat)
+* update comments regarding previous change
 * move agent to WinExe
 * move agent logging to a sqlite3 db into Logs folder (Id, string TimeStamp, string Message)
-* add toggleble option so that we can disable agent logging
+* add toggleable option so that we can disable agent logging
 * figure out way for versioning dbs
 * make update mechanic & installer
