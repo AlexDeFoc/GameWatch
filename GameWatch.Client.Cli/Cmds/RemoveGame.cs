@@ -79,8 +79,8 @@ public static class RemoveGame
             try
             {
                 var notified = gameMode is GameMode.Manual
-                    ? await IpcClient.SendResetActiveManualGameSignalAsync(target, id, cancellationToken)
-                    : await IpcClient.SendResetActiveAutoGameSignalAsync(target, id, cancellationToken);
+                    ? await IpcClient.SendRemoveManualGameSignalAsync(target, id, cancellationToken)
+                    : await IpcClient.SendRemoveAutoGameSignalAsync(target, id, cancellationToken);
 
                 if (!notified)
                 {
