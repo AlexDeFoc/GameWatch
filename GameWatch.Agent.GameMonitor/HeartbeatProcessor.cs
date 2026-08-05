@@ -9,7 +9,7 @@ namespace GameWatch.Agent.GameMonitor;
 public sealed class HeartbeatProcessor(AgentState state, ILogger<HeartbeatProcessor> logger)
 {
     /// <summary>
-    /// Checks all active sessions. Flushes 60s increments for auto sessions,
+    /// Checks all active sessions. Flushes save increments for auto sessions,
     /// full accumulated time for manual sessions, or forces a full flush of all
     /// accumulated seconds during shutdown.
     /// </summary>
