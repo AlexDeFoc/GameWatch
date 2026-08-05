@@ -947,7 +947,7 @@ public static class DbMng
 
             const string insertIntoGameMonitorAgentSql = """
                                                          INSERT INTO GameMonitorAgent (
-                                                             Id
+                                                             Id,
                                                              GamePlayTimeSaveThreshold
                                                          )
                                                          VALUES (
