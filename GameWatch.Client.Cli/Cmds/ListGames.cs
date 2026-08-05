@@ -166,11 +166,10 @@ public static class ListGames
                                 Console.WriteLine($"         Value: {game.WindowRule}");
                             }
 
-                            if (game.PathRule != null)
-                            {
-                                Console.WriteLine("      File Path: should match using pattern");
-                                Console.WriteLine($"         Value: {game.PathRule}");
-                            }
+                            if (game.PathRule == null) continue;
+
+                            Console.WriteLine("      File Path: should match using pattern");
+                            Console.WriteLine($"         Value: {game.PathRule}");
                         }
                     }
                     else

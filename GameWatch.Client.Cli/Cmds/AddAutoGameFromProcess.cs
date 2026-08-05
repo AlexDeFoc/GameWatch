@@ -145,6 +145,8 @@ public static class AddAutoGameFromProcess
 
             DbMng.GameLibrary.AddGame(game);
 
+            Console.WriteLine("✅ Game added successfully");
+
             const IpcTarget target = IpcTarget.GameWatchGameMonitorAgent;
             try
             {
@@ -166,8 +168,6 @@ public static class AddAutoGameFromProcess
                 Console.WriteLine($"⛔ Unhandled exception during IPC call to target '{nameof(target)}': {ex}");
                 return 1;
             }
-
-            Console.WriteLine("✅ Game added successfully");
 
             return 0;
         });

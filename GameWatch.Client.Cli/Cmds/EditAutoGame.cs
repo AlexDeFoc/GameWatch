@@ -162,6 +162,8 @@ public static class EditAutoGame
                 return 1;
             }
 
+            Console.WriteLine($"✅ Game with Name='{gameName}' edited successfully");
+
             const IpcTarget target = IpcTarget.GameWatchGameMonitorAgent;
             try
             {
@@ -183,8 +185,6 @@ public static class EditAutoGame
                 Console.WriteLine($"⛔ Unhandled exception during IPC call to target '{nameof(target)}': {ex}");
                 return 1;
             }
-
-            Console.WriteLine($"✅ Game with Name='{gameName}' edited successfully");
 
             return 0;
         });

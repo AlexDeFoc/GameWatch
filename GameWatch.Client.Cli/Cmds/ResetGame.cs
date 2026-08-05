@@ -79,30 +79,6 @@ public static class ResetGame
 
             DbMng.GameLibrary.ResetGamePlayTime(gameMode, idx);
 
-            const IpcTarget target = IpcTarget.GameWatchGameMonitorAgent;
-            try
-            {
-                var notified = gameMode is GameMode.Manual
-                    ? await IpcClient.SendResetActiveManualGameSignalAsync(target, id.Value, cancellationToken)
-                    : await IpcClient.SendResetActiveAutoGameSignalAsync(target, id.Value, cancellationToken);
-
-                if (!notified)
-                {
-                    Console.WriteLine("⚠️ Unable to communicate with the GameWatch background service. Please ensure the agent is running.");
-                    return 1;
-                }
-            }
-            catch (OperationCanceledException)
-            {
-                Console.WriteLine("⚠ Operation canceled.");
-                return 1;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"⛔ Unhandled exception during IPC call to target '{nameof(target)}': {ex}");
-                return 1;
-            }
-
             if (gameMode is GameMode.Manual)
             {
                 var requestResult = DbMng.GameLibrary.GetManualGameByIdx(idx);
@@ -129,6 +105,30 @@ public static class ResetGame
                 }
 
                 Console.WriteLine($"✅ Game with Name='{requestResult.Game.Name}' reset");
+            }
+
+            const IpcTarget target = IpcTarget.GameWatchGameMonitorAgent;
+            try
+            {
+                var notified = gameMode is GameMode.Manual
+                    ? await IpcClient.SendResetActiveManualGameSignalAsync(target, id.Value, cancellationToken)
+                    : await IpcClient.SendResetActiveAutoGameSignalAsync(target, id.Value, cancellationToken);
+
+                if (!notified)
+                {
+                    Console.WriteLine("⚠️ Unable to communicate with the GameWatch background service. Please ensure the agent is running.");
+                    return 1;
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                Console.WriteLine("⚠ Operation canceled.");
+                return 1;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"⛔ Unhandled exception during IPC call to target '{nameof(target)}': {ex}");
+                return 1;
             }
 
             return 0;

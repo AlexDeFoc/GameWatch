@@ -75,6 +75,8 @@ public static class RemoveGame
                 return 1;
             }
 
+            Console.WriteLine($"✅ Game with Name='{deletedGameTitle}' deleted");
+
             const IpcTarget target = IpcTarget.GameWatchGameMonitorAgent;
             try
             {
@@ -98,8 +100,6 @@ public static class RemoveGame
                 Console.WriteLine($"⛔ Unhandled exception during IPC call to target '{nameof(target)}': {ex}");
                 return 1;
             }
-
-            Console.WriteLine($"✅ Game with Name='{deletedGameTitle}' deleted");
 
             return 0;
         });

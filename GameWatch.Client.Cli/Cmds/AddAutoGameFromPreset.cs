@@ -36,6 +36,8 @@ public static class AddAutoGameFromPreset
 
             DbMng.GameLibrary.AddGame(preset);
 
+            Console.WriteLine("✅ Game added successfully");
+
             const IpcTarget target = IpcTarget.GameWatchGameMonitorAgent;
             try
             {
@@ -57,8 +59,6 @@ public static class AddAutoGameFromPreset
                 Console.WriteLine($"⛔ Unhandled exception during IPC call to target '{nameof(target)}': {ex}");
                 return 1;
             }
-
-            Console.WriteLine("✅ Game added successfully");
 
             return 0;
         });
