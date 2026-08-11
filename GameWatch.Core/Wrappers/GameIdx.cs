@@ -1,4 +1,4 @@
-﻿namespace GameWatch.Core.Dto;
+﻿namespace GameWatch.Core.Wrappers;
 
 public readonly record struct GameIdx(int V)
 {

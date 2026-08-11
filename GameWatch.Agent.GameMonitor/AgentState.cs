@@ -1,8 +1,8 @@
 ﻿using System.Collections.Concurrent;
 using System.Threading;
 using GameWatch.Core;
-using GameWatch.Core.Dto;
 using GameWatch.Core.GameRecords;
+using GameWatch.Core.Wrappers;
 
 namespace GameWatch.Agent.GameMonitor;
 

@@ -3,7 +3,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using GameWatch.Agent.GameMonitor.Ipc.Grpc;
 using GameWatch.Core;
-using GameWatch.Core.Dto;
+using GameWatch.Core.Dbs;
+using GameWatch.Core.Wrappers;
 using Grpc.Core;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -24,11 +25,11 @@ public sealed class IpcProcessorImpl(
             state.ActiveAutoGamesPids.TryRemove(id, out _);
 
             if (logger.IsEnabled(LogLevel.Information))
-                logger.LogInformation("✅ Removed auto game with Id={id} Name={name}", id, session.Game.Name);
+                logger.LogInformation("[OK] Removed auto game with Id={id} Name={name}", id, session.Game.Name);
         }
         else if (logger.IsEnabled(LogLevel.Warning))
         {
-            logger.LogWarning("⚠️ Auto Game with Id={id} wasn't being tracked. Ignoring signal to remove auto Game...", id);
+            logger.LogWarning("[WARN] Auto Game with Id={id} wasn't being tracked. Ignoring signal to remove auto Game...", id);
         }
 
         state.RequestGameListRefresh();
@@ -43,11 +44,11 @@ public sealed class IpcProcessorImpl(
         if (state.ActiveManualGames.TryRemove(id, out _))
         {
             if (logger.IsEnabled(LogLevel.Information))
-                logger.LogInformation("✅ Removed manual Game with Id={id}", id);
+                logger.LogInformation("[OK] Removed manual Game with Id={id}", id);
         }
         else if (logger.IsEnabled(LogLevel.Warning))
         {
-            logger.LogWarning("⚠️ Manual Game with Id={id} wasn't being tracked. Ignoring signal to remove manual Game...", id);
+            logger.LogWarning("[WARN] Manual Game with Id={id} wasn't being tracked. Ignoring signal to remove manual Game...", id);
         }
 
         return Task.FromResult(new IpcResponse { Success = true });
@@ -57,7 +58,7 @@ public sealed class IpcProcessorImpl(
     {
         state.RequestGameListRefresh();
         if (logger.IsEnabled(LogLevel.Information))
-            logger.LogInformation("ℹ️ Refresh auto games signal received");
+            logger.LogInformation("[INFO] Refresh auto games signal received");
 
         return Task.FromResult(new IpcResponse { Success = true });
     }
@@ -68,14 +69,14 @@ public sealed class IpcProcessorImpl(
 
         if (state.ActiveManualGames.TryRemove(id, out var session))
         {
-            var elapsed = (int)(DateTime.UtcNow - session.LastTimeFlushedPlayTime).TotalSeconds;
+            var elapsed = (long)(DateTime.UtcNow - session.LastTimeFlushedPlayTime).TotalSeconds;
             if (elapsed > 0)
             {
-                DbMng.GameLibrary.IncrementPlayTime(GameMode.Manual, id, elapsed);
+                GameLibrary.Instance.IncrementPlayTime(GameMode.Manual, id, elapsed);
             }
 
             if (logger.IsEnabled(LogLevel.Information))
-                logger.LogInformation("✅ Stopped manual Game Id={id}, Elapsed={elapsed}s", id, elapsed);
+                logger.LogInformation("[OK] Stopped manual Game Id={id}, Elapsed={elapsed}s", id, elapsed);
         }
         else
         {
@@ -83,7 +84,7 @@ public sealed class IpcProcessorImpl(
             state.ActiveManualGames.TryAdd(id, newSession);
 
             if (logger.IsEnabled(LogLevel.Information))
-                logger.LogInformation("✅ Started manual Game Id={id}", id);
+                logger.LogInformation("[OK] Started manual Game Id={id}", id);
         }
 
         return Task.FromResult(new IpcResponse { Success = true });
@@ -98,11 +99,11 @@ public sealed class IpcProcessorImpl(
             session.LastTimeFlushedPlayTime = DateTime.UtcNow;
 
             if (logger.IsEnabled(LogLevel.Information))
-                logger.LogInformation("✅ Reset manual Game playtime with Id={id}", id);
+                logger.LogInformation("[OK] Reset manual Game playtime with Id={id}", id);
         }
         else if (logger.IsEnabled(LogLevel.Warning))
         {
-            logger.LogWarning("⚠️ Manual Game with Id={id} wasn't being tracked. Ignoring signal to reset manual Game playtime...", id);
+            logger.LogWarning("[WARN] Manual Game with Id={id} wasn't being tracked. Ignoring signal to reset manual Game playtime...", id);
         }
 
         return Task.FromResult(new IpcResponse { Success = true });
@@ -117,11 +118,11 @@ public sealed class IpcProcessorImpl(
             session.LastTimeFlushedPlayTime = DateTime.UtcNow;
 
             if (logger.IsEnabled(LogLevel.Information))
-                logger.LogInformation("✅ Reset auto game playtime with Id={id} Name={name}", id, session.Game.Name);
+                logger.LogInformation("[OK] Reset auto game playtime with Id={id} Name={name}", id, session.Game.Name);
         }
         else if (logger.IsEnabled(LogLevel.Warning))
         {
-            logger.LogWarning("⚠️ Auto Game with Id={id} wasn't being tracked. Ignoring signal to reset auto Game playtime...", id);
+            logger.LogWarning("[WARN] Auto Game with Id={id} wasn't being tracked. Ignoring signal to reset auto Game playtime...", id);
         }
 
         return Task.FromResult(new IpcResponse { Success = true });
@@ -130,7 +131,7 @@ public sealed class IpcProcessorImpl(
     public override Task<IpcResponse> EditAutoGame(GameIdxRequest request, ServerCallContext context)
     {
         var idx = new GameIdx(request.GameIdx);
-        var idOpt = DbMng.GameLibrary.GetGameIdByIdx(GameMode.Auto, idx);
+        var idOpt = GameLibrary.Instance.GetGameIdByIdx(GameMode.Auto, idx);
 
         if (idOpt == null)
         {
@@ -144,16 +145,16 @@ public sealed class IpcProcessorImpl(
             // TODO: check if we can merge try get value and try remove
             if (state.ActiveAutoGames.TryGetValue(activePid, out var prevSession))
             {
-                var elapsed = (int)(DateTime.UtcNow - prevSession.LastTimeFlushedPlayTime).TotalSeconds;
+                var elapsed = (long)(DateTime.UtcNow - prevSession.LastTimeFlushedPlayTime).TotalSeconds;
                 if (elapsed > 0)
-                    DbMng.GameLibrary.IncrementPlayTime(GameMode.Auto, id, elapsed);
+                    GameLibrary.Instance.IncrementPlayTime(GameMode.Auto, id, elapsed);
             }
 
             state.ActiveAutoGames.TryRemove(activePid, out _);
         }
 
         // Refresh auto games list
-        state.LoadedAutoGames.ReplaceAll(DbMng.GameLibrary.GetAutoGames());
+        state.LoadedAutoGames.ReplaceAll(GameLibrary.Instance.GetAutoGames());
 
         if (idx.V - 1 < 0 || idx.V - 1 >= state.LoadedAutoGames.Count)
         {
@@ -161,7 +162,7 @@ public sealed class IpcProcessorImpl(
             return Task.FromResult(new IpcResponse { Success = true });
         }
 
-        var targetGame = state.LoadedAutoGames.Get(idx.V - 1);
+        var targetGame = state.LoadedAutoGames.Get(idx);
 
         // Re-evaluate running processes against updated rules
         var procs = ProcGatherer.GetListOfAvailableProcesses();
@@ -170,7 +171,7 @@ public sealed class IpcProcessorImpl(
         if (gamePidRaw == null)
         {
             if (logger.IsEnabled(LogLevel.Information))
-                logger.LogInformation("ℹ️ Refreshed edited auto game Id={id} Name='{name}' (Currently inactive).", id, targetGame.Name);
+                logger.LogInformation("[INFO] Refreshed edited auto game Id={id} Name='{name}' (Currently inactive).", id, targetGame.Name);
 
             return Task.FromResult(new IpcResponse { Success = true });
         }
@@ -188,7 +189,7 @@ public sealed class IpcProcessorImpl(
         state.ActiveAutoGamesPids.TryAdd(id, gamePid);
 
         if (logger.IsEnabled(LogLevel.Information))
-            logger.LogInformation("✅ Refreshed active edited game with Id={id} Name='{name}'", id, targetGame.Name);
+            logger.LogInformation("[OK] Refreshed active edited game with Id={id} Name='{name}'", id, targetGame.Name);
 
         return Task.FromResult(new IpcResponse { Success = true });
     }

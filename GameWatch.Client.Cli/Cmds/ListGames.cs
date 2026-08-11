@@ -1,6 +1,6 @@
 ﻿using System;
 using System.CommandLine;
-using GameWatch.Core;
+using GameWatch.Core.Dbs;
 
 namespace GameWatch.Client.Cli.Cmds;
 
@@ -10,17 +10,17 @@ public static class ListGames
     {
         var verboseOption = new Option<bool>("--verbose", "-v")
         {
-            Description = "List games with additional detailed matching rule metadata."
+            Description = "List auto games matching rules."
         };
 
         var manualOnlyOption = new Option<bool>("--manual-only", "-m")
         {
-            Description = "Display only manual game records."
+            Description = "Sets whether to only display manual game records."
         };
 
         var autoOnlyOption = new Option<bool>("--auto-only", "-a")
         {
-            Description = "Display only auto game records."
+            Description = "Sets whether to only display auto game records."
         };
 
         var showPresetsOption = new Option<bool>("--show-presets", "-p")
@@ -46,7 +46,7 @@ public static class ListGames
 
             if (isManual && isAuto)
             {
-                result.AddError("⛔ --manual-only and --auto-only are mutually exclusive flags.");
+                result.AddError("[FAIL] --manual-only and --auto-only are mutually exclusive flags.");
             }
         });
 
@@ -62,7 +62,7 @@ public static class ListGames
 
             if (shouldDisplayBothGameModes || manualOnly)
             {
-                var manualGames = DbMng.GameLibrary.GetManualGames();
+                var manualGames = GameLibrary.Instance.GetManualGames();
 
                 if (manualGames.Count > 0)
                 {
@@ -77,7 +77,7 @@ public static class ListGames
 
             if (shouldDisplayBothGameModes || autoOnly)
             {
-                var autoGames = DbMng.GameLibrary.GetAutoGames();
+                var autoGames = GameLibrary.Instance.GetAutoGames();
 
                 if (autoGames.Count > 0)
                 {
@@ -134,7 +134,7 @@ public static class ListGames
                 if (gamesHaveBeenDisplayed)
                     Console.WriteLine();
 
-                var presets = DbMng.GameLibraryPresets.GetPresets();
+                var presets = GamePresets.GetPresets();
 
                 if (presets.Count > 0)
                 {
@@ -145,7 +145,7 @@ public static class ListGames
                     {
                         foreach (var game in presets)
                         {
-                            Console.WriteLine($"{game.Id}. {TimeSpan.FromSeconds(game.PlayTimeSec.V)} - {game.Name}");
+                            Console.WriteLine($"{game.Id}. {TimeSpan.FromSeconds(game.PlayTimeSec)} - {game.Name}");
                             Console.WriteLine("   Matching rules:");
 
                             if (game.WindowTitle != null)
@@ -176,7 +176,7 @@ public static class ListGames
                     {
                         foreach (var game in presets)
                         {
-                            Console.WriteLine($"{game.Id}. {TimeSpan.FromSeconds(game.PlayTimeSec.V)} - {game.Name}");
+                            Console.WriteLine($"{game.Id}. {TimeSpan.FromSeconds(game.PlayTimeSec)} - {game.Name}");
                         }
                     }
                 }
@@ -184,7 +184,7 @@ public static class ListGames
 
             if (!gamesHaveBeenDisplayed)
             {
-                Console.WriteLine("ℹ️ No games found which to list");
+                Console.WriteLine("[INFO] No games found which to list");
             }
 
             return 0;

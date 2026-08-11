@@ -1,8 +1,8 @@
 ﻿using System;
 using System.CommandLine;
-using GameWatch.Core;
-using GameWatch.Core.Dto;
-using GameWatch.Core.GameRecords;
+using GameWatch.Core.Dbs;
+using GameWatch.Core.Wrappers;
+using ManualGame = GameWatch.Core.GameRecords.ManualGame;
 
 namespace GameWatch.Client.Cli.Cmds;
 
@@ -35,9 +35,9 @@ public static class AddManualGame
 
             var gameRecord = new ManualGame { Name = name, PlayTimeSec = new ElapsedTime(initialPlayTime) };
 
-            DbMng.GameLibrary.AddGame(gameRecord);
+            GameLibrary.Instance.AddGame(gameRecord);
 
-            Console.WriteLine("✅ Manual game added to database");
+            Console.WriteLine("[OK] Manual game added to database");
 
             return 0;
         });

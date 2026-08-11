@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using GameWatch.Core.Dto;
+using GameWatch.Core.Wrappers;
 
 namespace GameWatch.Core;
 

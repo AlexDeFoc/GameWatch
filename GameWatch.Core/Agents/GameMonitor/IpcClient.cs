@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using GameWatch.Agent.GameMonitor.Ipc.Grpc;
 using GameWatch.Core.Dto;
 using GameWatch.Core.Ipc;
+using GameWatch.Core.Wrappers;
 using GrpcDotNetNamedPipes;
 
 namespace GameWatch.Core.Agents.GameMonitor;

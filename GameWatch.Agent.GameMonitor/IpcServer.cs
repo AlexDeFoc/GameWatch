@@ -18,7 +18,7 @@ public sealed class IpcServer(IpcProcessorImpl ipcProcessor, ILogger<IpcServer> 
         _server.Start();
 
         if (logger.IsEnabled(LogLevel.Information))
-            logger.LogInformation("ℹ️ gRPC IPC Server started on pipe:'{PipeName}'", Core.Ipc.IpcConstants.GameMonitorAgentPipeName);
+            logger.LogInformation("[INFO] gRPC IPC Server started on pipe:'{PipeName}'", Core.Ipc.IpcConstants.GameMonitorAgentPipeName);
 
         try
         {
@@ -33,7 +33,7 @@ public sealed class IpcServer(IpcProcessorImpl ipcProcessor, ILogger<IpcServer> 
         {
             _server.Dispose();
             if (logger.IsEnabled(LogLevel.Information))
-                logger.LogInformation("ℹ️ gRPC IPC server shut down.");
+                logger.LogInformation("[INFO] gRPC IPC server shut down.");
         }
     }
 }

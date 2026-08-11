@@ -1,9 +1,9 @@
 ﻿using System;
 using System.CommandLine;
-using GameWatch.Core;
 using GameWatch.Core.Agents.GameMonitor;
-using GameWatch.Core.Dto;
+using GameWatch.Core.Dbs;
 using GameWatch.Core.Ipc;
+using GameWatch.Core.Wrappers;
 
 namespace GameWatch.Client.Cli.Cmds;
 
@@ -11,25 +11,25 @@ public static class RemoveGame
 {
     public static Command Build()
     {
-        var idxOption = new Option<int>("--index", "-i")
+        var idOption = new Option<int>("--id", "-i")
         {
-            Description = "The game index from (see 'list games')",
+            Description = "The game id from (see 'list games')",
             Required = true
         };
 
         var manualOption = new Option<bool>("--manual", "-m")
         {
-            Description = "Index corresponds to a manual game"
+            Description = "Sets whether provided game id corresponds to a manual game"
         };
 
         var autoOption = new Option<bool>("--auto", "-a")
         {
-            Description = "Index corresponds to an auto game"
+            Description = "Sets whether provided game id corresponds to an auto game"
         };
 
         var cmd = new Command("remove", "Remove game")
         {
-            idxOption,
+            idOption,
             manualOption,
             autoOption
         };
@@ -43,61 +43,51 @@ public static class RemoveGame
             switch (removeManual)
             {
                 case false when !removeAuto:
-                    result.AddError("⛔ Must specify whether to remove a manual or auto game");
+                    result.AddError("[FAIL] Must specify whether to remove a manual or auto game");
                     return;
                 case true when removeAuto:
-                    result.AddError("⛔ Cannot remove a manual and auto game with the same index");
+                    result.AddError("[FAIL] Cannot remove a manual and auto game with the same index");
                     return;
             }
-
-            var idx = result.GetRequiredValue(idxOption);
-
-            var gameMode = removeManual ? GameMode.Manual : GameMode.Auto;
-            var r = DbMng.GameLibrary.GetGameIdByIdx(gameMode, new GameIdx(idx));
-
-            if (r.HasValue) return;
-            result.AddError(gameMode is GameMode.Manual
-                                ? "⛔ Cannot find manual game with specified index"
-                                : "⛔ Cannot find auto game with specified index");
         });
 
         cmd.SetAction(async (result, cancellationToken) =>
         {
-            var removeManual = result.GetValue(manualOption);
-            var gameMode = removeManual ? GameMode.Manual : GameMode.Auto;
-            var idx = new GameIdx(result.GetRequiredValue(idxOption));
+            var shouldRemoveManualGame = result.GetValue(manualOption);
+            var gameMode = shouldRemoveManualGame ? GameMode.Manual : GameMode.Auto;
+            var gameIdx = new GameIdx(result.GetRequiredValue(idOption) - 1);
 
-            var (hasSucceeded, id, deletedGameTitle, failureReason) = DbMng.GameLibrary.DeleteGame(gameMode, idx);
+            var (hasSucceeded, gameId, deletedGameTitle, failureReason) = GameLibrary.Instance.DeleteGame(gameMode, gameIdx);
 
-            if (!hasSucceeded)
+            if (!hasSucceeded || gameId is null)
             {
                 Console.WriteLine(failureReason);
                 return 1;
             }
 
-            Console.WriteLine($"✅ Game with Name='{deletedGameTitle}' deleted");
+            Console.WriteLine($"[OK] Game with Name='{deletedGameTitle}' deleted");
 
             const IpcTarget target = IpcTarget.GameWatchGameMonitorAgent;
             try
             {
-                var notified = gameMode is GameMode.Manual
-                    ? await IpcClient.SendRemoveManualGameSignalAsync(target, id, cancellationToken)
-                    : await IpcClient.SendRemoveAutoGameSignalAsync(target, id, cancellationToken);
+                var notified = shouldRemoveManualGame
+                    ? await IpcClient.SendRemoveManualGameSignalAsync(target, gameId.Value, cancellationToken)
+                    : await IpcClient.SendRemoveAutoGameSignalAsync(target, gameId.Value, cancellationToken);
 
                 if (!notified)
                 {
-                    Console.WriteLine("⚠️ Unable to communicate with the GameWatch background service. Please ensure the agent is running.");
+                    Console.WriteLine("[WARN] Unable to communicate with the GameWatch background service. Please ensure the agent is running.");
                     return 1;
                 }
             }
             catch (OperationCanceledException)
             {
-                Console.WriteLine("⚠ Operation canceled.");
+                Console.WriteLine("[WARN] Operation canceled.");
                 return 1;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"⛔ Unhandled exception during IPC call to target '{nameof(target)}': {ex}");
+                Console.WriteLine($"[FAIL] Unhandled exception during IPC call to target '{nameof(target)}': {ex}");
                 return 1;
             }
 

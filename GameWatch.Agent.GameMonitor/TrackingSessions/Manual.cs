@@ -1,5 +1,7 @@
 ﻿using System;
+using GameWatch.Core;
 using GameWatch.Core.Dto;
+using GameWatch.Core.Wrappers;
 
 namespace GameWatch.Agent.GameMonitor.TrackingSessions;
 

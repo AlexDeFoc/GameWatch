@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
+using GameWatch.Core.Wrappers;
 
 namespace GameWatch.Core;
 
@@ -9,17 +10,19 @@ public class ConcurrentList<T> : IEnumerable<T>
     private readonly List<T> _list = [];
     private readonly Lock _lock = new();
 
-    /// <summary>
-    /// Gets the number of elements contained in the list atomically.
-    /// </summary>
-    public int Count
+    public void RemoveAt(GameIdx idx) => RemoveAt(idx.V);
+
+    public T Get(GameIdx idx) => Get(idx.V);
+
+    public T this[int idx] => Get(idx);
+
+    public T this[GameIdx idx] => Get(idx);
+
+    public void Clear()
     {
-        get
+        lock (_lock)
         {
-            lock (_lock)
-            {
-                return _list.Count;
-            }
+            _list.Clear();
         }
     }
 
@@ -31,9 +34,6 @@ public class ConcurrentList<T> : IEnumerable<T>
         }
     }
 
-    /// <summary>
-    /// Appends all items from the specified collection to the end of the list atomically.
-    /// </summary>
     public void AddRange(IEnumerable<T> items)
     {
         lock (_lock)
@@ -42,23 +42,12 @@ public class ConcurrentList<T> : IEnumerable<T>
         }
     }
 
-    /// <summary>
-    /// Clears the existing list and populates it with the contents of the specified collection atomically.
-    /// </summary>
     public void ReplaceAll(IEnumerable<T> items)
     {
         lock (_lock)
         {
             _list.Clear();
             _list.AddRange(items);
-        }
-    }
-
-    public T Get(int index)
-    {
-        lock (_lock)
-        {
-            return _list[index];
         }
     }
 
@@ -69,7 +58,7 @@ public class ConcurrentList<T> : IEnumerable<T>
     {
         lock (_lock)
         {
-            return [.._list];
+            return [.. _list];
         }
     }
 
@@ -83,13 +72,41 @@ public class ConcurrentList<T> : IEnumerable<T>
         List<T> snapshot;
         lock (_lock)
         {
-            snapshot = new List<T>(_list);
+            snapshot = [.. _list];
         }
+
         return snapshot.GetEnumerator();
     }
 
     IEnumerator IEnumerable.GetEnumerator()
     {
         return GetEnumerator();
+    }
+
+    private void RemoveAt(int idx)
+    {
+        lock (_lock)
+        {
+            _list.RemoveAt(idx);
+        }
+    }
+
+    private T Get(int idx)
+    {
+        lock (_lock)
+        {
+            return _list[idx];
+        }
+    }
+
+    public long Count
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return _list.Count;
+            }
+        }
     }
 }

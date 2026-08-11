@@ -2,9 +2,9 @@
 using System.CommandLine;
 using GameWatch.Core;
 using GameWatch.Core.Agents.GameMonitor;
-using GameWatch.Core.Dto;
-using GameWatch.Core.GameRecords;
+using GameWatch.Core.Dbs;
 using GameWatch.Core.Ipc;
+using GameWatch.Core.Wrappers;
 
 namespace GameWatch.Client.Cli.Cmds;
 
@@ -67,7 +67,7 @@ public static class AddAutoGameFromProcess
 
             if (ruleWindowExact && ruleWindowPattern is not null)
             {
-                result.AddError("⛔ Cannot specify both exact match and a title pattern. These options are mutually exclusive");
+                result.AddError("[FAIL] Cannot specify both exact match and a title pattern. These options are mutually exclusive");
             }
 
             var rulePathExact = result.GetValue(rulePathExactOption);
@@ -75,14 +75,14 @@ public static class AddAutoGameFromProcess
 
             if (rulePathExact && rulePathPattern is not null)
             {
-                result.AddError("⛔ Cannot specify both exact match and a exe path pattern. These options are mutually exclusive");
+                result.AddError("[FAIL] Cannot specify both exact match and a exe path pattern. These options are mutually exclusive");
             }
 
             if (rulePathPattern is not null && !RegexProcessor.IsValidPattern(rulePathPattern))
-                result.AddError("⛔ Provided exe path match rule is not a valid regex pattern");
+                result.AddError("[FAIL] Provided exe path match rule is not a valid regex pattern");
 
             if (ruleWindowPattern is not null && !RegexProcessor.IsValidPattern(ruleWindowPattern))
-                result.AddError("⛔ Provided windows title match rule is not a valid regex pattern");
+                result.AddError("[FAIL] Provided windows title match rule is not a valid regex pattern");
 
             var pid = result.GetRequiredValue(pidOption);
 
@@ -90,7 +90,7 @@ public static class AddAutoGameFromProcess
 
             if (proc is null)
             {
-                result.AddError("⛔ Cannot find process with provided PID");
+                result.AddError("[FAIL] Cannot find process with provided PID");
             }
         });
 
@@ -102,11 +102,11 @@ public static class AddAutoGameFromProcess
 
             if (proc is null)
             {
-                Console.WriteLine("⛔ Process with provided PID closed while processing it.");
+                Console.WriteLine("[FAIL] Process with provided PID closed while processing it.");
                 return 1;
             }
 
-            var game = new AutoGame()
+            var game = new Core.GameRecords.AutoGame()
             {
                 Name = result.GetRequiredValue(nameOption),
                 PlayTimeSec = new ElapsedTime(result.GetValue(playTimeOption))
@@ -143,9 +143,9 @@ public static class AddAutoGameFromProcess
                 }
             }
 
-            DbMng.GameLibrary.AddGame(game);
+            GameLibrary.Instance.AddGame(game);
 
-            Console.WriteLine("✅ Game added successfully");
+            Console.WriteLine("[OK] Game added successfully");
 
             const IpcTarget target = IpcTarget.GameWatchGameMonitorAgent;
             try
@@ -154,18 +154,18 @@ public static class AddAutoGameFromProcess
 
                 if (!notified)
                 {
-                    Console.WriteLine("⚠ Unable to communicate with the GameWatch background service. Please ensure the agent is running.");
+                    Console.WriteLine("[WARN] Unable to communicate with the GameWatch background service. Please ensure the agent is running.");
                     return 1;
                 }
             }
             catch (OperationCanceledException)
             {
-                Console.WriteLine("⚠ Operation canceled.");
+                Console.WriteLine("[WARN] Operation canceled.");
                 return 1;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"⛔ Unhandled exception during IPC call to target '{nameof(target)}': {ex}");
+                Console.WriteLine($"[FAIL] Unhandled exception during IPC call to target '{nameof(target)}': {ex}");
                 return 1;
             }
 

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using GameWatch.Core;
-using GameWatch.Core.Dto;
+using GameWatch.Core.Dbs;
+using GameWatch.Core.Wrappers;
 using Microsoft.Extensions.Logging;
 
 namespace GameWatch.Agent.GameMonitor;
@@ -26,10 +26,10 @@ public sealed class HeartbeatProcessor(AgentState state, ILogger<HeartbeatProces
 
         foreach (var s in gameSessions)
         {
-            var elapsedSeconds = (int)(utcNow - s.LastTimeFlushedPlayTime).TotalSeconds;
+            var elapsedSeconds = (long)(utcNow - s.LastTimeFlushedPlayTime).TotalSeconds;
             if (elapsedSeconds <= 0) continue;
 
-            int secondsToFlush;
+            long secondsToFlush;
 
             if (forceFlushAll)
             {
@@ -39,7 +39,7 @@ public sealed class HeartbeatProcessor(AgentState state, ILogger<HeartbeatProces
             else
             {
                 // Cap flush to exactly 60 seconds
-                secondsToFlush = DbMng.Settings.GameMonitorAgentGamePlayTimeSaveThreshold;
+                secondsToFlush = Settings.Instance.GameMonitorAgentGamePlayTimeSaveThreshold;
 
                 if (elapsedSeconds < secondsToFlush) continue;
 
@@ -54,19 +54,19 @@ public sealed class HeartbeatProcessor(AgentState state, ILogger<HeartbeatProces
 
         try
         {
-            DbMng.GameLibrary.IncrementPlayTime(GameMode.Auto, gamesToFlush);
+            GameLibrary.Instance.IncrementPlayTime(GameMode.Auto, gamesToFlush);
 
             if (!logger.IsEnabled(LogLevel.Information)) return;
 
             foreach (var (gameId, elapsed) in gamesToFlush)
             {
-                logger.LogInformation("{timestamp} ℹ️ Activity: Auto Game Id={id} Elapsed={elapsed}s", utcNow.TimeOfDay, gameId, elapsed);
+                logger.LogInformation("{timestamp} [INFO] Activity: Auto Game Id={id} Elapsed={elapsed}s", utcNow.TimeOfDay, gameId, elapsed);
             }
         }
         catch (Exception ex)
         {
             if (logger.IsEnabled(LogLevel.Error))
-                logger.LogError(ex, "⛔ Failed to flush playtime for Active auto games");
+                logger.LogError(ex, "[FAIL] Failed to flush playtime for Active auto games");
         }
     }
 
@@ -76,10 +76,10 @@ public sealed class HeartbeatProcessor(AgentState state, ILogger<HeartbeatProces
 
         foreach (var s in gameSessions)
         {
-            var elapsedSeconds = (int)(utcNow - s.LastTimeFlushedPlayTime).TotalSeconds;
+            var elapsedSeconds = (long)(utcNow - s.LastTimeFlushedPlayTime).TotalSeconds;
             if (elapsedSeconds <= 0) continue;
 
-            if (!forceFlushAll && elapsedSeconds < DbMng.Settings.GameMonitorAgentGamePlayTimeSaveThreshold) continue;
+            if (!forceFlushAll && elapsedSeconds < Settings.Instance.GameMonitorAgentGamePlayTimeSaveThreshold) continue;
 
             // Manual games flush all accumulated seconds without capping
             gamesToFlush[s.Id] = new ElapsedTime(elapsedSeconds);
@@ -92,19 +92,19 @@ public sealed class HeartbeatProcessor(AgentState state, ILogger<HeartbeatProces
 
         try
         {
-            DbMng.GameLibrary.IncrementPlayTime(GameMode.Manual, gamesToFlush);
+            GameLibrary.Instance.IncrementPlayTime(GameMode.Manual, gamesToFlush);
 
             if (!logger.IsEnabled(LogLevel.Information)) return;
 
             foreach (var (gameId, elapsed) in gamesToFlush)
             {
-                logger.LogInformation("{timestamp} ℹ️ Activity: Manual Game Id={id} Elapsed={elapsed}s", utcNow.TimeOfDay, gameId, elapsed);
+                logger.LogInformation("{timestamp} [INFO] Activity: Manual Game Id={id} Elapsed={elapsed}s", utcNow.TimeOfDay, gameId, elapsed);
             }
         }
         catch (Exception ex)
         {
             if (logger.IsEnabled(LogLevel.Error))
-                logger.LogError(ex, "⛔ Failed to flush playtime for active manual games");
+                logger.LogError(ex, "[FAIL] Failed to flush playtime for active manual games");
         }
     }
 }

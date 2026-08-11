@@ -1,9 +1,9 @@
 ﻿using System;
 using System.CommandLine;
-using GameWatch.Core;
 using GameWatch.Core.Agents.GameMonitor;
-using GameWatch.Core.Dto;
+using GameWatch.Core.Dbs;
 using GameWatch.Core.Ipc;
+using GameWatch.Core.Wrappers;
 
 namespace GameWatch.Client.Cli.Cmds;
 
@@ -11,22 +11,22 @@ public static class AddAutoGameFromPreset
 {
     public static Command Build()
     {
-        var idxOption = new Option<int>("--index", "-i")
+        var idOption = new Option<int>("--id", "-i")
         {
-            Description = "The preset index from (see 'list games -p')",
+            Description = "The preset id from (see 'list games -p')",
             Required = true
         };
 
         var cmd = new Command("preset", "Add auto game from a preset")
         {
-            idxOption
+            idOption
         };
         cmd.Aliases.Add("p");
 
         cmd.SetAction(async (result, cancellationToken) =>
         {
-            var idx = new GameIdx(result.GetValue(idxOption));
-            var (hasSucceeded, preset, failureReason) = DbMng.GameLibraryPresets.GetPresetByIdx(idx);
+            var gameIdx = new GameIdx(result.GetValue(idOption) - 1);
+            var (hasSucceeded, preset, failureReason) = GamePresets.Instance.GetPresetByIdx(gameIdx);
 
             if (!hasSucceeded || preset == null)
             {
@@ -34,9 +34,9 @@ public static class AddAutoGameFromPreset
                 return 1;
             }
 
-            DbMng.GameLibrary.AddGame(preset);
+            GameLibrary.Instance.AddGame(preset);
 
-            Console.WriteLine("✅ Game added successfully");
+            Console.WriteLine("[OK] Game added successfully");
 
             const IpcTarget target = IpcTarget.GameWatchGameMonitorAgent;
             try
@@ -45,18 +45,18 @@ public static class AddAutoGameFromPreset
 
                 if (!notified)
                 {
-                    Console.WriteLine("⚠ Unable to communicate with the GameWatch background service. Please ensure the agent is running.");
+                    Console.WriteLine("[WARN] Unable to communicate with the GameWatch background service. Please ensure the agent is running.");
                     return 1;
                 }
             }
             catch (OperationCanceledException)
             {
-                Console.WriteLine("⚠ Operation canceled.");
+                Console.WriteLine("[WARN] Operation canceled.");
                 return 1;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"⛔ Unhandled exception during IPC call to target '{nameof(target)}': {ex}");
+                Console.WriteLine($"[FAIL] Unhandled exception during IPC call to target '{nameof(target)}': {ex}");
                 return 1;
             }
 

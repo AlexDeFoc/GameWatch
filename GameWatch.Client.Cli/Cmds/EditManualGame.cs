@@ -1,7 +1,7 @@
 ﻿using System;
 using System.CommandLine;
-using GameWatch.Core;
-using GameWatch.Core.Dto;
+using GameWatch.Core.Dbs;
+using GameWatch.Core.Wrappers;
 
 namespace GameWatch.Client.Cli.Cmds;
 
@@ -9,9 +9,9 @@ public static class EditManualGame
 {
     public static Command Build()
     {
-        var idxOption = new Option<int>("--index", "-i")
+        var idOption = new Option<int>("--id", "-i")
         {
-            Description = "The game index from (see 'list games -m')",
+            Description = "The game id from (see 'list games -m')",
             Required = true
         };
 
@@ -27,7 +27,7 @@ public static class EditManualGame
 
         var cmd = new Command("manual", "Edit manual game")
         {
-            idxOption,
+            idOption,
             nameOption,
             playTimeOption
         };
@@ -35,14 +35,22 @@ public static class EditManualGame
 
         cmd.SetAction(result =>
         {
-            var idx = new GameIdx(result.GetRequiredValue(idxOption));
+            var gameIdx = new GameIdx(result.GetRequiredValue(idOption) - 1);
+            var gameIdResult = GameLibrary.Instance.GetManualGameByIdx(gameIdx);
+
+            if (!gameIdResult.HasSucceeded || gameIdResult.Game is null)
+            {
+                Console.WriteLine(gameIdResult.FailureReason);
+                return 1;
+            }
+
             var name = result.GetValue(nameOption);
             var playTime = result.GetValue(playTimeOption);
 
             var nameForLogging = name;
             if (name is null)
             {
-                var gameQueryResult = DbMng.GameLibrary.GetManualGameByIdx(idx);
+                var gameQueryResult = GameLibrary.Instance.GetManualGameByIdx(gameIdx);
 
                 if (gameQueryResult is { HasSucceeded: true, Game: not null })
                 {
@@ -50,12 +58,12 @@ public static class EditManualGame
                 }
             }
 
-            var status = DbMng.GameLibrary.ChangeGameProperty(GameMode.Manual,
-                                                                  idx,
-                                                                  name,
-                                                                  playTime is null
-                                                                      ? null
-                                                                      : new ElapsedTime(playTime.Value)
+            var status = GameLibrary.Instance.ChangeGameProperty(GameMode.Manual,
+                                                                 gameIdResult.Game.Id,
+                                                                 name,
+                                                                 playTime is null
+                                                                     ? null
+                                                                     : new ElapsedTime(playTime.Value)
             );
 
             if (!status.HasSucceeded)
@@ -65,8 +73,8 @@ public static class EditManualGame
             }
 
             Console.WriteLine(nameForLogging is not null
-                                  ? $"✅ Game with Name='{nameForLogging}' edited successfully"
-                                  : "✅ Manual game edited successfully");
+                                  ? $"[OK] Game with Name='{nameForLogging}' edited successfully"
+                                  : "[OK] Manual game edited successfully");
 
             return 0;
         });
