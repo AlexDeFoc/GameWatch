@@ -9,11 +9,11 @@
 
     <!-- For IDE intellisense -->
     <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
-        <OutputPath>../out/dev/dbg/Libraries/Core</OutputPath>
+        <OutputPath>./obj</OutputPath>
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
-        <OutputPath>../out/dev/rel/Libraries/Core</OutputPath>
+        <OutputPath>./obj</OutputPath>
     </PropertyGroup>
 
     <ItemGroup>

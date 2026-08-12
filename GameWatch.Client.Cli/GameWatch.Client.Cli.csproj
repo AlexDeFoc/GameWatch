@@ -13,11 +13,11 @@
     
     <!-- For IDE intellisense -->
     <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
-        <OutputPath>../out/dev/dbg/Cients/Cli</OutputPath>
+        <OutputPath>./obj</OutputPath>
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
-        <OutputPath>../out/dev/rel/Cients/Cli</OutputPath>
+        <OutputPath>./obj</OutputPath>
     </PropertyGroup>
 
     <ItemGroup>

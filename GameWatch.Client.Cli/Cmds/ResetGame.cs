@@ -2,6 +2,7 @@
 using System.CommandLine;
 using GameWatch.Core;
 using GameWatch.Core.Agents.GameMonitor;
+using GameWatch.Core.Dbs;
 using GameWatch.Core.Dto;
 using GameWatch.Core.Ipc;
 
@@ -43,22 +44,22 @@ public static class ResetGame
             switch (resetManual)
             {
                 case false when !resetAuto:
-                    result.AddError("⛔ Must specify whether to reset a manual or auto game");
+                    result.AddError("[FAIL] Must specify whether to reset a manual or auto game");
                     return;
                 case true when resetAuto:
-                    result.AddError("⛔ Cannot reset a manual and auto game with the same index");
+                    result.AddError("[FAIL] Cannot reset a manual and auto game with the same index");
                     return;
             }
 
             var idx = result.GetRequiredValue(idxOption);
 
             var gameMode = resetManual ? GameMode.Manual : GameMode.Auto;
-            var r = DbMng.GameLibrary.GetGameIdByIdx(gameMode, new GameIdx(idx));
+            var r = GameLibrary.Instance.GetGameIdByIdx(gameMode, new GameIdx(idx));
 
             if (r.HasValue) return;
             result.AddError(gameMode is GameMode.Manual
-                                ? "⛔ Cannot find manual game with specified index"
-                                : "⛔ Cannot find auto game with specified index");
+                                ? "[FAIL] Cannot find manual game with specified index"
+                                : "[FAIL] Cannot find auto game with specified index");
         });
 
         cmd.SetAction(async (result, cancellationToken) =>
@@ -67,44 +68,44 @@ public static class ResetGame
             var gameMode = resetManual ? GameMode.Manual : GameMode.Auto;
             var idxVal = result.GetRequiredValue(idxOption);
             var idx = new GameIdx(idxVal);
-            var id = DbMng.GameLibrary.GetGameIdByIdx(gameMode, idx);
+            var id = GameLibrary.Instance.GetGameIdByIdx(gameMode, idx);
 
             if (!id.HasValue)
             {
                 Console.WriteLine(gameMode is GameMode.Manual
-                                      ? "⛔ Cannot find manual game with specified index"
-                                      : "⛔ Cannot find auto game with specified index");
+                                      ? "[FAIL] Cannot find manual game with specified index"
+                                      : "[FAIL] Cannot find auto game with specified index");
                 return 1;
             }
 
-            DbMng.GameLibrary.ResetGamePlayTime(gameMode, idx);
+            GameLibrary.Instance.ResetGamePlayTime(gameMode, idx);
 
             if (gameMode is GameMode.Manual)
             {
-                var requestResult = DbMng.GameLibrary.GetManualGameByIdx(idx);
+                var requestResult = GameLibrary.Instance.GetManualGameByIdx(idx);
 
                 if (!requestResult.HasSucceeded || requestResult.Game is null)
                 {
-                    Console.WriteLine("⚠ Manual game reset, though we failed to grab game name");
+                    Console.WriteLine("[WARN] Manual game reset, though we failed to grab game name");
                     Console.WriteLine(requestResult.FailureReason);
                     return 0;
                 }
 
-                Console.WriteLine($"✅ Game with Name='{requestResult.Game.Name}' reset");
+                Console.WriteLine($"[OK] Game with Name='{requestResult.Game.Name}' reset");
             }
             else
             {
 
-                var requestResult = DbMng.GameLibrary.GetAutoGameByIdx(idx);
+                var requestResult = GameLibrary.Instance.GetAutoGameByIdx(idx);
 
                 if (!requestResult.HasSucceeded || requestResult.Game is null)
                 {
-                    Console.WriteLine("⚠ Auto game reset, though we failed to grab game name");
+                    Console.WriteLine("[WARN] Auto game reset, though we failed to grab game name");
                     Console.WriteLine(requestResult.FailureReason);
                     return 0;
                 }
 
-                Console.WriteLine($"✅ Game with Name='{requestResult.Game.Name}' reset");
+                Console.WriteLine($"[OK] Game with Name='{requestResult.Game.Name}' reset");
             }
 
             const IpcTarget target = IpcTarget.GameWatchGameMonitorAgent;
@@ -116,18 +117,18 @@ public static class ResetGame
 
                 if (!notified)
                 {
-                    Console.WriteLine("⚠️ Unable to communicate with the GameWatch background service. Please ensure the agent is running.");
+                    Console.WriteLine("[WARN] Unable to communicate with the GameWatch background service. Please ensure the agent is running.");
                     return 1;
                 }
             }
             catch (OperationCanceledException)
             {
-                Console.WriteLine("⚠ Operation canceled.");
+                Console.WriteLine("[WARN] Operation canceled.");
                 return 1;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"⛔ Unhandled exception during IPC call to target '{nameof(target)}': {ex}");
+                Console.WriteLine($"[FAIL] Unhandled exception during IPC call to target '{nameof(target)}': {ex}");
                 return 1;
             }
 

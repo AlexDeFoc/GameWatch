@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using GameWatch.Core;
+using GameWatch.Core.Dbs;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
@@ -16,12 +17,12 @@ public sealed class Worker(
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         if (logger.IsEnabled(LogLevel.Information))
-            logger.LogInformation("ℹ️ Agent started. Loading important stuff...");
+            logger.LogInformation("[INFO] Agent started. Loading important stuff...");
 
-        state.LoadedAutoGames.ReplaceAll(DbMng.GameLibrary.GetAutoGames());
+        state.LoadedAutoGames.ReplaceAll(GameLibrary.Instance.GetAutoGames());
 
         if (logger.IsEnabled(LogLevel.Information))
-            logger.LogInformation("✅️ Loaded auto games from db. Found={count} games", state.LoadedAutoGames.Count);
+            logger.LogInformation("[OK]️ Loaded auto games from db. Found={count} games", state.LoadedAutoGames.Count);
 
         using var timer = new PeriodicTimer(TimeSpan.FromSeconds(1));
         var secondsElapsed = 0;
@@ -34,9 +35,9 @@ public sealed class Worker(
                 if (state.GameListRefreshToken.IsCancellationRequested)
                 {
                     if (logger.IsEnabled(LogLevel.Information))
-                        logger.LogInformation("ℹ️ Reloading auto games from db...");
-                    state.LoadedAutoGames.ReplaceAll(DbMng.GameLibrary.GetAutoGames());
-                    logger.LogInformation("✅ Finished reloading auto games from db...");
+                        logger.LogInformation("[INFO] Reloading auto games from db...");
+                    state.LoadedAutoGames.ReplaceAll(GameLibrary.Instance.GetAutoGames());
+                    logger.LogInformation("[OK] Finished reloading auto games from db...");
                     state.ResetGameListRefresh();
                 }
 
@@ -56,12 +57,12 @@ public sealed class Worker(
             if (!state.ActiveAutoGames.IsEmpty || !state.ActiveManualGames.IsEmpty)
             {
                 if (logger.IsEnabled(LogLevel.Information))
-                    logger.LogInformation("ℹ️ Agent shutdown requested. Performing final partial flush...");
+                    logger.LogInformation("[INFO] Agent shutdown requested. Performing final partial flush...");
 
                 heartbeatProcessor.FlushHeartbeats(forceFlushAll: true);
 
                 if (logger.IsEnabled(LogLevel.Information))
-                    logger.LogInformation("✅ All games saved.");
+                    logger.LogInformation("[OK] All games saved.");
             }
         }
     }

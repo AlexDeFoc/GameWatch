@@ -2,6 +2,7 @@
 using System.CommandLine;
 using GameWatch.Core;
 using GameWatch.Core.Agents.GameMonitor;
+using GameWatch.Core.Dbs;
 using GameWatch.Core.Dto;
 using GameWatch.Core.Ipc;
 
@@ -39,10 +40,10 @@ public static class DeleteAllGames
                 clearAutoGames = true;
             }
 
-            DbMng.GameLibrary.DeleteAllGamesActionStatus? status;
+            GameLibrary.DeleteAllGamesActionStatus? status;
             if (clearManualGames)
             {
-                status = DbMng.GameLibrary.DeleteAllGames(GameMode.Manual);
+                status = GameLibrary.Instance.DeleteAllGames(GameMode.Manual);
 
                 if (!status.HasSucceeded)
                 {
@@ -50,12 +51,12 @@ public static class DeleteAllGames
                     return 1;
                 }
 
-                Console.WriteLine("✅ Deleted all manual games");
+                Console.WriteLine("[OK] Deleted all manual games");
             }
 
             if (!clearAutoGames) return 0;
 
-            status = DbMng.GameLibrary.DeleteAllGames(GameMode.Auto);
+            status = GameLibrary.Instance.DeleteAllGames(GameMode.Auto);
 
             if (!status.HasSucceeded)
             {
@@ -63,7 +64,7 @@ public static class DeleteAllGames
                 return 1;
             }
 
-            Console.WriteLine("✅ Deleted all auto games");
+            Console.WriteLine("[OK] Deleted all auto games");
 
             const IpcTarget target = IpcTarget.GameWatchGameMonitorAgent;
             try
@@ -72,18 +73,18 @@ public static class DeleteAllGames
 
                 if (!notified)
                 {
-                    Console.WriteLine("⚠ Unable to communicate with the GameWatch background service. Please ensure the agent is running.");
+                    Console.WriteLine("[WARN] Unable to communicate with the GameWatch background service. Please ensure the agent is running.");
                     return 1;
                 }
             }
             catch (OperationCanceledException)
             {
-                Console.WriteLine("⚠ Operation canceled.");
+                Console.WriteLine("[WARN] Operation canceled.");
                 return 1;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"⛔ Unhandled exception during IPC call to target '{nameof(target)}': {ex}");
+                Console.WriteLine($"[FAIL] Unhandled exception during IPC call to target '{nameof(target)}': {ex}");
                 return 1;
             }
 

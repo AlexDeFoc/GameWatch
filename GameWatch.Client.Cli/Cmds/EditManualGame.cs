@@ -1,6 +1,7 @@
 ﻿using System;
 using System.CommandLine;
 using GameWatch.Core;
+using GameWatch.Core.Dbs;
 using GameWatch.Core.Dto;
 
 namespace GameWatch.Client.Cli.Cmds;
@@ -42,7 +43,7 @@ public static class EditManualGame
             var nameForLogging = name;
             if (name is null)
             {
-                var gameQueryResult = DbMng.GameLibrary.GetManualGameByIdx(idx);
+                var gameQueryResult = GameLibrary.Instance.GetManualGameByIdx(idx);
 
                 if (gameQueryResult is { HasSucceeded: true, Game: not null })
                 {
@@ -50,7 +51,7 @@ public static class EditManualGame
                 }
             }
 
-            var status = DbMng.GameLibrary.ChangeGameProperty(GameMode.Manual,
+            var status = GameLibrary.Instance.ChangeGameProperty(GameMode.Manual,
                                                                   idx,
                                                                   name,
                                                                   playTime is null
@@ -65,8 +66,8 @@ public static class EditManualGame
             }
 
             Console.WriteLine(nameForLogging is not null
-                                  ? $"✅ Game with Name='{nameForLogging}' edited successfully"
-                                  : "✅ Manual game edited successfully");
+                                  ? $"[OK] Game with Name='{nameForLogging}' edited successfully"
+                                  : "[OK] Manual game edited successfully");
 
             return 0;
         });

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.CommandLine;
 using GameWatch.Core;
+using GameWatch.Core.Dbs;
 
 namespace GameWatch.Client.Cli.Cmds;
 
@@ -46,7 +47,7 @@ public static class ListGames
 
             if (isManual && isAuto)
             {
-                result.AddError("⛔ --manual-only and --auto-only are mutually exclusive flags.");
+                result.AddError("[FAIL] --manual-only and --auto-only are mutually exclusive flags.");
             }
         });
 
@@ -62,7 +63,7 @@ public static class ListGames
 
             if (shouldDisplayBothGameModes || manualOnly)
             {
-                var manualGames = DbMng.GameLibrary.GetManualGames();
+                var manualGames = GameLibrary.Instance.GetManualGames();
 
                 if (manualGames.Count > 0)
                 {
@@ -77,7 +78,7 @@ public static class ListGames
 
             if (shouldDisplayBothGameModes || autoOnly)
             {
-                var autoGames = DbMng.GameLibrary.GetAutoGames();
+                var autoGames = GameLibrary.Instance.GetAutoGames();
 
                 if (autoGames.Count > 0)
                 {
@@ -134,7 +135,7 @@ public static class ListGames
                 if (gamesHaveBeenDisplayed)
                     Console.WriteLine();
 
-                var presets = DbMng.GameLibraryPresets.GetPresets();
+                var presets = GamePresets.Instance.GetPresets();
 
                 if (presets.Count > 0)
                 {
@@ -184,7 +185,7 @@ public static class ListGames
 
             if (!gamesHaveBeenDisplayed)
             {
-                Console.WriteLine("ℹ️ No games found which to list");
+                Console.WriteLine("[INFO] No games found which to list");
             }
 
             return 0;

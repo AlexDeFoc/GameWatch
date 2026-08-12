@@ -1,6 +1,7 @@
 ﻿using System.CommandLine;
 using System.Threading.Tasks;
 using GameWatch.Core;
+using GameWatch.Core.Dbs;
 
 namespace GameWatch.Client.Cli;
 
@@ -16,9 +17,9 @@ public static class Program
 
     private static void InitializeDatabases()
     {
-        DbMng.GameLibrary.InitializeDatabase("../../UserData");
-        DbMng.GameLibraryPresets.InitializeDatabase("../../AppData");
-        DbMng.Settings.InitializeDatabase("../../AppData");
+        GameLibrary.Init("../../UserData");
+        GamePresets.Init("../../AppData");
+        Settings.Init("../../AppData");
     }
 
     private static RootCommand BuildRootCommand()

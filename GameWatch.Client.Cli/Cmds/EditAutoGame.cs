@@ -3,6 +3,7 @@ using System.CommandLine;
 using System.Linq;
 using GameWatch.Core;
 using GameWatch.Core.Agents.GameMonitor;
+using GameWatch.Core.Dbs;
 using GameWatch.Core.Dto;
 using GameWatch.Core.Ipc;
 
@@ -73,7 +74,7 @@ public static class EditAutoGame
 
             if (ruleWindowExact && ruleWindowPattern is not null)
             {
-                result.AddError("⛔ Cannot specify both exact match and a title pattern. These options are mutually exclusive");
+                result.AddError("[FAIL] Cannot specify both exact match and a title pattern. These options are mutually exclusive");
             }
 
             var rulePathExact = result.GetValue(rulePathExactOption);
@@ -81,7 +82,7 @@ public static class EditAutoGame
 
             if (rulePathExact && rulePathPattern is not null)
             {
-                result.AddError("⛔ Cannot specify both exact match and a exe path pattern. These options are mutually exclusive");
+                result.AddError("[FAIL] Cannot specify both exact match and a exe path pattern. These options are mutually exclusive");
             }
 
             var pid = result.GetRequiredValue(pidOption);
@@ -92,14 +93,14 @@ public static class EditAutoGame
 
             if (proc is null)
             {
-                result.AddError("⛔ Cannot find process with provided PID");
+                result.AddError("[FAIL] Cannot find process with provided PID");
             }
         });
 
         cmd.SetAction(async (result, cancellationToken) =>
         {
             var idx = new GameIdx(result.GetValue(idxOption));
-            var (hasSucceeded, game, failureReason) = DbMng.GameLibrary.GetAutoGameByIdx(idx);
+            var (hasSucceeded, game, failureReason) = GameLibrary.Instance.GetAutoGameByIdx(idx);
 
             if (!hasSucceeded || game == null)
             {
@@ -126,7 +127,7 @@ public static class EditAutoGame
 
                 if (targetProc is null)
                 {
-                    Console.WriteLine("⛔ Cannot set the matching rule to be window title exact or exe path exact without the game being active!");
+                    Console.WriteLine("[FAIL] Cannot set the matching rule to be window title exact or exe path exact without the game being active!");
                     return 1;
                 }
             }
@@ -146,7 +147,7 @@ public static class EditAutoGame
                     ? targetProc!.FilePath
                     : game.FilePath;
 
-            var status = DbMng.GameLibrary.ChangeGameProperty(GameMode.Auto,
+            var status = GameLibrary.Instance.ChangeGameProperty(GameMode.Auto,
                                                                   idx,
                                                                   gameName,
                                                                   gamePlayTime,
@@ -162,7 +163,7 @@ public static class EditAutoGame
                 return 1;
             }
 
-            Console.WriteLine($"✅ Game with Name='{gameName}' edited successfully");
+            Console.WriteLine($"[OK] Game with Name='{gameName}' edited successfully");
 
             const IpcTarget target = IpcTarget.GameWatchGameMonitorAgent;
             try
@@ -171,18 +172,18 @@ public static class EditAutoGame
 
                 if (!notified)
                 {
-                    Console.WriteLine("⚠ Unable to communicate with the GameWatch background service. Please ensure the agent is running.");
+                    Console.WriteLine("[WARN] Unable to communicate with the GameWatch background service. Please ensure the agent is running.");
                     return 1;
                 }
             }
             catch (OperationCanceledException)
             {
-                Console.WriteLine("⚠ Operation canceled.");
+                Console.WriteLine("[WARN] Operation canceled.");
                 return 1;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"⛔ Unhandled exception during IPC call to target '{nameof(target)}': {ex}");
+                Console.WriteLine($"[FAIL] Unhandled exception during IPC call to target '{nameof(target)}': {ex}");
                 return 1;
             }
 

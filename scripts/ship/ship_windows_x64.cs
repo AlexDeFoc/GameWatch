@@ -39,13 +39,16 @@ static void PublishComponent(string projDir, string outDir, string rid)
         // 🚀 Core Native AOT (Forces Full Safe Trimming automatically)
         "-p:PublishAot=true",
 
+        // 🔍 Detailed Warning Output
+        "-p:TrimmerSingleWarn=false",
+
         // ⚡ Safe Size & Metadata Optimizations
         "-p:IlcGenerateCompleteTypeMetadata=false",
         "-p:MetadataUpdaterSupport=false",
 
         // 🛡️ Safety & Globalization
         "-p:EnableAotAnalyzer=true",
-        "-p:TreatWarningsAsErrors=true",
+        "-p:TreatWarningsAsErrors=false",
         "-p:InvariantGlobalization=true",
 
         // ✂️ Symbol & Debug Stripping

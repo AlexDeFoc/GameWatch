@@ -2,6 +2,7 @@
 using System.CommandLine;
 using GameWatch.Core;
 using GameWatch.Core.Agents.GameMonitor;
+using GameWatch.Core.Dbs;
 using GameWatch.Core.Dto;
 using GameWatch.Core.Ipc;
 
@@ -24,11 +25,11 @@ public static class ToggleGame
         {
             var gameIdx = parseResult.GetValue(idxOption);
 
-            var gameId = DbMng.GameLibrary.GetGameIdByIdx(GameMode.Manual, new GameIdx(gameIdx));
+            var gameId = GameLibrary.Instance.GetGameIdByIdx(GameMode.Manual, new GameIdx(gameIdx));
 
             if (gameId == null)
             {
-                Console.WriteLine("⛔ Provided Game index is out of range. Ignoring command...");
+                Console.WriteLine("[FAIL] Provided Game index is out of range. Ignoring command...");
                 return 1;
             }
 
@@ -40,11 +41,11 @@ public static class ToggleGame
 
                 if (notified) return 0;
 
-                Console.WriteLine("⛔ Game Monitor Agent is not running. Failed to toggle manual Game!");
+                Console.WriteLine("[FAIL] Game Monitor Agent is not running. Failed to toggle manual Game!");
             }
             catch (Exception)
             {
-                Console.WriteLine("⛔ Failed to communicate with the Game Monitor Agent. Failed to toggle manual Game!");
+                Console.WriteLine("[FAIL] Failed to communicate with the Game Monitor Agent. Failed to toggle manual Game!");
             }
 
             return 0;

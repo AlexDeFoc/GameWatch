@@ -2,6 +2,7 @@
 using System.CommandLine;
 using GameWatch.Core;
 using GameWatch.Core.Agents.GameMonitor;
+using GameWatch.Core.Dbs;
 using GameWatch.Core.Dto;
 using GameWatch.Core.Ipc;
 
@@ -43,22 +44,22 @@ public static class RemoveGame
             switch (removeManual)
             {
                 case false when !removeAuto:
-                    result.AddError("⛔ Must specify whether to remove a manual or auto game");
+                    result.AddError("[FAIL] Must specify whether to remove a manual or auto game");
                     return;
                 case true when removeAuto:
-                    result.AddError("⛔ Cannot remove a manual and auto game with the same index");
+                    result.AddError("[FAIL] Cannot remove a manual and auto game with the same index");
                     return;
             }
 
             var idx = result.GetRequiredValue(idxOption);
 
             var gameMode = removeManual ? GameMode.Manual : GameMode.Auto;
-            var r = DbMng.GameLibrary.GetGameIdByIdx(gameMode, new GameIdx(idx));
+            var r = GameLibrary.Instance.GetGameIdByIdx(gameMode, new GameIdx(idx));
 
             if (r.HasValue) return;
             result.AddError(gameMode is GameMode.Manual
-                                ? "⛔ Cannot find manual game with specified index"
-                                : "⛔ Cannot find auto game with specified index");
+                                ? "[FAIL] Cannot find manual game with specified index"
+                                : "[FAIL] Cannot find auto game with specified index");
         });
 
         cmd.SetAction(async (result, cancellationToken) =>
@@ -67,7 +68,7 @@ public static class RemoveGame
             var gameMode = removeManual ? GameMode.Manual : GameMode.Auto;
             var idx = new GameIdx(result.GetRequiredValue(idxOption));
 
-            var (hasSucceeded, id, deletedGameTitle, failureReason) = DbMng.GameLibrary.DeleteGame(gameMode, idx);
+            var (hasSucceeded, id, deletedGameTitle, failureReason) = GameLibrary.Instance.DeleteGame(gameMode, idx);
 
             if (!hasSucceeded)
             {
@@ -75,7 +76,7 @@ public static class RemoveGame
                 return 1;
             }
 
-            Console.WriteLine($"✅ Game with Name='{deletedGameTitle}' deleted");
+            Console.WriteLine($"[OK] Game with Name='{deletedGameTitle}' deleted");
 
             const IpcTarget target = IpcTarget.GameWatchGameMonitorAgent;
             try
@@ -86,18 +87,18 @@ public static class RemoveGame
 
                 if (!notified)
                 {
-                    Console.WriteLine("⚠️ Unable to communicate with the GameWatch background service. Please ensure the agent is running.");
+                    Console.WriteLine("[WARN] Unable to communicate with the GameWatch background service. Please ensure the agent is running.");
                     return 1;
                 }
             }
             catch (OperationCanceledException)
             {
-                Console.WriteLine("⚠ Operation canceled.");
+                Console.WriteLine("[WARN] Operation canceled.");
                 return 1;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"⛔ Unhandled exception during IPC call to target '{nameof(target)}': {ex}");
+                Console.WriteLine($"[FAIL] Unhandled exception during IPC call to target '{nameof(target)}': {ex}");
                 return 1;
             }
 

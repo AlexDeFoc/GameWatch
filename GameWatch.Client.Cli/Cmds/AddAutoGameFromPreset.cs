@@ -2,6 +2,7 @@
 using System.CommandLine;
 using GameWatch.Core;
 using GameWatch.Core.Agents.GameMonitor;
+using GameWatch.Core.Dbs;
 using GameWatch.Core.Dto;
 using GameWatch.Core.Ipc;
 
@@ -26,7 +27,7 @@ public static class AddAutoGameFromPreset
         cmd.SetAction(async (result, cancellationToken) =>
         {
             var idx = new GameIdx(result.GetValue(idxOption));
-            var (hasSucceeded, preset, failureReason) = DbMng.GameLibraryPresets.GetPresetByIdx(idx);
+            var (hasSucceeded, preset, failureReason) = GamePresets.Instance.GetPresetByIdx(idx);
 
             if (!hasSucceeded || preset == null)
             {
@@ -34,9 +35,9 @@ public static class AddAutoGameFromPreset
                 return 1;
             }
 
-            DbMng.GameLibrary.AddGame(preset);
+            GameLibrary.Instance.AddGame(preset);
 
-            Console.WriteLine("✅ Game added successfully");
+            Console.WriteLine("[OK] Game added successfully");
 
             const IpcTarget target = IpcTarget.GameWatchGameMonitorAgent;
             try
@@ -45,18 +46,18 @@ public static class AddAutoGameFromPreset
 
                 if (!notified)
                 {
-                    Console.WriteLine("⚠ Unable to communicate with the GameWatch background service. Please ensure the agent is running.");
+                    Console.WriteLine("[WARN] Unable to communicate with the GameWatch background service. Please ensure the agent is running.");
                     return 1;
                 }
             }
             catch (OperationCanceledException)
             {
-                Console.WriteLine("⚠ Operation canceled.");
+                Console.WriteLine("[WARN] Operation canceled.");
                 return 1;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"⛔ Unhandled exception during IPC call to target '{nameof(target)}': {ex}");
+                Console.WriteLine($"[FAIL] Unhandled exception during IPC call to target '{nameof(target)}': {ex}");
                 return 1;
             }
 

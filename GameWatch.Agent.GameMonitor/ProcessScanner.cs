@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using GameWatch.Core;
+using GameWatch.Core.Dbs;
 using GameWatch.Core.Dto;
 using Microsoft.Extensions.Logging;
 
@@ -32,10 +33,10 @@ public sealed class ProcessScanner(AgentState state, ILogger<ProcessScanner> log
             var elapsed = (int)(DateTime.UtcNow - session.LastTimeFlushedPlayTime).TotalSeconds;
             if (elapsed <= 0) continue;
 
-            DbMng.GameLibrary.IncrementPlayTime(GameMode.Auto, session.Game.Id, elapsed);
+            GameLibrary.Instance.IncrementPlayTime(GameMode.Auto, session.Game.Id, new ElapsedTime(elapsed));
 
             if (logger.IsEnabled(LogLevel.Information))
-                logger.LogInformation("ℹ️ Auto Game Id={id} Name='{name}' has stopped. Elapsed={elapsed}s", session.Game.Id, session.Game.Name, elapsed);
+                logger.LogInformation("[INFO] Auto Game Id={id} Name='{name}' has stopped. Elapsed={elapsed}s", session.Game.Id, session.Game.Name, elapsed);
         }
 
         // 'search match' step:
@@ -60,7 +61,7 @@ public sealed class ProcessScanner(AgentState state, ILogger<ProcessScanner> log
                 state.ActiveAutoGamesPids.TryAdd(game.Id, gamePid);
 
                 if (logger.IsEnabled(LogLevel.Information))
-                    logger.LogInformation("ℹ️ Auto Game Id={id} Name='{name}' has started.", game.Id, game.Name);
+                    logger.LogInformation("[INFO] Auto Game Id={id} Name='{name}' has started.", game.Id, game.Name);
 
                 break;
             }
