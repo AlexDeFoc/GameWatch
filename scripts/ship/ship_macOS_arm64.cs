@@ -46,9 +46,12 @@ static void PublishComponent(string projDir, string outDir, string rid)
         "-p:EnableCompressionInSingleFile=true",
         "-p:IncludeNativeLibrariesForSelfExtract=true",
 
+        // 🔍 Detailed Warning Output
+        "-p:TrimmerSingleWarn=false",
+
         // 🛡️ Safety & Strict Analysis
         "-p:EnableTrimAnalyzer=true",
-        "-p:TreatWarningsAsErrors=true",
+        "-p:TreatWarningsAsErrors=false", // These will not be ignored, but just false so that we can see them all
         "-p:InvariantGlobalization=true",
 
         // ✂️ Symbol & Debug Stripping
@@ -61,7 +64,7 @@ static void PublishComponent(string projDir, string outDir, string rid)
         // with trimming (coming from Dapper.AOT) but they are safe to ignore
         // because on Windows using Native AOT compiles with no warnings which
         // imply that R2R shouldn't have any issues even with warnings
-        "-p:NoWarn=IL2104",
+        //"-p:NoWarn=IL2104",
 
         "-o", $"\"{outDir}\""
     };

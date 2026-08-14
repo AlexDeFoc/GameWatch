@@ -48,7 +48,7 @@ static void PublishComponent(string projDir, string outDir, string rid)
 
         // 🛡️ Safety & Globalization
         "-p:EnableAotAnalyzer=true",
-        "-p:TreatWarningsAsErrors=false",
+        "-p:TreatWarningsAsErrors=false", // These will not be ignored, but just false so that we can see them all
         "-p:InvariantGlobalization=true",
 
         // ✂️ Symbol & Debug Stripping
