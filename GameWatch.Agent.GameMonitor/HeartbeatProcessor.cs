@@ -1,19 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
-using GameWatch.Core;
 using GameWatch.Core.Dbs;
-using GameWatch.Core.Dto;
+using GameWatch.Core.Wrappers;
 using Microsoft.Extensions.Logging;
 
 namespace GameWatch.Agent.GameMonitor;
 
 public sealed class HeartbeatProcessor(AgentState state, ILogger<HeartbeatProcessor> logger)
 {
-    /// <summary>
-    /// Checks all active sessions. Flushes save increments for auto sessions,
-    /// full accumulated time for manual sessions, or forces a full flush of all
-    /// accumulated seconds during shutdown.
-    /// </summary>
     public void FlushHeartbeats(bool forceFlushAll = false)
     {
         var now = DateTime.UtcNow;
@@ -23,14 +17,14 @@ public sealed class HeartbeatProcessor(AgentState state, ILogger<HeartbeatProces
 
     private void FlushAutoGames(IEnumerable<TrackingSessions.Auto> gameSessions, DateTime utcNow, bool forceFlushAll)
     {
-        var gamesToFlush = new Dictionary<GameId, ElapsedTime>();
+        var gamesToFlush = new Dictionary<TableId, ElapsedTime>();
 
         foreach (var s in gameSessions)
         {
-            var elapsedSeconds = (int)(utcNow - s.LastTimeFlushedPlayTime).TotalSeconds;
+            var elapsedSeconds = (long)(utcNow - s.LastTimeFlushedPlayTime).TotalSeconds;
             if (elapsedSeconds <= 0) continue;
 
-            int secondsToFlush;
+            long secondsToFlush;
 
             if (forceFlushAll)
             {
@@ -48,7 +42,12 @@ public sealed class HeartbeatProcessor(AgentState state, ILogger<HeartbeatProces
                 s.LastTimeFlushedPlayTime = s.LastTimeFlushedPlayTime.AddSeconds(secondsToFlush);
             }
 
-            gamesToFlush[s.Game.Id] = new ElapsedTime(secondsToFlush);
+            var tableIdResult = GameLibrary.Instance.GetTableId(GameMode.Auto, s.Game.Id);
+
+            if (!tableIdResult.Ok || tableIdResult.TableId is null)
+                continue; // NOTE TODO: Look into this, maybe we gotta force refresh? or maybe on then next proc refresh it will fix itself, or i don't even know when it's possible to encounter a null or not ok scenario
+
+            gamesToFlush[tableIdResult.TableId.Value] = new ElapsedTime(secondsToFlush);
         }
 
         if (gamesToFlush.Count == 0) return;
@@ -73,16 +72,17 @@ public sealed class HeartbeatProcessor(AgentState state, ILogger<HeartbeatProces
 
     private void FlushManualGames(IEnumerable<TrackingSessions.Manual> gameSessions, DateTime utcNow, bool forceFlushAll)
     {
-        var gamesToFlush = new Dictionary<GameId, ElapsedTime>();
+        var gamesToFlush = new Dictionary<TableId, ElapsedTime>();
 
         foreach (var s in gameSessions)
         {
-            var elapsedSeconds = (int)(utcNow - s.LastTimeFlushedPlayTime).TotalSeconds;
+            var elapsedSeconds = (long)(utcNow - s.LastTimeFlushedPlayTime).TotalSeconds;
             if (elapsedSeconds <= 0) continue;
 
             if (!forceFlushAll && elapsedSeconds < Settings.Instance.GameMonitorAgentGamePlayTimeSaveThreshold) continue;
 
             // Manual games flush all accumulated seconds without capping
+            // NOTE TODO: Should we cap this? Look into it if it tracks correctly and accurately
             gamesToFlush[s.Id] = new ElapsedTime(elapsedSeconds);
 
             // Advance by exact elapsed time to preserve fractional-second precision

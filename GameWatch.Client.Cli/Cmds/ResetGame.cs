@@ -1,10 +1,9 @@
 ﻿using System;
 using System.CommandLine;
-using GameWatch.Core;
 using GameWatch.Core.Agents.GameMonitor;
 using GameWatch.Core.Dbs;
-using GameWatch.Core.Dto;
 using GameWatch.Core.Ipc;
+using GameWatch.Core.Wrappers;
 
 namespace GameWatch.Client.Cli.Cmds;
 
@@ -12,25 +11,25 @@ public static class ResetGame
 {
     public static Command Build()
     {
-        var idxOption = new Option<int>("--index", "-i")
+        var displayIdOption = new Option<int>("--id", "-i")
         {
-            Description = "The game index from (see 'list games')",
+            Description = "The game id from (see 'list games')",
             Required = true
         };
 
         var manualOption = new Option<bool>("--manual", "-m")
         {
-            Description = "Index corresponds to a manual game"
+            Description = "Should reset manual game"
         };
 
         var autoOption = new Option<bool>("--auto", "-a")
         {
-            Description = "Index corresponds to an auto game"
+            Description = "Should reset auto game"
         };
 
         var cmd = new Command("reset", "Reset game properties")
         {
-            idxOption,
+            displayIdOption,
             manualOption,
             autoOption
         };
@@ -50,89 +49,47 @@ public static class ResetGame
                     result.AddError("[FAIL] Cannot reset a manual and auto game with the same index");
                     return;
             }
-
-            var idx = result.GetRequiredValue(idxOption);
-
-            var gameMode = resetManual ? GameMode.Manual : GameMode.Auto;
-            var r = GameLibrary.Instance.GetGameIdByIdx(gameMode, new GameIdx(idx));
-
-            if (r.HasValue) return;
-            result.AddError(gameMode is GameMode.Manual
-                                ? "[FAIL] Cannot find manual game with specified index"
-                                : "[FAIL] Cannot find auto game with specified index");
         });
 
         cmd.SetAction(async (result, cancellationToken) =>
         {
             var resetManual = result.GetValue(manualOption);
             var gameMode = resetManual ? GameMode.Manual : GameMode.Auto;
-            var idxVal = result.GetRequiredValue(idxOption);
-            var idx = new GameIdx(idxVal);
-            var id = GameLibrary.Instance.GetGameIdByIdx(gameMode, idx);
 
-            if (!id.HasValue)
+            var displayId = new DisplayId(result.GetRequiredValue(displayIdOption));
+            var tableIdResult = GameLibrary.Instance.GetTableId(GameMode.Manual, displayId);
+
+            if (!tableIdResult.Ok || tableIdResult.TableId is null)
             {
-                Console.WriteLine(gameMode is GameMode.Manual
-                                      ? "[FAIL] Cannot find manual game with specified index"
-                                      : "[FAIL] Cannot find auto game with specified index");
+                Console.WriteLine(tableIdResult.FailureReason);
                 return 1;
             }
 
-            GameLibrary.Instance.ResetGamePlayTime(gameMode, idx);
+            var tableId = tableIdResult.TableId.Value;
 
-            if (gameMode is GameMode.Manual)
+            var resetGameResult = GameLibrary.Instance.ResetGame(gameMode, tableId);
+
+            if (!resetGameResult.Ok)
             {
-                var requestResult = GameLibrary.Instance.GetManualGameByIdx(idx);
-
-                if (!requestResult.HasSucceeded || requestResult.Game is null)
-                {
-                    Console.WriteLine("[WARN] Manual game reset, though we failed to grab game name");
-                    Console.WriteLine(requestResult.FailureReason);
-                    return 0;
-                }
-
-                Console.WriteLine($"[OK] Game with Name='{requestResult.Game.Name}' reset");
-            }
-            else
-            {
-
-                var requestResult = GameLibrary.Instance.GetAutoGameByIdx(idx);
-
-                if (!requestResult.HasSucceeded || requestResult.Game is null)
-                {
-                    Console.WriteLine("[WARN] Auto game reset, though we failed to grab game name");
-                    Console.WriteLine(requestResult.FailureReason);
-                    return 0;
-                }
-
-                Console.WriteLine($"[OK] Game with Name='{requestResult.Game.Name}' reset");
-            }
-
-            const IpcTarget target = IpcTarget.GameWatchGameMonitorAgent;
-            try
-            {
-                var notified = gameMode is GameMode.Manual
-                    ? await IpcClient.SendResetActiveManualGameSignalAsync(target, id.Value, cancellationToken)
-                    : await IpcClient.SendResetActiveAutoGameSignalAsync(target, id.Value, cancellationToken);
-
-                if (!notified)
-                {
-                    Console.WriteLine("[WARN] Unable to communicate with the GameWatch background service. Please ensure the agent is running.");
-                    return 1;
-                }
-            }
-            catch (OperationCanceledException)
-            {
-                Console.WriteLine("[WARN] Operation canceled.");
-                return 1;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[FAIL] Unhandled exception during IPC call to target '{nameof(target)}': {ex}");
+                Console.WriteLine(resetGameResult.FailureReason);
                 return 1;
             }
 
-            return 0;
+            Console.WriteLine($"[OK] Game with Name='{resetGameResult.GameName}' got reset");
+
+            const IpcTarget ipcTarget = IpcTarget.GameWatchGameMonitorAgent;
+            var notificationResult = resetManual
+                ? await IpcClient.NotifyAboutManualGameResetAsync(ipcTarget,
+                                                                  tableId,
+                                                                  cancellationToken)
+                : await IpcClient.NotifyAboutAutoGameResetAsync(ipcTarget,
+                                                                tableId,
+                                                                cancellationToken);
+
+            if (notificationResult.Ok) return 0;
+
+            Console.WriteLine(notificationResult.FailureReason);
+            return 1;
         });
 
         return cmd;

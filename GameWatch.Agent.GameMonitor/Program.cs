@@ -1,7 +1,6 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using GameWatch.Core;
 using GameWatch.Core.Agents.GameMonitor;
 using GameWatch.Core.Dbs;
 using GameWatch.Core.Ipc;
@@ -17,11 +16,10 @@ public static class Program
         // Step 1: Evict old instance using a dedicated, short-lived token
         using (var evictionCts = new CancellationTokenSource(TimeSpan.FromMilliseconds(500)))
         {
-            var evicted = await IpcClient.SendEvictAgentSignalAsync(IpcTarget.GameWatchGameMonitorAgent, evictionCts.Token);
-            if (evicted)
-            {
-                Console.WriteLine("♻️ Previous agent evicted. Waiting for pipe release...");
-            }
+            var notificationResult = await IpcClient.SendEvictAgentSignalAsync(IpcTarget.GameWatchGameMonitorAgent, evictionCts.Token);
+            Console.WriteLine(!notificationResult.Ok
+                                  ? notificationResult.FailureReason
+                                  : "[INFO] Previous agent evicted. Waiting for pipe release...");
         }
 
         // Step 2: Initialize DB

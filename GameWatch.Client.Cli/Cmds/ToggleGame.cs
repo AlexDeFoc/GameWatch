@@ -5,6 +5,7 @@ using GameWatch.Core.Agents.GameMonitor;
 using GameWatch.Core.Dbs;
 using GameWatch.Core.Dto;
 using GameWatch.Core.Ipc;
+using GameWatch.Core.Wrappers;
 
 namespace GameWatch.Client.Cli.Cmds;
 
@@ -12,43 +13,56 @@ public static class ToggleGame
 {
     public static Command Build()
     {
-        var idxOption = new Option<int>("--index", "-i")
+        var displayIdOption = new Option<int>("--id", "-i")
         {
-            Description = "The Game index from (see 'list games -m')",
+            Description = "The manual game id from (see 'list games -m')",
             Required = true
         };
 
-        var cmd = new Command("toggle", "Start or stop a certain manual Game record") { idxOption };
+        var cmd = new Command("toggle", "Start or stop a certain manual game record")
+        {
+            displayIdOption
+        };
         cmd.Aliases.Add("tg");
 
         cmd.SetAction(async (parseResult, cancellationToken) =>
         {
-            var gameIdx = parseResult.GetValue(idxOption);
+            var displayId = new DisplayId(parseResult.GetValue(displayIdOption));
+            var tableIdResult = GameLibrary.Instance.GetTableId(GameMode.Manual, displayId);
 
-            var gameId = GameLibrary.Instance.GetGameIdByIdx(GameMode.Manual, new GameIdx(gameIdx));
-
-            if (gameId == null)
+            if (!tableIdResult.Ok || tableIdResult.TableId is null)
             {
-                Console.WriteLine("[FAIL] Provided Game index is out of range. Ignoring command...");
+                Console.WriteLine(tableIdResult.FailureReason);
                 return 1;
             }
 
-            try
-            {
-                var notified = await IpcClient.SendToggleManualGameSignalAsync(IpcTarget.GameWatchGameMonitorAgent,
-                                                                               gameId.Value,
-                                                                               cancellationToken);
+            var tableId = tableIdResult.TableId.Value;
 
-                if (notified) return 0;
+            var manualGameResult = GameLibrary.Instance.GetManualGame(tableId, displayId);
 
-                Console.WriteLine("[FAIL] Game Monitor Agent is not running. Failed to toggle manual Game!");
-            }
-            catch (Exception)
+            if (!manualGameResult.Ok || manualGameResult.Game is null)
             {
-                Console.WriteLine("[FAIL] Failed to communicate with the Game Monitor Agent. Failed to toggle manual Game!");
+                Console.WriteLine(manualGameResult.FailureReason);
+                return 1;
             }
 
-            return 0;
+            var game = manualGameResult.Game;
+
+            var notificationResult = await IpcClient.SendToggleManualGameSignalAsync(IpcTarget.GameWatchGameMonitorAgent,
+                                                                                     tableId,
+                                                                                     cancellationToken);
+
+            if (notificationResult.Ok)
+            {
+                Console.WriteLine(notificationResult.StartedGame
+                                      ? $"[OK] Game with Name='{game.Name}' started"
+                                      : $"[OK] Game with Name='{game.Name}' stopped");
+
+                return 0;
+            }
+
+            Console.WriteLine(notificationResult.FailureReason);
+            return 1;
         });
 
         return cmd;

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.CommandLine;
-using GameWatch.Core;
 using GameWatch.Core.Dbs;
 
 namespace GameWatch.Client.Cli.Cmds;
@@ -135,7 +134,7 @@ public static class ListGames
                 if (gamesHaveBeenDisplayed)
                     Console.WriteLine();
 
-                var presets = GamePresets.Instance.GetPresets();
+                var presets = GamePresets.GetPreMadePresets();
 
                 if (presets.Count > 0)
                 {
@@ -146,7 +145,7 @@ public static class ListGames
                     {
                         foreach (var game in presets)
                         {
-                            Console.WriteLine($"{game.Id}. {TimeSpan.FromSeconds(game.PlayTimeSec.V)} - {game.Name}");
+                            Console.WriteLine($"{game.Id}. {TimeSpan.FromSeconds(game.PlayTimeSec)} - {game.Name}");
                             Console.WriteLine("   Matching rules:");
 
                             if (game.WindowTitle != null)
@@ -177,7 +176,7 @@ public static class ListGames
                     {
                         foreach (var game in presets)
                         {
-                            Console.WriteLine($"{game.Id}. {TimeSpan.FromSeconds(game.PlayTimeSec.V)} - {game.Name}");
+                            Console.WriteLine($"{game.Id}. {TimeSpan.FromSeconds(game.PlayTimeSec)} - {game.Name}");
                         }
                     }
                 }

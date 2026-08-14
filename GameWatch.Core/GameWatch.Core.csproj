@@ -8,17 +8,15 @@
     </PropertyGroup>
 
     <!-- For IDE intellisense -->
-    <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
-        <OutputPath>./obj</OutputPath>
-    </PropertyGroup>
+<!--    <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">-->
+<!--        <OutputPath>./obj</OutputPath>-->
+<!--    </PropertyGroup>-->
 
-    <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
-        <OutputPath>./obj</OutputPath>
-    </PropertyGroup>
+<!--    <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">-->
+<!--        <OutputPath>./obj</OutputPath>-->
+<!--    </PropertyGroup>-->
 
     <ItemGroup>
-        <PackageReference Include="Dapper" Version="2.1.79"/>
-        <PackageReference Include="Dapper.AOT" Version="1.0.52"/>
         <PackageReference Include="Google.Protobuf" Version="3.35.1"/>
         <PackageReference Include="Grpc.Tools" Version="2.83.0">
             <PrivateAssets>all</PrivateAssets>
@@ -27,10 +25,6 @@
         <PackageReference Include="GrpcDotNetNamedPipes" Version="3.1.0"/>
         <PackageReference Include="Microsoft.Data.Sqlite" Version="11.0.0-preview.6.26359.118"/>
     </ItemGroup>
-
-    <PropertyGroup>
-        <InterceptorsNamespaces>$(InterceptorsNamespaces);Dapper.AOT</InterceptorsNamespaces>
-    </PropertyGroup>
 
     <ItemGroup>
         <Protobuf Include="Protos\game_monitor.proto" GrpcServices="Both"/>

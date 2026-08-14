@@ -5,31 +5,43 @@ package gamewatch.ipc;
 option csharp_namespace = "GameWatch.Agent.GameMonitor.Ipc.Grpc";
 
 service IpcProcessor {
-  rpc ToggleManualGame (GameIdRequest) returns (IpcResponse);
-  rpc RemoveManualGame (GameIdRequest) returns (IpcResponse);
-  rpc RemoveAutoGame (GameIdRequest) returns (IpcResponse);
-  rpc RefreshAutoGamesList (EmptyRequest) returns (IpcResponse);
-  rpc ResetActiveManualGame (GameIdRequest) returns (IpcResponse);
-  rpc ResetActiveAutoGame (GameIdRequest) returns (IpcResponse);
-  rpc EditAutoGame (GameIdxRequest) returns (IpcResponse);
+  rpc ToggleManualGame (TableIdRequest) returns (ToggleManualGameResponse);
+  rpc RemoveManualGame (TableIdRequest) returns (StatusIpcResponse);
+  rpc RemoveAutoGame (TableIdRequest) returns (StatusIpcResponse);
+  rpc RefreshAutoGamesList (EmptyRequest) returns (StatusIpcResponse);
+  rpc ResetActiveManualGame (TableIdRequest) returns (StatusAndMessageIpcResponse);
+  rpc ResetActiveAutoGame (TableIdRequest) returns (StatusAndMessageIpcResponse);
+  rpc EditAutoGame (EditGameRequest) returns (StatusAndMessageIpcResponse);
 
   // Eviction endpoint <- used when to replace one agent instance with an older one
-  rpc EvictAgent (EvictRequest) returns (IpcResponse);
+  rpc EvictAgent (EvictRequest) returns (StatusAndMessageIpcResponse);
+}
+
+message EditGameRequest {
+  int32 table_id = 1;
+  bool matching_rules_changed = 2;
+}
+
+// TableId = Id of table inside sqlite3 db
+message TableIdRequest {
+  int32 table_id = 1;
 }
 
 message EvictRequest {}
 
 message EmptyRequest {}
 
-message GameIdxRequest {
-  int32 game_idx = 1;
+message ToggleManualGameResponse {
+  bool ok = 1;
+  bool started_game = 2;
+  string failure_reason = 3;
 }
 
-message GameIdRequest {
-  int32 game_id = 1;
+message StatusIpcResponse {
+  bool ok = 1;
 }
 
-message IpcResponse {
-  bool success = 1;
-  string message = 2;
+message StatusAndMessageIpcResponse {
+  bool ok = 1;
+  string msg = 2;
 }

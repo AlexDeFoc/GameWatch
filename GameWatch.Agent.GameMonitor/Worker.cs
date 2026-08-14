@@ -1,7 +1,6 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using GameWatch.Core;
 using GameWatch.Core.Dbs;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;

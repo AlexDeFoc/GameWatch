@@ -1,9 +1,8 @@
 ﻿using System;
 using System.CommandLine;
-using GameWatch.Core;
 using GameWatch.Core.Dbs;
-using GameWatch.Core.Dto;
 using GameWatch.Core.GameRecords;
+using GameWatch.Core.Wrappers;
 
 namespace GameWatch.Client.Cli.Cmds;
 

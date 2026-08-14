@@ -1,10 +1,9 @@
 ﻿using System;
 using System.CommandLine;
-using GameWatch.Core;
 using GameWatch.Core.Agents.GameMonitor;
 using GameWatch.Core.Dbs;
-using GameWatch.Core.Dto;
 using GameWatch.Core.Ipc;
+using GameWatch.Core.Wrappers;
 
 namespace GameWatch.Client.Cli.Cmds;
 
@@ -12,56 +11,53 @@ public static class AddAutoGameFromPreset
 {
     public static Command Build()
     {
-        var idxOption = new Option<int>("--index", "-i")
+        var displayIdOption = new Option<int>("--id", "-i")
         {
-            Description = "The preset index from (see 'list games -p')",
+            Description = "The preset id from (see 'list games -p')",
             Required = true
         };
 
         var cmd = new Command("preset", "Add auto game from a preset")
         {
-            idxOption
+            displayIdOption
         };
         cmd.Aliases.Add("p");
 
         cmd.SetAction(async (result, cancellationToken) =>
         {
-            var idx = new GameIdx(result.GetValue(idxOption));
-            var (hasSucceeded, preset, failureReason) = GamePresets.Instance.GetPresetByIdx(idx);
+            var displayId = new DisplayId(result.GetValue(displayIdOption));
 
-            if (!hasSucceeded || preset == null)
+            var tableIdResult = GamePresets.Instance.GetTableId(displayId);
+
+            if (!tableIdResult.Ok || tableIdResult.TableId is null)
             {
-                Console.WriteLine(failureReason);
+                Console.WriteLine(tableIdResult.FailureReason);
                 return 1;
             }
 
-            GameLibrary.Instance.AddGame(preset);
+            var tableId = tableIdResult.TableId.Value;
 
-            Console.WriteLine("[OK] Game added successfully");
+            var queryGamePresetResult = GamePresets.Instance.GetPreset(tableId, displayId);
 
-            const IpcTarget target = IpcTarget.GameWatchGameMonitorAgent;
-            try
+            if (!queryGamePresetResult.Ok || queryGamePresetResult.GamePreset is null)
             {
-                var notified = await IpcClient.SendRefreshSignalForAutoGamesListAsync(target, cancellationToken);
-
-                if (!notified)
-                {
-                    Console.WriteLine("[WARN] Unable to communicate with the GameWatch background service. Please ensure the agent is running.");
-                    return 1;
-                }
-            }
-            catch (OperationCanceledException)
-            {
-                Console.WriteLine("[WARN] Operation canceled.");
-                return 1;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[FAIL] Unhandled exception during IPC call to target '{nameof(target)}': {ex}");
+                Console.WriteLine(queryGamePresetResult.FailureReason);
                 return 1;
             }
 
-            return 0;
+            var gamePreset = queryGamePresetResult.GamePreset;
+
+            GameLibrary.Instance.AddGame(gamePreset);
+
+            Console.WriteLine($"[OK] Game with Name='{gamePreset.Name}' added successfully");
+
+            var notificationResult = await IpcClient.SendRefreshSignalForAutoGamesListAsync(IpcTarget.GameWatchGameMonitorAgent,
+                                                                                            cancellationToken);
+
+            if (notificationResult.Ok) return 0;
+
+            Console.WriteLine(notificationResult.FailureReason);
+            return 1;
         });
 
         return cmd;

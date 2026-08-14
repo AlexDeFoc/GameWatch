@@ -12,13 +12,13 @@
     </PropertyGroup>
     
     <!-- For IDE intellisense -->
-    <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
-        <OutputPath>./obj</OutputPath>
-    </PropertyGroup>
+<!--    <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">-->
+<!--        <OutputPath>./obj</OutputPath>-->
+<!--    </PropertyGroup>-->
 
-    <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
-        <OutputPath>./obj</OutputPath>
-    </PropertyGroup>
+<!--    <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">-->
+<!--        <OutputPath>./obj</OutputPath>-->
+<!--    </PropertyGroup>-->
 
     <ItemGroup>
       <PackageReference Include="System.CommandLine" Version="2.0.10" />

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using GameWatch.Core;
 using GameWatch.Core.Dbs;
-using GameWatch.Core.Dto;
+using GameWatch.Core.Wrappers;
 using Microsoft.Extensions.Logging;
 
 namespace GameWatch.Agent.GameMonitor;
@@ -12,7 +12,7 @@ public sealed class ProcessScanner(AgentState state, ILogger<ProcessScanner> log
 {
     public void Scan()
     {
-        // Idx = GameId
+        // Idx = Id
         List<TrackingSessions.Auto> recentlyInactiveAutoGames = [];
         var availableProcs = ProcGatherer.GetDictOfAvailableProcesses();
 
@@ -23,20 +23,51 @@ public sealed class ProcessScanner(AgentState state, ILogger<ProcessScanner> log
             if (availableProcs.ContainsKey(pid.V)) continue;
 
             if (!state.ActiveAutoGames.TryRemove(pid, out var session)) continue;
-            state.ActiveAutoGamesPids.TryRemove(session.Game.Id, out _);
+
+            var queryTableIdResult = GameLibrary.Instance.GetTableId(GameMode.Auto, session.Game.Id);
+
+            if (!queryTableIdResult.Ok || queryTableIdResult.TableId is null)
+            {
+                if (logger.IsEnabled(LogLevel.Error))
+                    logger.LogError("[ERROR] Cannot find active game with in-memory DisplayId='{id}' Name='{name}' " +
+                                    "to be able to process game in step 'remove inactives'. " +
+                                    "Its possible the game was removed and the agent didn't receive the signal. " +
+                                    "Skipping game...", session.Game.Id, session.Game.Name);
+
+                continue;
+            }
+
+            var tableId = queryTableIdResult.TableId.Value;
+
+            state.ActiveAutoGamesPids.TryRemove(tableId, out _);
             recentlyInactiveAutoGames.Add(session);
         }
 
         // perform 'save recent inactives' step:
         foreach (var session in recentlyInactiveAutoGames)
         {
-            var elapsed = (int)(DateTime.UtcNow - session.LastTimeFlushedPlayTime).TotalSeconds;
+            var elapsed = (long)(DateTime.UtcNow - session.LastTimeFlushedPlayTime).TotalSeconds;
             if (elapsed <= 0) continue;
 
-            GameLibrary.Instance.IncrementPlayTime(GameMode.Auto, session.Game.Id, new ElapsedTime(elapsed));
+            var queryTableIdResult = GameLibrary.Instance.GetTableId(GameMode.Auto, session.Game.Id);
+
+            if (!queryTableIdResult.Ok || queryTableIdResult.TableId is null)
+            {
+                if (logger.IsEnabled(LogLevel.Error))
+                    logger.LogError("[ERROR] Cannot find active game with in-memory DisplayId='{id}' Name='{name}' " +
+                                    "to be able to process game in step 'save recent inactives'. " +
+                                    "Its possible the game was removed and the agent didn't receive the signal. " +
+                                    "Skipping game...", session.Game.Id, session.Game.Name);
+
+                continue;
+            }
+
+            var tableId = queryTableIdResult.TableId.Value;
+
+            GameLibrary.Instance.IncrementPlayTime(GameMode.Auto, tableId, new ElapsedTime(elapsed));
 
             if (logger.IsEnabled(LogLevel.Information))
-                logger.LogInformation("[INFO] Auto Game Id={id} Name='{name}' has stopped. Elapsed={elapsed}s", session.Game.Id, session.Game.Name, elapsed);
+                logger.LogInformation("[INFO] Auto Game TableId='{id}' Name='{name}' has stopped. Elapsed={elapsed}s", tableId, session.Game.Name, elapsed);
         }
 
         // 'search match' step:
@@ -51,17 +82,33 @@ public sealed class ProcessScanner(AgentState state, ILogger<ProcessScanner> log
             if (activeGameIds.Contains(game.Id))
                 continue;
 
+            var queryTableIdResult = GameLibrary.Instance.GetTableId(GameMode.Auto, game.Id);
+
+            if (!queryTableIdResult.Ok || queryTableIdResult.TableId is null)
+            {
+                if (logger.IsEnabled(LogLevel.Error))
+                    logger.LogError("[ERROR] Cannot find active game with in-memory DisplayId='{id}' Name='{name}' " +
+                                    "to be able to process game in step 'perform actual search match'. " +
+                                    "Its possible the game was removed and the agent didn't receive the signal. " +
+                                    "Skipping game...", game.Id, game.Name);
+
+                continue;
+            }
+
+            var tableId = queryTableIdResult.TableId.Value;
+
             foreach (var (pid, proc) in availableProcs)
             {
                 if (!RuleMatcher.IsMatch(proc, game)) continue;
 
                 var newSession = new TrackingSessions.Auto { Game = game };
                 var gamePid = new Pid(pid);
+
                 state.ActiveAutoGames.TryAdd(gamePid, newSession);
-                state.ActiveAutoGamesPids.TryAdd(game.Id, gamePid);
+                state.ActiveAutoGamesPids.TryAdd(tableId, gamePid);
 
                 if (logger.IsEnabled(LogLevel.Information))
-                    logger.LogInformation("[INFO] Auto Game Id={id} Name='{name}' has started.", game.Id, game.Name);
+                    logger.LogInformation("[INFO] Auto Game TableId='{id}' Name='{name}' has started.", tableId, game.Name);
 
                 break;
             }

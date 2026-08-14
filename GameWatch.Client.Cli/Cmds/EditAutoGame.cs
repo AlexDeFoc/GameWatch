@@ -1,11 +1,10 @@
 ﻿using System;
 using System.CommandLine;
-using System.Linq;
 using GameWatch.Core;
 using GameWatch.Core.Agents.GameMonitor;
 using GameWatch.Core.Dbs;
-using GameWatch.Core.Dto;
 using GameWatch.Core.Ipc;
+using GameWatch.Core.Wrappers;
 
 namespace GameWatch.Client.Cli.Cmds;
 
@@ -13,13 +12,13 @@ public static class EditAutoGame
 {
     public static Command Build()
     {
-        var idxOption = new Option<int>("--index", "-i")
+        var displayIdOption = new Option<int>("--id", "-i")
         {
-            Description = "The game index from (see 'list games -a')",
+            Description = "The game id from (see 'list games -a')",
             Required = true
         };
 
-        var nameOption = new Option<string>("--name", "-n")
+        var gameNameOption = new Option<string>("--name", "-n")
         {
             Description = "New name for the game"
         };
@@ -34,58 +33,58 @@ public static class EditAutoGame
             Description = "Target process PID from (see 'list procs'). Provide only when you are targeting a different process then the original one"
         };
 
-        var ruleWindowExactOption = new Option<bool>("--rule-window-exact", "-we")
+        var matchTitleExactOption = new Option<string>("--rule-title-exact", "-te")
         {
-            Description = "Match rule: Require exact match on the target process window title"
+            Description = "Match rule: Will match, value, fully against process window title"
         };
 
-        var ruleWindowPatternOption = new Option<string>("--rule-window-pattern", "-wp")
+        var matchTitlePatternOption = new Option<string>("--rule-title-pattern", "-tp")
         {
-            Description = "Match rule: Pattern/regex to match against the process window title",
+            Description = "Match rule: Will match, value as regex pattern, against process window title",
         };
 
-        var rulePathExactOption = new Option<bool>("--rule-path-exact", "-pe")
+        var matchPathExactOption = new Option<string>("--rule-path-exact", "-pe")
         {
-            Description = "Match rule: Require exact match on the target process executable path"
+            Description = "Match rule: Will match, value, fully against process file path"
         };
 
-        var rulePathPatternOption = new Option<string>("--rule-path-pattern", "-pp")
+        var matchPathPatternOption = new Option<string>("--rule-path-pattern", "-pp")
         {
-            Description = "Match rule: Pattern/regex to match against the target process executable path"
+            Description = "Match rule: Will match, value as regex pattern, against process file path"
         };
 
         var cmd = new Command("auto", "Edit auto game")
         {
-            idxOption,
-            nameOption,
+            displayIdOption,
+            gameNameOption,
             playTimeOption,
             pidOption,
-            ruleWindowExactOption,
-            ruleWindowPatternOption,
-            rulePathExactOption,
-            rulePathPatternOption
+            matchTitleExactOption,
+            matchTitlePatternOption,
+            matchPathExactOption,
+            matchPathPatternOption
         };
         cmd.Aliases.Add("a");
 
         cmd.Validators.Add(result =>
         {
-            var ruleWindowExact = result.GetValue(ruleWindowExactOption);
-            var ruleWindowPattern = result.GetValue(ruleWindowPatternOption);
+            var matchTitleExact = result.GetValue(matchTitleExactOption);
+            var matchTitlePattern = result.GetValue(matchTitlePatternOption);
 
-            if (ruleWindowExact && ruleWindowPattern is not null)
+            if (matchTitleExact is not null && matchTitlePattern is not null)
             {
-                result.AddError("[FAIL] Cannot specify both exact match and a title pattern. These options are mutually exclusive");
+                result.AddError("[FAIL] Cannot specify both exact match and pattern match against process window title. These options are mutually exclusive");
             }
 
-            var rulePathExact = result.GetValue(rulePathExactOption);
-            var rulePathPattern = result.GetValue(rulePathPatternOption);
+            var matchPathExact = result.GetValue(matchPathExactOption);
+            var matchPathPattern = result.GetValue(matchPathPatternOption);
 
-            if (rulePathExact && rulePathPattern is not null)
+            if (matchPathExact is not null && matchPathPattern is not null)
             {
-                result.AddError("[FAIL] Cannot specify both exact match and a exe path pattern. These options are mutually exclusive");
+                result.AddError("[FAIL] Cannot specify both exact match and pattern match against process file path. These options are mutually exclusive");
             }
 
-            var pid = result.GetRequiredValue(pidOption);
+            var pid = result.GetValue(pidOption);
 
             if (pid is null) return;
 
@@ -99,95 +98,108 @@ public static class EditAutoGame
 
         cmd.SetAction(async (result, cancellationToken) =>
         {
-            var idx = new GameIdx(result.GetValue(idxOption));
-            var (hasSucceeded, game, failureReason) = GameLibrary.Instance.GetAutoGameByIdx(idx);
+            var displayId = new DisplayId(result.GetValue(displayIdOption));
 
-            if (!hasSucceeded || game == null)
+            var tableIdResult = GameLibrary.Instance.GetTableId(GameMode.Auto, displayId);
+
+            if (!tableIdResult.Ok || tableIdResult.TableId is null)
             {
-                Console.WriteLine(failureReason);
+                Console.WriteLine(tableIdResult.FailureReason);
                 return 1;
             }
 
-            var pid = result.GetValue(pidOption);
-            var ruleWindowExact = result.GetValue(ruleWindowExactOption);
-            var rulePathExact = result.GetValue(rulePathExactOption);
-            var ruleWindowPattern = result.GetValue(ruleWindowPatternOption);
-            var rulePathPattern = result.GetValue(rulePathPatternOption);
-            var playTimeGotten = result.GetValue(playTimeOption);
+            var tableId = tableIdResult.TableId.Value;
 
-            var gameName = result.GetValue(nameOption) ?? game.Name;
-            var gamePlayTime = playTimeGotten is null ? game.PlayTimeSec : new ElapsedTime(playTimeGotten.Value);
-            OurProc? targetProc = null;
+            var autoGameResult = GameLibrary.Instance.GetAutoGame(tableId, displayId);
 
-            if (ruleWindowExact || rulePathExact)
+            if (!autoGameResult.Ok || autoGameResult.Game is null)
             {
-                targetProc = pid is null
-                    ? ProcGatherer.GetListOfAvailableProcesses().FirstOrDefault(proc => RuleMatcher.IsMatch(proc, game))
-                    : ProcGatherer.GetOurProcFromPid(new Pid(pid.Value));
+                Console.WriteLine(autoGameResult.FailureReason);
+                return 1;
+            }
+
+            var game = autoGameResult.Game;
+
+            var pid = result.GetValue(pidOption);
+            var newGameName = result.GetValue(gameNameOption);
+            var matchTitleExact = result.GetValue(matchTitleExactOption);
+            var matchTitlePattern = result.GetValue(matchTitlePatternOption);
+            var matchPathExact = result.GetValue(matchPathExactOption);
+            var matchPathPattern = result.GetValue(matchPathPatternOption);
+            var playTimeValue = result.GetValue(playTimeOption);
+
+            if (newGameName is not null)
+                game.Name = newGameName;
+
+            if (playTimeValue is not null)
+                game.PlayTimeSec = new ElapsedTime(playTimeValue.Value);
+
+            if (matchTitleExact is not null && game.WindowRule is not null)
+                game.WindowRule = null;
+            else if (matchTitlePattern is not null && game.WindowTitle is not null)
+                game.WindowTitle = null;
+
+            if (matchPathExact is not null && game.PathRule is not null)
+                game.PathRule = null;
+            else if (matchPathPattern is not null && game.PathRule is not null)
+                game.FilePath = null;
+
+            if (matchTitlePattern is not null)
+                game.WindowRule = matchTitlePattern;
+
+            if (matchPathPattern is not null)
+                game.PathRule = matchPathPattern;
+
+            if (pid is not null)
+            {
+                var targetProc = ProcGatherer.GetOurProcFromPid(new Pid(pid.Value));
 
                 if (targetProc is null)
                 {
-                    Console.WriteLine("[FAIL] Cannot set the matching rule to be window title exact or exe path exact without the game being active!");
+                    Console.WriteLine("[FAIL] Cannot find process with provided pid");
                     return 1;
                 }
+
+                if (matchTitleExact is not null)
+                    game.WindowTitle = targetProc.WindowTitle;
+
+                if (matchPathExact is not null)
+                    game.FilePath = targetProc.FilePath;
             }
 
-            var shouldClearWindowTitle = ruleWindowPattern is not null && game.WindowTitle is not null;
-            var shouldClearFilePath = rulePathPattern is not null && game.FilePath is not null;
+            var editGameResult = GameLibrary.Instance.EditGame(game,
+                                                               tableId,
+                                                               playTimeChanged: playTimeValue is not null,
+                                                               nameChanged: newGameName is null,
+                                                               windowTitleChanged: matchTitleExact is not null,
+                                                               windowRuleChanged: matchTitlePattern is not null,
+                                                               filePathChanged: matchPathExact is not null,
+                                                               pathRuleChanged: matchPathPattern is not null);
 
-            var procWindowTitle = shouldClearWindowTitle
-                ? null
-                : ruleWindowExact
-                    ? targetProc!.WindowTitle
-                    : game.WindowTitle;
-
-            var procFilePath = shouldClearFilePath
-                ? null
-                : rulePathExact
-                    ? targetProc!.FilePath
-                    : game.FilePath;
-
-            var status = GameLibrary.Instance.ChangeGameProperty(GameMode.Auto,
-                                                                  idx,
-                                                                  gameName,
-                                                                  gamePlayTime,
-                                                                  procWindowTitle,
-                                                                  procFilePath,
-                                                                  ruleWindowPattern,
-                                                                  rulePathPattern
-            );
-
-            if (!status.HasSucceeded)
+            if (!editGameResult.Ok)
             {
-                Console.WriteLine(status.FailureReason);
+                Console.WriteLine(editGameResult.FailureReason);
                 return 1;
             }
 
-            Console.WriteLine($"[OK] Game with Name='{gameName}' edited successfully");
+            Console.WriteLine($"[OK] Game with Name='{game.Name}' edited successfully");
 
-            const IpcTarget target = IpcTarget.GameWatchGameMonitorAgent;
-            try
-            {
-                var notified = await IpcClient.SendEditAutoGameSignalAsync(target, idx, cancellationToken);
+            var matchingRulesChanged = playTimeValue is not null
+                                       || newGameName is not null
+                                       || matchTitleExact is not null
+                                       || matchTitlePattern is not null
+                                       || matchPathExact is not null
+                                       || matchPathPattern is not null;
 
-                if (!notified)
-                {
-                    Console.WriteLine("[WARN] Unable to communicate with the GameWatch background service. Please ensure the agent is running.");
-                    return 1;
-                }
-            }
-            catch (OperationCanceledException)
-            {
-                Console.WriteLine("[WARN] Operation canceled.");
-                return 1;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[FAIL] Unhandled exception during IPC call to target '{nameof(target)}': {ex}");
-                return 1;
-            }
+            var notificationResult = await IpcClient.NotifyAboutEditAutoGameAsync(IpcTarget.GameWatchGameMonitorAgent,
+                                                                                  tableId,
+                                                                                  matchingRulesChanged,
+                                                                                  cancellationToken);
 
-            return 0;
+            if (notificationResult.Ok) return 0;
+
+            Console.WriteLine(notificationResult.FailureReason);
+            return 1;
         });
 
         return cmd;

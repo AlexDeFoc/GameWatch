@@ -4,8 +4,9 @@ using GameWatch.Core;
 using GameWatch.Core.Agents.GameMonitor;
 using GameWatch.Core.Dbs;
 using GameWatch.Core.Dto;
-using GameWatch.Core.GameRecords;
 using GameWatch.Core.Ipc;
+using GameWatch.Core.Wrappers;
+using AutoGame = GameWatch.Core.GameRecords.AutoGame;
 
 namespace GameWatch.Client.Cli.Cmds;
 
@@ -19,7 +20,7 @@ public static class AddAutoGameFromProcess
             Required = true
         };
 
-        var pidOption = new Option<int>("--pid")
+        var pidOption = new Option<int?>("--pid")
         {
             Description = "Target process PID from (see 'list procs')",
             Required = true
@@ -30,7 +31,7 @@ public static class AddAutoGameFromProcess
             Description = "Set initial playtime"
         };
 
-        var ruleWindowExactOption = new Option<bool>("--rule-window-exact", "-we")
+        var ruleWindowExactOption = new Option<string>("--rule-window-exact", "-we")
         {
             Description = "Match rule: Require exact match on the target process window title"
         };
@@ -40,7 +41,7 @@ public static class AddAutoGameFromProcess
             Description = "Match rule: Pattern/regex to match against the process window title",
         };
 
-        var rulePathExactOption = new Option<bool>("--rule-path-exact", "-pe")
+        var rulePathExactOption = new Option<string>("--rule-path-exact", "-pe")
         {
             Description = "Match rule: Require exact match on the target process executable path"
         };
@@ -61,12 +62,14 @@ public static class AddAutoGameFromProcess
             rulePathPatternOption
         };
 
+        cmd.Description = "You can add by providing a process pid and optionally matching filters, or only matching filters. Also if you don't provide any filters but do provide a pid, it will match exactly both the window title and the file path.";
+
         cmd.Validators.Add(result =>
         {
             var ruleWindowExact = result.GetValue(ruleWindowExactOption);
             var ruleWindowPattern = result.GetValue(ruleWindowPatternOption);
 
-            if (ruleWindowExact && ruleWindowPattern is not null)
+            if (ruleWindowExact is not null && ruleWindowPattern is not null)
             {
                 result.AddError("[FAIL] Cannot specify both exact match and a title pattern. These options are mutually exclusive");
             }
@@ -74,7 +77,7 @@ public static class AddAutoGameFromProcess
             var rulePathExact = result.GetValue(rulePathExactOption);
             var rulePathPattern = result.GetValue(rulePathPatternOption);
 
-            if (rulePathExact && rulePathPattern is not null)
+            if (rulePathExact is not null && rulePathPattern is not null)
             {
                 result.AddError("[FAIL] Cannot specify both exact match and a exe path pattern. These options are mutually exclusive");
             }
@@ -85,11 +88,13 @@ public static class AddAutoGameFromProcess
             if (ruleWindowPattern is not null && !RegexProcessor.IsValidPattern(ruleWindowPattern))
                 result.AddError("[FAIL] Provided windows title match rule is not a valid regex pattern");
 
-            var pid = result.GetRequiredValue(pidOption);
+            var pid = result.GetValue(pidOption);
 
-            var proc = ProcGatherer.GetOurProcFromPid(new Pid(pid));
+            OurProc? proc = null;
+            if (pid is not null)
+                proc = ProcGatherer.GetOurProcFromPid(new Pid(pid.Value));
 
-            if (proc is null)
+            if (proc is null && pid is not null)
             {
                 result.AddError("[FAIL] Cannot find process with provided PID");
             }
@@ -97,17 +102,20 @@ public static class AddAutoGameFromProcess
 
         cmd.SetAction(async (result, cancellationToken) =>
         {
-            var pid = result.GetRequiredValue(pidOption);
+            var pid = result.GetValue(pidOption);
 
-            var proc = ProcGatherer.GetOurProcFromPid(new Pid(pid));
+            OurProc? proc = null;
 
-            if (proc is null)
+            if (pid is not null)
+                proc = ProcGatherer.GetOurProcFromPid(new Pid(pid.Value));
+
+            if (proc is null && pid is not null)
             {
                 Console.WriteLine("[FAIL] Process with provided PID closed while processing it.");
                 return 1;
             }
 
-            var game = new AutoGame()
+            var game = new AutoGame
             {
                 Name = result.GetRequiredValue(nameOption),
                 PlayTimeSec = new ElapsedTime(result.GetValue(playTimeOption))
@@ -118,25 +126,25 @@ public static class AddAutoGameFromProcess
             var rulePathExact = result.GetValue(rulePathExactOption);
             var rulePathPattern = result.GetValue(rulePathPatternOption);
 
-            if (!ruleWindowExact && ruleWindowPattern is null && !rulePathExact && rulePathPattern is null)
+            if (ruleWindowExact is null && ruleWindowPattern is null && rulePathExact is null && rulePathPattern is null && proc is not null)
             {
                 game.WindowTitle = proc.WindowTitle;
                 game.FilePath = proc.FilePath;
             }
             else
             {
-                if (ruleWindowExact)
+                if (ruleWindowExact is not null)
                 {
-                    game.WindowTitle = proc.WindowTitle;
+                    game.WindowTitle = proc is not null ? proc.WindowTitle : ruleWindowExact;
                 }
                 else if (ruleWindowPattern is not null)
                 {
                     game.WindowRule = ruleWindowPattern;
                 }
 
-                if (rulePathExact)
+                if (rulePathExact is not null)
                 {
-                    game.FilePath = proc.FilePath;
+                    game.FilePath = proc is not null ? proc.FilePath : rulePathExact;
                 }
                 else if (rulePathPattern is not null)
                 {
@@ -146,31 +154,15 @@ public static class AddAutoGameFromProcess
 
             GameLibrary.Instance.AddGame(game);
 
-            Console.WriteLine("[OK] Game added successfully");
+            Console.WriteLine($"[OK] Game with Name='{game.Name}' added successfully");
 
-            const IpcTarget target = IpcTarget.GameWatchGameMonitorAgent;
-            try
-            {
-                var notified = await IpcClient.SendRefreshSignalForAutoGamesListAsync(target, cancellationToken);
+            var notificationResult = await IpcClient.SendRefreshSignalForAutoGamesListAsync(IpcTarget.GameWatchGameMonitorAgent,
+                                                                                            cancellationToken);
 
-                if (!notified)
-                {
-                    Console.WriteLine("[WARN] Unable to communicate with the GameWatch background service. Please ensure the agent is running.");
-                    return 1;
-                }
-            }
-            catch (OperationCanceledException)
-            {
-                Console.WriteLine("[WARN] Operation canceled.");
-                return 1;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[FAIL] Unhandled exception during IPC call to target '{nameof(target)}': {ex}");
-                return 1;
-            }
+            if (notificationResult.Ok) return 0;
 
-            return 0;
+            Console.WriteLine(notificationResult.FailureReason);
+            return 1;
         });
 
         return cmd;
