@@ -12,9 +12,7 @@ public sealed class GamePresets
     public static GamePresets Instance { get; private set; } = null!;
 
     private readonly string _connStr;
-    private readonly List<TableId> _presetIds = [];
-
-    public static void Init(string relPathToParent) => Instance = new GamePresets(relPathToParent);
+    private readonly List<TableId> _presetIds;
 
     private GamePresets(string relPathToParent)
     {
@@ -25,9 +23,6 @@ public sealed class GamePresets
 
         if (!string.IsNullOrEmpty(dbParentPath) && !Directory.Exists(dbParentPath))
             Directory.CreateDirectory(dbParentPath);
-
-        if (!File.Exists(dbPath))
-            return;
 
         using var conn = CreateConnection();
 
@@ -55,6 +50,7 @@ public sealed class GamePresets
             insertPreMadePresetsCmd.Transaction = tran;
             insertPreMadePresetsCmd.CommandText = """
                                                   INSERT INTO AutoGamePresets (
+                                                      Id,
                                                       Name,
                                                       PlayTimeSec,
                                                       WindowTitle,
@@ -63,17 +59,19 @@ public sealed class GamePresets
                                                       PathRule
                                                   )
                                                   VALUES (
+                                                      @Id,
                                                       @Name,
                                                       @PlayTimeSec,
                                                       @WindowTitle,
                                                       @FilePath,
                                                       @WindowRule,
                                                       @PathRule
-                                                  );
+                                                  ) ON CONFLICT(Id) DO NOTHING;
                                                   """;
 
             var presets = GetPreMadePresets();
 
+            var pTableId = insertPreMadePresetsCmd.Parameters.Add("@Id", SqliteType.Integer);
             var pName = insertPreMadePresetsCmd.Parameters.Add("@Name", SqliteType.Text);
             var pPlayTimeSec = insertPreMadePresetsCmd.Parameters.Add("@PlayTimeSec", SqliteType.Integer);
             var pWindowTitle = insertPreMadePresetsCmd.Parameters.Add("@WindowTitle", SqliteType.Text);
@@ -83,24 +81,30 @@ public sealed class GamePresets
 
             foreach (var p in presets)
             {
+                pTableId.Value = p.TableId;
                 pName.Value = p.Name;
                 pPlayTimeSec.Value = p.PlayTimeSec;
-                pWindowTitle.Value = p.WindowTitle;
-                pFilePath.Value = p.FilePath;
-                pWindowRule.Value = p.WindowRule;
-                pPathRule.Value = p.PathRule;
+                pWindowTitle.Value = (object?)p.WindowTitle ?? DBNull.Value;
+                pWindowRule.Value = (object?)p.WindowRule ?? DBNull.Value;
+                pFilePath.Value = (object?)p.FilePath ?? DBNull.Value;
+                pPathRule.Value = (object?)p.PathRule ?? DBNull.Value;
 
                 insertPreMadePresetsCmd.ExecuteNonQuery();
             }
+
+            tran.Commit();
         }
 
         _presetIds = Utils.FetchTableIds(conn, "AutoGamePresets");
     }
 
+    public static void Init(string relPathToParent) => Instance = new GamePresets(relPathToParent);
+
     public static List<AutoGameDto> GetPreMadePresets() =>
     [
         new()
         {
+            TableId = 1,
             Name = "Spotify",
             PathRule = @"[/\\]spotify(\.exe)?$"
         }
@@ -109,7 +113,7 @@ public sealed class GamePresets
     public QueryTableIdResult GetTableId(DisplayId displayId)
     {
         return !Utils.IsWithinBounds(displayId, _presetIds)
-            ? new QueryTableIdResult(FailureReason: "[FAIL] Cannot find game with provided id. Ignoring command...")
+            ? new QueryTableIdResult(FailureReason: $"[FAIL] Cannot find game with provided id because its outside the possible values range. (Max value is {_presetIds.Count}). Ignoring command...")
             : new QueryTableIdResult(Ok: true, TableId: _presetIds[displayId.V - 1]);
     }
 
@@ -150,6 +154,7 @@ public sealed class GamePresets
 
     private SqliteConnection CreateConnection(bool queryOnly = false) => Utils.CreateSqlConnection(_connStr, queryOnly);
 
+    // Results
     public record struct QueryTableIdResult(bool Ok = false, TableId? TableId = null, string? FailureReason = null);
 
     public record struct QueryPresetResult(bool Ok = false, AutoGameRecord? GamePreset = null, string? FailureReason = null);

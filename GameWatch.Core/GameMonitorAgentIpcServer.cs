@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using GameWatch.Agent.GameMonitor.Ipc.Grpc;
 using GameWatch.Core.Types;
+using Grpc.Core;
 using GrpcDotNetNamedPipes;
 
 namespace GameWatch.Core;
@@ -21,8 +22,27 @@ public static class GameMonitorAgentIpcServer
                 ? new StatusAndFailureMsgResult(FailureReason: response.Msg)
                 : new StatusAndFailureMsgResult(Ok: response.Ok);
         }
+        catch (RpcException ex) when (ex.StatusCode is StatusCode.Unavailable)
+        {
+            // Service/IPC Server is not running
+            return new StatusAndFailureMsgResult(
+                FailureReason: "[WARN] Failed to notify game monitor agent. Is the agent running?");
+        }
+        catch (RpcException ex) when (ex.StatusCode is StatusCode.Cancelled)
+        {
+            // Explicit gRPC cancellation
+            return new StatusAndFailureMsgResult(
+                FailureReason: "[WARN] Request regarding notification sent to game monitor agent, was cancelled by the client or server.");
+        }
+        catch (RpcException ex)
+        {
+            // Other gRPC errors (DeadlineExceeded, Unauthenticated, Internal, etc.)
+            return new StatusAndFailureMsgResult(
+                FailureReason: $"[WARN] gRPC call failed ({ex.StatusCode}): {ex.Status.Detail}");
+        }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
+            // Framework cancellation token triggered
             return new StatusAndFailureMsgResult(FailureReason: $"[WARN] Operation cancelled. Reason: {ex.Message}");
         }
         catch (Exception ex)
@@ -47,8 +67,27 @@ public static class GameMonitorAgentIpcServer
                 ? new StatusAndFailureMsgResult(FailureReason: response.Msg)
                 : new StatusAndFailureMsgResult(Ok: response.Ok);
         }
+        catch (RpcException ex) when (ex.StatusCode is StatusCode.Unavailable)
+        {
+            // Service/IPC Server is not running
+            return new StatusAndFailureMsgResult(
+                FailureReason: "[WARN] Failed to notify game monitor agent. Is the agent running?");
+        }
+        catch (RpcException ex) when (ex.StatusCode is StatusCode.Cancelled)
+        {
+            // Explicit gRPC cancellation
+            return new StatusAndFailureMsgResult(
+                FailureReason: "[WARN] Request regarding notification sent to game monitor agent, was cancelled by the client or server.");
+        }
+        catch (RpcException ex)
+        {
+            // Other gRPC errors (DeadlineExceeded, Unauthenticated, Internal, etc.)
+            return new StatusAndFailureMsgResult(
+                FailureReason: $"[WARN] gRPC call failed ({ex.StatusCode}): {ex.Status.Detail}");
+        }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
+            // Framework cancellation token triggered
             return new StatusAndFailureMsgResult(FailureReason: $"[WARN] Operation cancelled. Reason: {ex.Message}");
         }
         catch (Exception ex)
@@ -71,8 +110,27 @@ public static class GameMonitorAgentIpcServer
             await client.RefreshAutoGamesListAsync(new EmptyRequest(), cancellationToken: cancellationToken);
             return new StatusAndFailureMsgResult(Ok: true);
         }
+        catch (RpcException ex) when (ex.StatusCode is StatusCode.Unavailable)
+        {
+            // Service/IPC Server is not running
+            return new StatusAndFailureMsgResult(
+                FailureReason: "[WARN] Failed to notify game monitor agent. Is the agent running?");
+        }
+        catch (RpcException ex) when (ex.StatusCode is StatusCode.Cancelled)
+        {
+            // Explicit gRPC cancellation
+            return new StatusAndFailureMsgResult(
+                FailureReason: "[WARN] Request regarding notification sent to game monitor agent, was cancelled by the client or server.");
+        }
+        catch (RpcException ex)
+        {
+            // Other gRPC errors (DeadlineExceeded, Unauthenticated, Internal, etc.)
+            return new StatusAndFailureMsgResult(
+                FailureReason: $"[WARN] gRPC call failed ({ex.StatusCode}): {ex.Status.Detail}");
+        }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
+            // Framework cancellation token triggered
             return new StatusAndFailureMsgResult(FailureReason: $"[WARN] Operation cancelled. Reason: {ex.Message}");
         }
         catch (Exception ex)
@@ -97,8 +155,27 @@ public static class GameMonitorAgentIpcServer
                 ? new ToggleManualGameResult(FailureReason: response.FailureReason)
                 : new ToggleManualGameResult(Ok: response.Ok, StartedGame: response.StartedGame);
         }
+        catch (RpcException ex) when (ex.StatusCode is StatusCode.Unavailable)
+        {
+            // Service/IPC Server is not running
+            return new ToggleManualGameResult(
+                FailureReason: "[WARN] Failed to notify game monitor agent. Is the agent running?");
+        }
+        catch (RpcException ex) when (ex.StatusCode is StatusCode.Cancelled)
+        {
+            // Explicit gRPC cancellation
+            return new ToggleManualGameResult(
+                FailureReason: "[WARN] Request regarding notification sent to game monitor agent, was cancelled by the client or server.");
+        }
+        catch (RpcException ex)
+        {
+            // Other gRPC errors (DeadlineExceeded, Unauthenticated, Internal, etc.)
+            return new ToggleManualGameResult(
+                FailureReason: $"[WARN] gRPC call failed ({ex.StatusCode}): {ex.Status.Detail}");
+        }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
+            // Framework cancellation token triggered
             return new ToggleManualGameResult(FailureReason: $"[WARN] Operation cancelled. Reason: {ex.Message}");
         }
         catch (Exception ex)
@@ -121,8 +198,27 @@ public static class GameMonitorAgentIpcServer
             await client.RemoveManualGameAsync(new GameIdAndNameRequest { TableId = tableId.V, GameName = gameName }, cancellationToken: cancellationToken);
             return new StatusAndFailureMsgResult(Ok: true);
         }
+        catch (RpcException ex) when (ex.StatusCode is StatusCode.Unavailable)
+        {
+            // Service/IPC Server is not running
+            return new StatusAndFailureMsgResult(
+                FailureReason: "[WARN] Failed to notify game monitor agent. Is the agent running?");
+        }
+        catch (RpcException ex) when (ex.StatusCode is StatusCode.Cancelled)
+        {
+            // Explicit gRPC cancellation
+            return new StatusAndFailureMsgResult(
+                FailureReason: "[WARN] Request regarding notification sent to game monitor agent, was cancelled by the client or server.");
+        }
+        catch (RpcException ex)
+        {
+            // Other gRPC errors (DeadlineExceeded, Unauthenticated, Internal, etc.)
+            return new StatusAndFailureMsgResult(
+                FailureReason: $"[WARN] gRPC call failed ({ex.StatusCode}): {ex.Status.Detail}");
+        }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
+            // Framework cancellation token triggered
             return new StatusAndFailureMsgResult(FailureReason: $"[WARN] Operation cancelled. Reason: {ex.Message}");
         }
         catch (Exception ex)
@@ -145,8 +241,27 @@ public static class GameMonitorAgentIpcServer
             await client.RemoveAutoGameAsync(new GameIdAndNameRequest { TableId = tableId.V, GameName = gameName }, cancellationToken: cancellationToken);
             return new StatusAndFailureMsgResult(Ok: true);
         }
+        catch (RpcException ex) when (ex.StatusCode is StatusCode.Unavailable)
+        {
+            // Service/IPC Server is not running
+            return new StatusAndFailureMsgResult(
+                FailureReason: "[WARN] Failed to notify game monitor agent. Is the agent running?");
+        }
+        catch (RpcException ex) when (ex.StatusCode is StatusCode.Cancelled)
+        {
+            // Explicit gRPC cancellation
+            return new StatusAndFailureMsgResult(
+                FailureReason: "[WARN] Request regarding notification sent to game monitor agent, was cancelled by the client or server.");
+        }
+        catch (RpcException ex)
+        {
+            // Other gRPC errors (DeadlineExceeded, Unauthenticated, Internal, etc.)
+            return new StatusAndFailureMsgResult(
+                FailureReason: $"[WARN] gRPC call failed ({ex.StatusCode}): {ex.Status.Detail}");
+        }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
+            // Framework cancellation token triggered
             return new StatusAndFailureMsgResult(FailureReason: $"[WARN] Operation cancelled. Reason: {ex.Message}");
         }
         catch (Exception ex)
@@ -172,8 +287,27 @@ public static class GameMonitorAgentIpcServer
                 ? new StatusAndFailureMsgResult(FailureReason: response.Msg)
                 : new StatusAndFailureMsgResult(Ok: response.Ok);
         }
+        catch (RpcException ex) when (ex.StatusCode is StatusCode.Unavailable)
+        {
+            // Service/IPC Server is not running
+            return new StatusAndFailureMsgResult(
+                FailureReason: "[WARN] Failed to notify game monitor agent. Is the agent running?");
+        }
+        catch (RpcException ex) when (ex.StatusCode is StatusCode.Cancelled)
+        {
+            // Explicit gRPC cancellation
+            return new StatusAndFailureMsgResult(
+                FailureReason: "[WARN] Request regarding notification sent to game monitor agent, was cancelled by the client or server.");
+        }
+        catch (RpcException ex)
+        {
+            // Other gRPC errors (DeadlineExceeded, Unauthenticated, Internal, etc.)
+            return new StatusAndFailureMsgResult(
+                FailureReason: $"[WARN] gRPC call failed ({ex.StatusCode}): {ex.Status.Detail}");
+        }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
+            // Framework cancellation token triggered
             return new StatusAndFailureMsgResult(FailureReason: $"[WARN] Operation cancelled. Reason: {ex.Message}");
         }
         catch (Exception ex)
@@ -196,13 +330,20 @@ public static class GameMonitorAgentIpcServer
             await client.EvictOldInstanceAsync(new EmptyRequest(), cancellationToken: cancellationToken);
             return new EvictOldInstanceResult(Ok: true);
         }
-        catch (Grpc.Core.RpcException ex) when (ex.StatusCode is Grpc.Core.StatusCode.Cancelled or Grpc.Core.StatusCode.Unavailable)
+        catch (RpcException ex) when (ex.StatusCode is StatusCode.Cancelled or StatusCode.Unavailable)
         {
             // No server was actively listening on the pipe
             return new EvictOldInstanceResult(Ok: true, InstanceWasPresent: false);
         }
+        catch (RpcException ex)
+        {
+            // Other gRPC errors (DeadlineExceeded, Unauthenticated, Internal, etc.)
+            return new EvictOldInstanceResult(
+                FailureReason: $"[WARN] gRPC call failed ({ex.StatusCode}): {ex.Status.Detail}");
+        }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
+            // Framework cancellation token triggered
             return new EvictOldInstanceResult(FailureReason: $"[WARN] Operation cancelled. Reason: {ex.Message}");
         }
         catch (Exception ex)

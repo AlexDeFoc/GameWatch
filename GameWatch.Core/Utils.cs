@@ -9,7 +9,7 @@ namespace GameWatch.Core;
 
 public static class Utils
 {
-    public static bool IsWithinBounds(DisplayId i, IEnumerable<TableId> collection) => i.V >= 0 && i.V < collection.Count();
+    public static bool IsWithinBounds(DisplayId i, IEnumerable<TableId> collection) => i.V >= 1 && i.V - 1 < collection.Count();
 
     public static string GetTableName(GameMode gameMode) => gameMode switch
     {

@@ -51,7 +51,7 @@ public sealed class HeartbeatProcessor(AgentState state, ILogger<HeartbeatProces
 
         try
         {
-            GameLibrary.Instance.IncrementPlayTime(GameMode.Manual, gamesElapsedToFlush);
+            GameLibrary.Instance.IncrementPlayTime(GameMode.Auto, gamesElapsedToFlush);
 
             if (!logger.IsEnabled(LogLevel.Information)) return;
 

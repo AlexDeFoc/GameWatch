@@ -9,21 +9,13 @@ public sealed class Settings
 {
     public static Settings Instance { get; private set; } = null!;
 
-    public static void Init(string relPathToParent) => Instance = new Settings(relPathToParent);
-
-    public int GameMonitorAgentGamePlayTimeSaveThreshold
-    {
-        get => Interlocked.CompareExchange(ref field, 0, 0);
-        private set => Interlocked.Exchange(ref field, value);
-    }
-
-    private readonly string _connString;
+    private readonly string _connStr;
 
     private Settings(string relPathToParent)
     {
         var dbFolderPath = PathResolver.ResolveRelativePath(relPathToParent);
         var dbPath = Path.Join(dbFolderPath, "Settings.db");
-        _connString = $"Data Source={dbPath}";
+        _connStr = $"Data Source={dbPath}";
 
         if (!string.IsNullOrEmpty(dbFolderPath) && !Directory.Exists(dbFolderPath))
             Directory.CreateDirectory(dbFolderPath);
@@ -47,8 +39,8 @@ public sealed class Settings
 
         if (reader.Read())
         {
-            var threshold = reader.GetInt32(0);
-            GameMonitorAgentGamePlayTimeSaveThreshold = threshold < 1
+            var threshold = reader.GetInt64(0);
+            GameMonitorAgentGamePlayTimeSaveThreshold = threshold < 1L
                 ? GetGameMonitorAgentDefaults().GamePlayTimeSaveThreshold
                 : threshold;
         }
@@ -58,18 +50,27 @@ public sealed class Settings
         }
     }
 
+    public long GameMonitorAgentGamePlayTimeSaveThreshold
+    {
+        get => Interlocked.CompareExchange(ref field, 0L, 0L);
+        private set => Interlocked.Exchange(ref field, value);
+    }
+
+    public static void Init(string relPathToParent) => Instance = new Settings(relPathToParent);
+
     private void EnsureDatabaseCreatedAndSeeded()
     {
         using var conn = CreateConnection();
 
-        ExecuteNonQuery(conn, """
+        Utils.ExecuteNonQuery(conn, """
                               PRAGMA journal_mode = WAL;
-                              PRAGMA mmap_size = 134217728;
+                              PRAGMA user_version = 1;
+                              PRAGMA encoding = UTF-8;
                               """);
 
         using var tran = conn.BeginTransaction();
 
-        ExecuteNonQuery(conn, """
+        Utils.ExecuteNonQuery(conn, """
                               CREATE TABLE IF NOT EXISTS GameMonitorAgent (
                                   Id INTEGER PRIMARY KEY CHECK (Id = 1),
                                   GamePlayTimeSaveThreshold INTEGER NOT NULL DEFAULT 60
@@ -105,30 +106,10 @@ public sealed class Settings
         };
     }
 
-    private SqliteConnection CreateConnection()
-    {
-        var conn = new SqliteConnection(_connString);
-        conn.Open();
-
-        ExecuteNonQuery(conn, """
-                              PRAGMA synchronous = NORMAL;
-                              PRAGMA busy_timeout = 5000;
-                              PRAGMA temp_store = MEMORY;
-                              """);
-
-        return conn;
-    }
-
-    private static void ExecuteNonQuery(SqliteConnection conn, string sql, SqliteTransaction? tran = null)
-    {
-        using var cmd = conn.CreateCommand();
-        cmd.CommandText = sql;
-        if (tran != null) cmd.Transaction = tran;
-        cmd.ExecuteNonQuery();
-    }
+    private SqliteConnection CreateConnection(bool queryOnly = false) => Utils.CreateSqlConnection(_connStr, queryOnly);
 
     private sealed class GameMonitorAgentSettingsDto
     {
-        public int GamePlayTimeSaveThreshold { get; init; }
+        public long GamePlayTimeSaveThreshold { get; init; }
     }
 }

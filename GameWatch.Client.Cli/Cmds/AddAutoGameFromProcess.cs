@@ -19,8 +19,7 @@ public static class AddAutoGameFromProcess
 
         var pidOption = new Option<int?>("--pid")
         {
-            Description = "Target process PID from (see 'list procs')",
-            Required = true
+            Description = "Target process PID from (see 'list procs')"
         };
 
         var playTimeOption = new Option<int>("--playtime", "-p")
