@@ -1,5 +1,3 @@
-using System;
-using System.IO;
 using System.Runtime.CompilerServices;
 using System.Diagnostics;
 
@@ -7,13 +5,13 @@ var scriptFolderPath = Path.GetDirectoryName(GetScriptFilePath())!;
 var rootDir = Path.GetFullPath("../../..", scriptFolderPath);
 
 // 1. Add .exe extension only if running on Windows
-string exeName = OperatingSystem.IsWindows() ? "GameWatch.Agent.GameMonitor.exe" : "GameWatch.Agent.GameMonitor";
+var exeName = OperatingSystem.IsWindows() ? "GameWatch.Agent.GameMonitor.exe" : "GameWatch.Agent.GameMonitor";
 
 var exeDir = Path.Combine(rootDir, "out", "dev", "rel", "Agents", "GameMonitor");
 var exePath = Path.Combine(exeDir, exeName);
 
 // 2. Forward all incoming arguments
-string forwardedArgs = string.Join(" ", args);
+var forwardedArgs = string.Join(" ", args);
 
 // 3. Ensure target binary exists
 if (!File.Exists(exePath))
@@ -25,6 +23,7 @@ if (!File.Exists(exePath))
 
 // 4. Run the binary in the current shell context
 Run(exePath, forwardedArgs, workingDirectory: exeDir);
+return;
 
 static string GetScriptFilePath([CallerFilePath] string path = "") => path;
 

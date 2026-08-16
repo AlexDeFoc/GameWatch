@@ -1,7 +1,4 @@
 using System.Diagnostics;
-using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Runtime.CompilerServices;
 
 var scriptFolderPath = Path.GetDirectoryName(GetScriptFilePath())!;
@@ -22,6 +19,8 @@ foreach (var (projectName, subPath) in components)
 
     PublishComponent(projDir, outDir, rid: "win-x64");
 }
+
+return;
 
 // --- Helper Functions ---
 
@@ -76,7 +75,7 @@ static void Run(string command, string cmdArgs = "", string? workingDirectory = 
         CreateNoWindow = false
     };
 
-    using var process = Process.Start(psi) 
+    using var process = Process.Start(psi)
         ?? throw new InvalidOperationException($"Failed to start process: {command}");
 
     process.WaitForExit();

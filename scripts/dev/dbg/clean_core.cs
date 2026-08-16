@@ -1,4 +1,3 @@
-using System.IO;
 using System.Runtime.CompilerServices;
 
 var scriptFolderPath = Path.GetDirectoryName(GetScriptFilePath())!;
@@ -7,6 +6,7 @@ var targetDir = Path.Combine(rootDir, "out", "dev", "dbg", "Libraries", "Core");
 
 ForceDeleteDirectory(targetDir);
 Directory.CreateDirectory(targetDir);
+return;
 
 static string GetScriptFilePath([CallerFilePath] string path = "") => path;
 

@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-using System.IO;
 using System.Runtime.CompilerServices;
 using System.Diagnostics;
 
@@ -18,6 +16,7 @@ var launchArgs = new List<string>
 };
 
 Run("dotnet", string.Join(" ", launchArgs));
+return;
 
 static string GetScriptFilePath([CallerFilePath] string path = "") => path;
 

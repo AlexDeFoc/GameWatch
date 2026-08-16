@@ -1,7 +1,4 @@
 using System.Diagnostics;
-using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Runtime.CompilerServices;
 
 var scriptFolderPath = Path.GetDirectoryName(GetScriptFilePath())!;
@@ -22,6 +19,8 @@ foreach (var (projectName, subPath) in components)
 
     PublishComponent(projDir, outDir, rid: "linux-x64");
 }
+
+return;
 
 // --- Helper Functions ---
 
