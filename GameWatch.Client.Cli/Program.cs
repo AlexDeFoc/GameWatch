@@ -1,6 +1,5 @@
 ﻿using System.CommandLine;
 using System.Threading.Tasks;
-using GameWatch.Core;
 using GameWatch.Core.Dbs;
 
 namespace GameWatch.Client.Cli;

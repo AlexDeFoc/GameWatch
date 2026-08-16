@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using GameWatch.Core.GameRecords;
-using GameWatch.Core.Wrappers;
+using GameWatch.Core.Helpers;
+using GameWatch.Core.Types;
 using Microsoft.Data.Sqlite;
 
 namespace GameWatch.Core.Dbs;
@@ -94,10 +94,10 @@ public sealed class GamePresets
             }
         }
 
-        _presetIds = Utils.GetDbTableIds(conn, "AutoGamePresets");
+        _presetIds = Utils.FetchTableIds(conn, "AutoGamePresets");
     }
 
-    public static List<Dto.AutoGame> GetPreMadePresets() =>
+    public static List<AutoGameDto> GetPreMadePresets() =>
     [
         new()
         {
@@ -108,12 +108,12 @@ public sealed class GamePresets
 
     public QueryTableIdResult GetTableId(DisplayId displayId)
     {
-        return !Utils.IsDisplayIdWithinBounds(displayId, _presetIds)
+        return !Utils.IsWithinBounds(displayId, _presetIds)
             ? new QueryTableIdResult(FailureReason: "[FAIL] Cannot find game with provided id. Ignoring command...")
             : new QueryTableIdResult(Ok: true, TableId: _presetIds[displayId.V - 1]);
     }
 
-    public QueryPresetResult GetPreset(TableId tableId, DisplayId displayId)
+    public QueryPresetResult GetPreset(TableId tableId)
     {
         using var conn = CreateConnection(queryOnly: true);
         using var cmd = conn.CreateCommand();
@@ -140,7 +140,7 @@ public sealed class GamePresets
                 return new QueryPresetResult(FailureReason: "[FAIL] Preset not found in database. Ignoring command...");
 
             return new QueryPresetResult(Ok: true,
-                                         GamePreset: new AutoGame(Utils.QueryAutoGameDtoFromDb(reader), displayId));
+                                         GamePreset: new AutoGameRecord(Utils.ReadAutoGame(reader)));
         }
         catch (Exception ex)
         {
@@ -152,5 +152,5 @@ public sealed class GamePresets
 
     public record struct QueryTableIdResult(bool Ok = false, TableId? TableId = null, string? FailureReason = null);
 
-    public record struct QueryPresetResult(bool Ok = false, GameRecords.AutoGame? GamePreset = null, string? FailureReason = null);
+    public record struct QueryPresetResult(bool Ok = false, AutoGameRecord? GamePreset = null, string? FailureReason = null);
 }

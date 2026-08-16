@@ -1,6 +1,6 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using System.Threading;
+using GameWatch.Core.Helpers;
 using Microsoft.Data.Sqlite;
 
 namespace GameWatch.Core.Dbs;
@@ -19,9 +19,9 @@ public sealed class Settings
 
     private readonly string _connString;
 
-    private Settings(string relativePathToAppDataFolder)
+    private Settings(string relPathToParent)
     {
-        var dbFolderPath = PathResolver.ResolveRelativePath(relativePathToAppDataFolder);
+        var dbFolderPath = PathResolver.ResolveRelativePath(relPathToParent);
         var dbPath = Path.Join(dbFolderPath, "Settings.db");
         _connString = $"Data Source={dbPath}";
 
@@ -30,8 +30,6 @@ public sealed class Settings
 
         EnsureDatabaseCreatedAndSeeded();
 
-        // Init variables
-        // Gathering stage
         using var conn = CreateConnection();
 
         const string readGameMonitorAgentSettings = """
@@ -42,6 +40,7 @@ public sealed class Settings
                                                     """;
 
         using var cmd = conn.CreateCommand();
+        cmd.Parameters.AddWithValue("@Id", 1);
         cmd.CommandText = readGameMonitorAgentSettings;
 
         using var reader = cmd.ExecuteReader();
@@ -98,35 +97,13 @@ public sealed class Settings
         tran.Commit();
     }
 
-    private GameMonitorAgentSettingsDto GetGameMonitorAgentDefaults()
+    private static GameMonitorAgentSettingsDto GetGameMonitorAgentDefaults()
     {
         return new GameMonitorAgentSettingsDto
         {
             GamePlayTimeSaveThreshold = 60
         };
     }
-
-    public void ResetGameMonitorAgentSettings(SqliteConnection conn, SqliteTransaction tran)
-    {
-        const string resetSql = """
-                                INSERT INTO GameMonitorAgent (Id, GamePlayTimeSaveThreshold)
-                                VALUES (1, @GamePlayTimeSaveThreshold)
-                                ON CONFLICT(Id) DO UPDATE SET 
-                                    GamePlayTimeSaveThreshold = EXCLUDED.GamePlayTimeSaveThreshold;
-                                """;
-
-        using var cmd = conn.CreateCommand();
-        cmd.Transaction = tran;
-        cmd.CommandText = resetSql;
-        cmd.Parameters.AddWithValue("@GamePlayTimeSaveThreshold", GetGameMonitorAgentDefaults().GamePlayTimeSaveThreshold);
-        cmd.ExecuteNonQuery();
-    }
-
-    private string GetTableName(SettingsTarget target) => target switch
-    {
-        SettingsTarget.GameMonitorAgent => "GameMonitorAgent",
-        _ => throw new ArgumentOutOfRangeException(nameof(target), target, "Unsupported target.")
-    };
 
     private SqliteConnection CreateConnection()
     {
@@ -150,14 +127,8 @@ public sealed class Settings
         cmd.ExecuteNonQuery();
     }
 
-    private enum SettingsTarget
-    {
-        GameMonitorAgent
-    }
-
     private sealed class GameMonitorAgentSettingsDto
     {
-        public int Id { get; set; }
-        public int GamePlayTimeSaveThreshold { get; set; }
+        public int GamePlayTimeSaveThreshold { get; init; }
     }
 }

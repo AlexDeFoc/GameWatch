@@ -1,9 +1,8 @@
 ﻿using System;
 using System.CommandLine;
-using GameWatch.Core.Agents.GameMonitor;
+using GameWatch.Core;
 using GameWatch.Core.Dbs;
-using GameWatch.Core.Ipc;
-using GameWatch.Core.Wrappers;
+using GameWatch.Core.Types;
 
 namespace GameWatch.Client.Cli.Cmds;
 
@@ -37,22 +36,21 @@ public static class AddAutoGameFromPreset
 
             var tableId = tableIdResult.TableId.Value;
 
-            var queryGamePresetResult = GamePresets.Instance.GetPreset(tableId, displayId);
+            var gamePresetResult = GamePresets.Instance.GetPreset(tableId);
 
-            if (!queryGamePresetResult.Ok || queryGamePresetResult.GamePreset is null)
+            if (!gamePresetResult.Ok || gamePresetResult.GamePreset is null)
             {
-                Console.WriteLine(queryGamePresetResult.FailureReason);
+                Console.WriteLine(gamePresetResult.FailureReason);
                 return 1;
             }
 
-            var gamePreset = queryGamePresetResult.GamePreset;
+            var gamePreset = gamePresetResult.GamePreset;
 
             GameLibrary.Instance.AddGame(gamePreset);
 
             Console.WriteLine($"[OK] Game with Name='{gamePreset.Name}' added successfully");
 
-            var notificationResult = await IpcClient.SendRefreshSignalForAutoGamesListAsync(IpcTarget.GameWatchGameMonitorAgent,
-                                                                                            cancellationToken);
+            var notificationResult = await GameMonitorAgentIpcServer.RequestToRefreshAutoGamesCacheAsync(cancellationToken);
 
             if (notificationResult.Ok) return 0;
 

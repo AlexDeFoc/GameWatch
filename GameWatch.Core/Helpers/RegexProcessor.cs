@@ -1,6 +1,6 @@
 ﻿using System.Text.RegularExpressions;
 
-namespace GameWatch.Core;
+namespace GameWatch.Core.Helpers;
 
 public static class RegexProcessor
 {

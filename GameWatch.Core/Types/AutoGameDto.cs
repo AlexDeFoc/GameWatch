@@ -1,8 +1,8 @@
-﻿namespace GameWatch.Core.Dto;
+﻿namespace GameWatch.Core.Types;
 
-public sealed class AutoGame
+public sealed class AutoGameDto
 {
-    public int Id { get; init; }
+    public int TableId { get; init; }
     public string Name { get; init; } = string.Empty;
     public long PlayTimeSec { get; init; }
     public string? WindowTitle { get; init; }

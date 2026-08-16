@@ -1,4 +1,4 @@
-﻿namespace GameWatch.Core.Wrappers;
+﻿namespace GameWatch.Core.Types;
 
 public enum GameMode
 {

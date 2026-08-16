@@ -68,9 +68,10 @@ public static class ListGames
                 {
                     gamesHaveBeenDisplayed = true;
                     Console.WriteLine("--- Manual games ---");
-                    foreach (var game in manualGames)
+                    for (var i = 0; i < manualGames.Count; ++i)
                     {
-                        Console.WriteLine($"{game.Id}. {TimeSpan.FromSeconds(game.PlayTimeSec.V)} - {game.Name}");
+                        var game = manualGames[i];
+                        Console.WriteLine($"{i + 1}. {TimeSpan.FromSeconds(game.PlayTimeSec.V)} - {game.Name}");
                     }
                 }
             }
@@ -89,9 +90,10 @@ public static class ListGames
 
                     if (verbose)
                     {
-                        foreach (var game in autoGames)
+                        for (var i = 0; i < autoGames.Count; ++i)
                         {
-                            Console.WriteLine($"{game.Id}. {TimeSpan.FromSeconds(game.PlayTimeSec.V)} - {game.Name}");
+                            var game = autoGames[i];
+                            Console.WriteLine($"{i + 1}. {TimeSpan.FromSeconds(game.PlayTimeSec.V)} - {game.Name}");
                             Console.WriteLine("   Matching rules:");
 
                             if (game.WindowTitle != null)
@@ -112,6 +114,7 @@ public static class ListGames
                                 Console.WriteLine($"         Value: {game.WindowRule}");
                             }
 
+                            // ReSharper disable once InvertIf
                             if (game.PathRule != null)
                             {
                                 Console.WriteLine("      File Path: should match using pattern");
@@ -121,9 +124,10 @@ public static class ListGames
                     }
                     else
                     {
-                        foreach (var game in autoGames)
+                        for (var i = 0; i < autoGames.Count; ++i)
                         {
-                            Console.WriteLine($"{game.Id}. {TimeSpan.FromSeconds(game.PlayTimeSec.V)} - {game.Name}");
+                            var game = autoGames[i];
+                            Console.WriteLine($"{i + 1}. {TimeSpan.FromSeconds(game.PlayTimeSec.V)} - {game.Name}");
                         }
                     }
                 }
@@ -143,9 +147,10 @@ public static class ListGames
 
                     if (verbose)
                     {
-                        foreach (var game in presets)
+                        for (var i = 0; i < presets.Count; ++i)
                         {
-                            Console.WriteLine($"{game.Id}. {TimeSpan.FromSeconds(game.PlayTimeSec)} - {game.Name}");
+                            var game = presets[i];
+                            Console.WriteLine($"{i + 1}. {TimeSpan.FromSeconds(game.PlayTimeSec)} - {game.Name}");
                             Console.WriteLine("   Matching rules:");
 
                             if (game.WindowTitle != null)
@@ -174,9 +179,10 @@ public static class ListGames
                     }
                     else
                     {
-                        foreach (var game in presets)
+                        for (var i = 0; i < presets.Count; ++i)
                         {
-                            Console.WriteLine($"{game.Id}. {TimeSpan.FromSeconds(game.PlayTimeSec)} - {game.Name}");
+                            var game = presets[i];
+                            Console.WriteLine($"{i + 1}. {TimeSpan.FromSeconds(game.PlayTimeSec)} - {game.Name}");
                         }
                     }
                 }

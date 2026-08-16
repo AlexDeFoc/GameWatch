@@ -4,10 +4,9 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
-using GameWatch.Core.Dto;
-using GameWatch.Core.Wrappers;
+using GameWatch.Core.Types;
 
-namespace GameWatch.Core;
+namespace GameWatch.Core.Helpers;
 
 public static class ProcGatherer
 {
@@ -23,9 +22,9 @@ public static class ProcGatherer
 
     private static readonly List<string> ExcludedSystemDirectories = InitializeSystemDirectories();
 
-    public static Dictionary<int, OurProc> GetDictOfAvailableProcesses()
+    public static Dictionary<int, ProcDto> GetDictOfAvailableProcesses()
     {
-        var result = new Dictionary<int, OurProc>();
+        var result = new Dictionary<int, ProcDto>();
         var procs = Process.GetProcesses().ToList();
 
         foreach (var proc in procs)
@@ -47,7 +46,7 @@ public static class ProcGatherer
                     continue;
 
                 result.Add(proc.Id,
-                           new OurProc(
+                           new ProcDto(
                                Pid: proc.Id,
                                WindowTitle: proc.MainWindowTitle,
                                FilePath: filePath));
@@ -66,9 +65,9 @@ public static class ProcGatherer
         return result;
     }
 
-    public static List<OurProc> GetListOfAvailableProcesses()
+    public static List<ProcDto> GetListOfAvailableProcesses()
     {
-        var result = new List<OurProc>();
+        var result = new List<ProcDto>();
         var procs = Process.GetProcesses().ToList();
 
         foreach (var proc in procs)
@@ -89,7 +88,7 @@ public static class ProcGatherer
                 if (IsSystemProcess(filePath))
                     continue;
 
-                result.Add(new OurProc(
+                result.Add(new ProcDto(
                                Pid: proc.Id,
                                WindowTitle: proc.MainWindowTitle,
                                FilePath: filePath));
@@ -108,7 +107,7 @@ public static class ProcGatherer
         return result;
     }
 
-    public static OurProc? GetOurProcFromPid(Pid pid)
+    public static ProcDto? GetOurProcFromPid(Pid pid)
     {
         try
         {
@@ -118,7 +117,7 @@ public static class ProcGatherer
             if (string.IsNullOrEmpty(filePath) || string.IsNullOrEmpty(proc.MainWindowTitle))
                 return null;
 
-            return new OurProc(Pid: proc.Id,
+            return new ProcDto(Pid: proc.Id,
                                WindowTitle: proc.MainWindowTitle,
                                FilePath: filePath);
         }

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.CommandLine;
 using GameWatch.Core.Dbs;
-using GameWatch.Core.Wrappers;
+using GameWatch.Core.Types;
 
 namespace GameWatch.Client.Cli.Cmds;
 
@@ -44,9 +44,10 @@ public static class EditManualGame
                 Console.WriteLine(tableIdResult.FailureReason);
                 return 1;
             }
+
             var tableId = tableIdResult.TableId.Value;
 
-            var manualGameResult = GameLibrary.Instance.GetManualGame(tableId, displayId);
+            var manualGameResult = GameLibrary.Instance.GetManualGame(tableId);
 
             if (!manualGameResult.Ok || manualGameResult.Game is null)
             {
@@ -65,14 +66,14 @@ public static class EditManualGame
             if (playTimeValue is not null)
                 game.PlayTimeSec = new ElapsedTime(playTimeValue.Value);
 
-            var editGameResult = GameLibrary.Instance.EditGame(game,
-                                                               tableId,
-                                                               nameChanged: newGameName is not null,
-                                                               playTimeChanged: playTimeValue is not null);
+            var editedGameResult = GameLibrary.Instance.EditGame(game,
+                                                                 tableId,
+                                                                 nameChanged: newGameName is not null,
+                                                                 playTimeChanged: playTimeValue is not null);
 
-            if (!editGameResult.Ok)
+            if (!editedGameResult.Ok)
             {
-                Console.WriteLine(editGameResult.FailureReason);
+                Console.WriteLine(editedGameResult.FailureReason);
                 return 1;
             }
 

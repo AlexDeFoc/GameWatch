@@ -2,15 +2,16 @@
 using System.Threading;
 using System.Threading.Tasks;
 using GameWatch.Agent.GameMonitor.Ipc.Grpc;
+using GameWatch.Core.Types;
 using GrpcDotNetNamedPipes;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 namespace GameWatch.Agent.GameMonitor;
 
-public sealed class IpcServer(IpcProcessorImpl ipcProcessor, ILogger<IpcServer> logger) : BackgroundService
+public sealed class IpcSignalCollector(IpcProcessorImpl ipcProcessor, ILogger<IpcSignalCollector> logger) : BackgroundService
 {
-    private readonly NamedPipeServer _server = new(Core.Ipc.IpcConstants.GameMonitorAgentPipeName);
+    private readonly NamedPipeServer _server = new(IpcConstants.GameMonitorAgentPipeName);
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -18,7 +19,7 @@ public sealed class IpcServer(IpcProcessorImpl ipcProcessor, ILogger<IpcServer> 
         _server.Start();
 
         if (logger.IsEnabled(LogLevel.Information))
-            logger.LogInformation("[INFO] gRPC IPC Server started on pipe:'{PipeName}'", Core.Ipc.IpcConstants.GameMonitorAgentPipeName);
+            logger.LogInformation("[INFO] gRPC IPC Server started on pipe:'{PipeName}'", IpcConstants.GameMonitorAgentPipeName);
 
         try
         {

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Threading;
 
-namespace GameWatch.Core;
+namespace GameWatch.Core.Types;
 
 public class ConcurrentList<T> : IEnumerable<T>
 {

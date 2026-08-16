@@ -27,7 +27,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Protobuf Include="Protos\game_monitor.proto" GrpcServices="Both"/>
+        <Protobuf Include="Protos\game_monitor_agent_ipc_setup.proto" GrpcServices="Both" />
     </ItemGroup>
 
 </Project>

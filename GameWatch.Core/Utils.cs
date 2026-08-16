@@ -1,13 +1,41 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
-using GameWatch.Core.Wrappers;
+using GameWatch.Core.Types;
 using Microsoft.Data.Sqlite;
 
 namespace GameWatch.Core;
 
 public static class Utils
 {
+    public static bool IsWithinBounds(DisplayId i, IEnumerable<TableId> collection) => i.V >= 0 && i.V < collection.Count();
+
+    public static string GetTableName(GameMode gameMode) => gameMode switch
+    {
+        GameMode.Manual => "ManualGames",
+        GameMode.Auto => "AutoGames",
+        _ => throw new ArgumentOutOfRangeException(nameof(gameMode), gameMode, "Unsupported game mode provided.")
+    };
+
+    public static AutoGameDto ReadAutoGame(SqliteDataReader r) => new()
+    {
+        TableId = r.GetInt32(0),
+        Name = r.GetString(1),
+        PlayTimeSec = r.GetInt64(2),
+        WindowTitle = r.IsDBNull(3) ? null : r.GetString(3),
+        FilePath = r.IsDBNull(4) ? null : r.GetString(4),
+        WindowRule = r.IsDBNull(5) ? null : r.GetString(5),
+        PathRule = r.IsDBNull(6) ? null : r.GetString(6),
+    };
+
+    public static ManualGameDto ReadManualGame(SqliteDataReader r) => new()
+    {
+        TableId = r.GetInt32(0),
+        Name = r.GetString(1),
+        PlayTimeSec = r.GetInt64(2)
+    };
+
     public static int ExecuteNonQuery(SqliteConnection conn, string sql, SqliteTransaction? tran = null)
     {
         using var cmd = conn.CreateCommand();
@@ -39,7 +67,7 @@ public static class Utils
         return conn;
     }
 
-    public static List<TableId> GetDbTableIds(SqliteConnection conn, string tableName)
+    public static List<TableId> FetchTableIds(SqliteConnection conn, string tableName)
     {
         using var cmd = conn.CreateCommand();
         cmd.CommandText = $"SELECT Id FROM {tableName} ORDER BY Id ASC;";
@@ -54,25 +82,7 @@ public static class Utils
         return list;
     }
 
-    public static Dto.AutoGame QueryAutoGameDtoFromDb(SqliteDataReader r) => new()
-    {
-        Id = r.GetInt32(0),
-        Name = r.GetString(1),
-        PlayTimeSec = r.GetInt64(2),
-        WindowTitle = r.IsDBNull(3) ? null : r.GetString(3),
-        FilePath = r.IsDBNull(4) ? null : r.GetString(4),
-        WindowRule = r.IsDBNull(5) ? null : r.GetString(5),
-        PathRule = r.IsDBNull(6) ? null : r.GetString(6),
-    };
-
-    public static Dto.ManualGame QueryManualGameDtoFromDb(SqliteDataReader r) => new()
-    {
-        Id = r.GetInt32(0),
-        Name = r.GetString(1),
-        PlayTimeSec = r.GetInt64(2)
-    };
-
-    public static List<GameRecords.AutoGame> QueryAutoGamesFromDb(SqliteConnection conn)
+    public static List<AutoGameRecord> QueryAutoGames(SqliteConnection conn)
     {
         using var cmd = conn.CreateCommand();
         cmd.CommandText = """
@@ -89,22 +99,17 @@ public static class Utils
                           """;
 
         using var reader = cmd.ExecuteReader();
-        var list = new List<GameRecords.AutoGame>();
+        var list = new List<AutoGameRecord>();
 
-        var displayIdValue = 1;
         while (reader.Read())
         {
-            var dto = QueryAutoGameDtoFromDb(reader);
-
-            list.Add(new GameRecords.AutoGame(dto, new DisplayId(displayIdValue)));
-
-            displayIdValue++;
+            list.Add(new AutoGameRecord(ReadAutoGame(reader)));
         }
 
         return list;
     }
 
-    public static List<GameRecords.ManualGame> QueryManualGamesFromDb(SqliteConnection conn)
+    public static List<ManualGameRecord> QueryManualGames(SqliteConnection conn)
     {
         using var cmd = conn.CreateCommand();
         cmd.CommandText = """
@@ -117,27 +122,13 @@ public static class Utils
                           """;
 
         using var reader = cmd.ExecuteReader();
-        var list = new List<GameRecords.ManualGame>();
+        var list = new List<ManualGameRecord>();
 
-        var displayIdValue = 1;
         while (reader.Read())
         {
-            var dto = QueryManualGameDtoFromDb(reader);
-
-            list.Add(new GameRecords.ManualGame(dto, new DisplayId(displayIdValue)));
-
-            displayIdValue++;
+            list.Add(new ManualGameRecord(ReadManualGame(reader)));
         }
 
         return list;
     }
-
-    public static bool IsDisplayIdWithinBounds(DisplayId i, List<TableId> list) => i.V >= 0 && i.V < list.Count;
-
-    public static string GetTableName(GameMode gameMode) => gameMode switch
-    {
-        GameMode.Manual => "ManualGames",
-        GameMode.Auto => "AutoGames",
-        _ => throw new ArgumentOutOfRangeException(nameof(gameMode), gameMode, "Unsupported Game mode.")
-    };
 }

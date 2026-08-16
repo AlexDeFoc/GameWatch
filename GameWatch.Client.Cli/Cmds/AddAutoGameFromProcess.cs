@@ -1,12 +1,9 @@
 ﻿using System;
 using System.CommandLine;
 using GameWatch.Core;
-using GameWatch.Core.Agents.GameMonitor;
 using GameWatch.Core.Dbs;
-using GameWatch.Core.Dto;
-using GameWatch.Core.Ipc;
-using GameWatch.Core.Wrappers;
-using AutoGame = GameWatch.Core.GameRecords.AutoGame;
+using GameWatch.Core.Helpers;
+using GameWatch.Core.Types;
 
 namespace GameWatch.Client.Cli.Cmds;
 
@@ -90,7 +87,7 @@ public static class AddAutoGameFromProcess
 
             var pid = result.GetValue(pidOption);
 
-            OurProc? proc = null;
+            ProcDto? proc = null;
             if (pid is not null)
                 proc = ProcGatherer.GetOurProcFromPid(new Pid(pid.Value));
 
@@ -104,7 +101,7 @@ public static class AddAutoGameFromProcess
         {
             var pid = result.GetValue(pidOption);
 
-            OurProc? proc = null;
+            ProcDto? proc = null;
 
             if (pid is not null)
                 proc = ProcGatherer.GetOurProcFromPid(new Pid(pid.Value));
@@ -115,7 +112,7 @@ public static class AddAutoGameFromProcess
                 return 1;
             }
 
-            var game = new AutoGame
+            var game = new AutoGameRecord
             {
                 Name = result.GetRequiredValue(nameOption),
                 PlayTimeSec = new ElapsedTime(result.GetValue(playTimeOption))
@@ -156,8 +153,7 @@ public static class AddAutoGameFromProcess
 
             Console.WriteLine($"[OK] Game with Name='{game.Name}' added successfully");
 
-            var notificationResult = await IpcClient.SendRefreshSignalForAutoGamesListAsync(IpcTarget.GameWatchGameMonitorAgent,
-                                                                                            cancellationToken);
+            var notificationResult = await GameMonitorAgentIpcServer.RequestToRefreshAutoGamesCacheAsync(cancellationToken);
 
             if (notificationResult.Ok) return 0;
 

@@ -1,9 +1,8 @@
 ﻿using System;
 using System.CommandLine;
-using GameWatch.Core.Agents.GameMonitor;
+using GameWatch.Core;
 using GameWatch.Core.Dbs;
-using GameWatch.Core.Ipc;
-using GameWatch.Core.Wrappers;
+using GameWatch.Core.Types;
 
 namespace GameWatch.Client.Cli.Cmds;
 
@@ -33,14 +32,14 @@ public static class DeleteAllGames
             var clearManualGames = result.GetValue(manualOption);
             var clearAutoGames = result.GetValue(autoOption);
 
-            GameLibrary.DeleteAllGamesResult deleteAllGamesResult;
+            GameLibrary.DeleteAllGamesResult deletedAllGamesResult;
             if (clearManualGames)
             {
-                deleteAllGamesResult = GameLibrary.Instance.DeleteAllGames(GameMode.Manual);
+                deletedAllGamesResult = GameLibrary.Instance.DeleteAllGames(GameMode.Manual);
 
-                if (!deleteAllGamesResult.Ok)
+                if (!deletedAllGamesResult.Ok)
                 {
-                    Console.WriteLine(deleteAllGamesResult.FailureReason);
+                    Console.WriteLine(deletedAllGamesResult.FailureReason);
                     return 1;
                 }
 
@@ -49,18 +48,17 @@ public static class DeleteAllGames
 
             if (!clearAutoGames) return 0;
 
-            deleteAllGamesResult = GameLibrary.Instance.DeleteAllGames(GameMode.Auto);
+            deletedAllGamesResult = GameLibrary.Instance.DeleteAllGames(GameMode.Auto);
 
-            if (!deleteAllGamesResult.Ok)
+            if (!deletedAllGamesResult.Ok)
             {
-                Console.WriteLine(deleteAllGamesResult.FailureReason);
+                Console.WriteLine(deletedAllGamesResult.FailureReason);
                 return 1;
             }
 
             Console.WriteLine("[OK] Deleted all auto games");
 
-            var notificationResult = await IpcClient.SendRefreshSignalForAutoGamesListAsync(IpcTarget.GameWatchGameMonitorAgent,
-                                                                                            cancellationToken);
+            var notificationResult = await GameMonitorAgentIpcServer.RequestToRefreshAutoGamesCacheAsync(cancellationToken);
 
             if (notificationResult.Ok) return 0;
 

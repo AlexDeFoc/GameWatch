@@ -1,8 +1,7 @@
 ﻿using System;
 using System.CommandLine;
 using GameWatch.Core.Dbs;
-using GameWatch.Core.GameRecords;
-using GameWatch.Core.Wrappers;
+using GameWatch.Core.Types;
 
 namespace GameWatch.Client.Cli.Cmds;
 
@@ -33,7 +32,7 @@ public static class AddManualGame
             var name = result.GetRequiredValue(nameOption);
             var initialPlayTime = result.GetValue(playTimeOption);
 
-            var gameRecord = new ManualGame { Name = name, PlayTimeSec = new ElapsedTime(initialPlayTime) };
+            var gameRecord = new ManualGameRecord { Name = name, PlayTimeSec = new ElapsedTime(initialPlayTime) };
 
             GameLibrary.Instance.AddGame(gameRecord);
 

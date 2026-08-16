@@ -1,10 +1,8 @@
-﻿using GameWatch.Core.Wrappers;
+﻿namespace GameWatch.Core.Types;
 
-namespace GameWatch.Core.GameRecords;
-
-public sealed class AutoGame
+public sealed class AutoGameRecord
 {
-    public DisplayId Id { get; init; }
+    public TableId TableId { get; }
     public string Name { get; set; } = string.Empty;
     public ElapsedTime PlayTimeSec { get; set; }
     public string? WindowTitle { get; set; }
@@ -12,17 +10,18 @@ public sealed class AutoGame
     public string? WindowRule { get; set; }
     public string? PathRule { get; set; }
 
-    public AutoGame()
+    public AutoGameRecord()
     {
     }
 
-    public AutoGame(Dto.AutoGame dto, DisplayId displayId)
+    public AutoGameRecord(AutoGameDto dto)
     {
-        Id = displayId;
+        TableId = new TableId(dto.TableId);
         Name = dto.Name;
         PlayTimeSec = new ElapsedTime(dto.PlayTimeSec);
         WindowTitle = dto.WindowTitle;
         WindowRule = dto.WindowRule;
         FilePath = dto.FilePath;
+        PathRule = dto.PathRule;
     }
 }

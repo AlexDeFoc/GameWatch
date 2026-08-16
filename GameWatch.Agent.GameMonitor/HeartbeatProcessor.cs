@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using GameWatch.Core.Dbs;
-using GameWatch.Core.Wrappers;
+using GameWatch.Core.Types;
 using Microsoft.Extensions.Logging;
 
 namespace GameWatch.Agent.GameMonitor;
@@ -17,7 +17,8 @@ public sealed class HeartbeatProcessor(AgentState state, ILogger<HeartbeatProces
 
     private void FlushAutoGames(IEnumerable<TrackingSessions.Auto> gameSessions, DateTime utcNow, bool forceFlushAll)
     {
-        var gamesToFlush = new Dictionary<TableId, ElapsedTime>();
+        var gamesElapsedToFlush = new Dictionary<TableId, ElapsedTime>();
+        var gameNames = new Dictionary<TableId, string>();
 
         foreach (var s in gameSessions)
         {
@@ -42,64 +43,72 @@ public sealed class HeartbeatProcessor(AgentState state, ILogger<HeartbeatProces
                 s.LastTimeFlushedPlayTime = s.LastTimeFlushedPlayTime.AddSeconds(secondsToFlush);
             }
 
-            var tableIdResult = GameLibrary.Instance.GetTableId(GameMode.Auto, s.Game.Id);
-
-            if (!tableIdResult.Ok || tableIdResult.TableId is null)
-                continue; // NOTE TODO: Look into this, maybe we gotta force refresh? or maybe on then next proc refresh it will fix itself, or i don't even know when it's possible to encounter a null or not ok scenario
-
-            gamesToFlush[tableIdResult.TableId.Value] = new ElapsedTime(secondsToFlush);
+            gamesElapsedToFlush[s.TableId] = new ElapsedTime(secondsToFlush);
+            gameNames[s.TableId] = s.GameName;
         }
 
-        if (gamesToFlush.Count == 0) return;
+        if (gamesElapsedToFlush.Count == 0) return;
 
         try
         {
-            GameLibrary.Instance.IncrementPlayTime(GameMode.Auto, gamesToFlush);
+            GameLibrary.Instance.IncrementPlayTime(GameMode.Manual, gamesElapsedToFlush);
 
             if (!logger.IsEnabled(LogLevel.Information)) return;
 
-            foreach (var (gameId, elapsed) in gamesToFlush)
+            foreach (var (tableId, elapsed) in gamesElapsedToFlush)
             {
-                logger.LogInformation("{timestamp} [INFO] Activity: Auto Game Id={id} Elapsed={elapsed}s", utcNow.TimeOfDay, gameId, elapsed);
+                logger.LogInformation("[INFO] Activity: Auto game with TableId='{id}' Name='{name}', Elapsed={elapsed}s", tableId.V, gameNames[tableId], elapsed.V);
             }
         }
         catch (Exception ex)
         {
             if (logger.IsEnabled(LogLevel.Error))
-                logger.LogError(ex, "[FAIL] Failed to flush playtime for Active auto games");
+                logger.LogError(ex, "[FAIL] Failed to flush playtime for active auto games");
         }
     }
 
     private void FlushManualGames(IEnumerable<TrackingSessions.Manual> gameSessions, DateTime utcNow, bool forceFlushAll)
     {
-        var gamesToFlush = new Dictionary<TableId, ElapsedTime>();
+        var gamesElapsedToFlush = new Dictionary<TableId, ElapsedTime>();
+        var gameNames = new Dictionary<TableId, string>();
 
         foreach (var s in gameSessions)
         {
             var elapsedSeconds = (long)(utcNow - s.LastTimeFlushedPlayTime).TotalSeconds;
             if (elapsedSeconds <= 0) continue;
 
-            if (!forceFlushAll && elapsedSeconds < Settings.Instance.GameMonitorAgentGamePlayTimeSaveThreshold) continue;
+            long secondsToFlush;
 
-            // Manual games flush all accumulated seconds without capping
-            // NOTE TODO: Should we cap this? Look into it if it tracks correctly and accurately
-            gamesToFlush[s.Id] = new ElapsedTime(elapsedSeconds);
+            if (forceFlushAll)
+            {
+                secondsToFlush = elapsedSeconds;
+                s.LastTimeFlushedPlayTime = utcNow;
+            }
+            else
+            {
+                // Cap flush to exactly 60 seconds
+                secondsToFlush = Settings.Instance.GameMonitorAgentGamePlayTimeSaveThreshold;
+                if (elapsedSeconds < secondsToFlush) continue;
 
-            // Advance by exact elapsed time to preserve fractional-second precision
-            s.LastTimeFlushedPlayTime = s.LastTimeFlushedPlayTime.AddSeconds(elapsedSeconds);
+                // Advance by 60s to keep any remaining seconds for the next tick
+                s.LastTimeFlushedPlayTime = s.LastTimeFlushedPlayTime.AddSeconds(secondsToFlush);
+            }
+
+            gamesElapsedToFlush[s.TableId] = new ElapsedTime(secondsToFlush);
+            gameNames[s.TableId] = s.GameName;
         }
 
-        if (gamesToFlush.Count == 0) return;
+        if (gamesElapsedToFlush.Count is 0) return;
 
         try
         {
-            GameLibrary.Instance.IncrementPlayTime(GameMode.Manual, gamesToFlush);
+            GameLibrary.Instance.IncrementPlayTime(GameMode.Manual, gamesElapsedToFlush);
 
             if (!logger.IsEnabled(LogLevel.Information)) return;
 
-            foreach (var (gameId, elapsed) in gamesToFlush)
+            foreach (var (tableId, elapsed) in gamesElapsedToFlush)
             {
-                logger.LogInformation("{timestamp} [INFO] Activity: Manual Game Id={id} Elapsed={elapsed}s", utcNow.TimeOfDay, gameId, elapsed);
+                logger.LogInformation("[INFO] Activity: Manual game with TableId='{id}' Name='{name}', Elapsed={elapsed}s", tableId.V, gameNames[tableId], elapsed.V);
             }
         }
         catch (Exception ex)

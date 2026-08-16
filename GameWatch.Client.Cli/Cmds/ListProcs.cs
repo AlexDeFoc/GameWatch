@@ -1,6 +1,6 @@
 ﻿using System;
 using System.CommandLine;
-using GameWatch.Core;
+using GameWatch.Core.Helpers;
 
 namespace GameWatch.Client.Cli.Cmds;
 

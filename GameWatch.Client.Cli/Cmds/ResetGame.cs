@@ -1,9 +1,8 @@
 ﻿using System;
 using System.CommandLine;
-using GameWatch.Core.Agents.GameMonitor;
+using GameWatch.Core;
 using GameWatch.Core.Dbs;
-using GameWatch.Core.Ipc;
-using GameWatch.Core.Wrappers;
+using GameWatch.Core.Types;
 
 namespace GameWatch.Client.Cli.Cmds;
 
@@ -69,22 +68,23 @@ public static class ResetGame
 
             var resetGameResult = GameLibrary.Instance.ResetGame(gameMode, tableId);
 
-            if (!resetGameResult.Ok)
+            if (!resetGameResult.Ok || resetGameResult.GameName is null)
             {
                 Console.WriteLine(resetGameResult.FailureReason);
                 return 1;
             }
 
-            Console.WriteLine($"[OK] Game with Name='{resetGameResult.GameName}' got reset");
+            var gameName = resetGameResult.GameName;
 
-            const IpcTarget ipcTarget = IpcTarget.GameWatchGameMonitorAgent;
+            Console.WriteLine($"[OK] Game with Name='{gameName}' got reset");
+
             var notificationResult = resetManual
-                ? await IpcClient.NotifyAboutManualGameResetAsync(ipcTarget,
-                                                                  tableId,
-                                                                  cancellationToken)
-                : await IpcClient.NotifyAboutAutoGameResetAsync(ipcTarget,
-                                                                tableId,
-                                                                cancellationToken);
+                ? await GameMonitorAgentIpcServer.NotifyThatManualGameGotResetAsync(tableId,
+                                                                                    gameName,
+                                                                                    cancellationToken)
+                : await GameMonitorAgentIpcServer.NotifyThatAutoGameGotResetAsync(tableId,
+                                                                                  gameName,
+                                                                                  cancellationToken);
 
             if (notificationResult.Ok) return 0;
 

@@ -1,10 +1,9 @@
 ﻿using System;
 using System.CommandLine;
 using GameWatch.Core;
-using GameWatch.Core.Agents.GameMonitor;
 using GameWatch.Core.Dbs;
-using GameWatch.Core.Ipc;
-using GameWatch.Core.Wrappers;
+using GameWatch.Core.Helpers;
+using GameWatch.Core.Types;
 
 namespace GameWatch.Client.Cli.Cmds;
 
@@ -110,7 +109,7 @@ public static class EditAutoGame
 
             var tableId = tableIdResult.TableId.Value;
 
-            var autoGameResult = GameLibrary.Instance.GetAutoGame(tableId, displayId);
+            var autoGameResult = GameLibrary.Instance.GetAutoGame(tableId);
 
             if (!autoGameResult.Ok || autoGameResult.Game is null)
             {
@@ -167,18 +166,18 @@ public static class EditAutoGame
                     game.FilePath = targetProc.FilePath;
             }
 
-            var editGameResult = GameLibrary.Instance.EditGame(game,
-                                                               tableId,
-                                                               playTimeChanged: playTimeValue is not null,
-                                                               nameChanged: newGameName is null,
-                                                               windowTitleChanged: matchTitleExact is not null,
-                                                               windowRuleChanged: matchTitlePattern is not null,
-                                                               filePathChanged: matchPathExact is not null,
-                                                               pathRuleChanged: matchPathPattern is not null);
+            var editedGameResult = GameLibrary.Instance.EditGame(game,
+                                                                 tableId,
+                                                                 playTimeChanged: playTimeValue is not null,
+                                                                 nameChanged: newGameName is null,
+                                                                 windowTitleChanged: matchTitleExact is not null,
+                                                                 windowRuleChanged: matchTitlePattern is not null,
+                                                                 filePathChanged: matchPathExact is not null,
+                                                                 pathRuleChanged: matchPathPattern is not null);
 
-            if (!editGameResult.Ok)
+            if (!editedGameResult.Ok)
             {
-                Console.WriteLine(editGameResult.FailureReason);
+                Console.WriteLine(editedGameResult.FailureReason);
                 return 1;
             }
 
@@ -191,10 +190,10 @@ public static class EditAutoGame
                                        || matchPathExact is not null
                                        || matchPathPattern is not null;
 
-            var notificationResult = await IpcClient.NotifyAboutEditAutoGameAsync(IpcTarget.GameWatchGameMonitorAgent,
-                                                                                  tableId,
-                                                                                  matchingRulesChanged,
-                                                                                  cancellationToken);
+            var notificationResult = await GameMonitorAgentIpcServer.NotifyThatAutoGameGotEditedAsync(tableId,
+                                                                                                      game.Name,
+                                                                                                      matchingRulesChanged,
+                                                                                                      cancellationToken);
 
             if (notificationResult.Ok) return 0;
 

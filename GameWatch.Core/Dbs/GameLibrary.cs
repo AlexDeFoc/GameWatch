@@ -2,7 +2,8 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using GameWatch.Core.Wrappers;
+using GameWatch.Core.Helpers;
+using GameWatch.Core.Types;
 using Microsoft.Data.Sqlite;
 
 namespace GameWatch.Core.Dbs;
@@ -10,8 +11,8 @@ namespace GameWatch.Core.Dbs;
 public sealed class GameLibrary
 {
     private readonly string _connStr;
-    private readonly List<TableId> _manualGameTableIds;
-    private readonly List<TableId> _autoGameTableIds;
+    private readonly TableIdMap _manualGameTableIds;
+    private readonly TableIdMap _autoGameTableIds;
 
     public static GameLibrary Instance { get; private set; } = null!;
 
@@ -59,11 +60,11 @@ public sealed class GameLibrary
             tran.Commit();
         }
 
-        _manualGameTableIds = Utils.GetDbTableIds(conn, "ManualGames");
-        _autoGameTableIds = Utils.GetDbTableIds(conn, "AutoGames");
+        _manualGameTableIds = [.. Utils.FetchTableIds(conn, "ManualGames")];
+        _autoGameTableIds = [.. Utils.FetchTableIds(conn, "AutoGames")];
     }
 
-    public void AddGame(GameRecords.ManualGame gameRecord)
+    public void AddGame(ManualGameRecord game)
     {
         using var conn = CreateConnection();
         using var tran = conn.BeginTransaction();
@@ -75,8 +76,8 @@ public sealed class GameLibrary
                           VALUES (@Name, @PlayTimeSec);
                           SELECT last_insert_rowid();
                           """;
-        cmd.Parameters.AddWithValue("@Name", gameRecord.Name);
-        cmd.Parameters.AddWithValue("@PlayTimeSec", gameRecord.PlayTimeSec.V);
+        cmd.Parameters.AddWithValue("@Name", game.Name);
+        cmd.Parameters.AddWithValue("@PlayTimeSec", game.PlayTimeSec.V);
 
         var gameIdValue = Convert.ToInt32(cmd.ExecuteScalar());
         tran.Commit();
@@ -84,7 +85,7 @@ public sealed class GameLibrary
         _manualGameTableIds.Add(new TableId(gameIdValue));
     }
 
-    public void AddGame(GameRecords.AutoGame gameRecord)
+    public void AddGame(AutoGameRecord game)
     {
         using var conn = CreateConnection();
         using var tran = conn.BeginTransaction();
@@ -109,12 +110,12 @@ public sealed class GameLibrary
                           SELECT last_insert_rowid();
                           """;
 
-        cmd.Parameters.AddWithValue("@Name", gameRecord.Name);
-        cmd.Parameters.AddWithValue("@PlayTimeSec", gameRecord.PlayTimeSec.V);
-        cmd.Parameters.AddWithValue("@WindowTitle", gameRecord.WindowTitle);
-        cmd.Parameters.AddWithValue("@FilePath", gameRecord.FilePath);
-        cmd.Parameters.AddWithValue("@WindowRule", gameRecord.WindowRule);
-        cmd.Parameters.AddWithValue("@PathRule", gameRecord.PathRule);
+        cmd.Parameters.AddWithValue("@Name", game.Name);
+        cmd.Parameters.AddWithValue("@PlayTimeSec", game.PlayTimeSec.V);
+        cmd.Parameters.AddWithValue("@WindowTitle", game.WindowTitle);
+        cmd.Parameters.AddWithValue("@FilePath", game.FilePath);
+        cmd.Parameters.AddWithValue("@WindowRule", game.WindowRule);
+        cmd.Parameters.AddWithValue("@PathRule", game.PathRule);
 
         var gameIdValue = Convert.ToInt32(cmd.ExecuteScalar());
         tran.Commit();
@@ -122,33 +123,33 @@ public sealed class GameLibrary
         _autoGameTableIds.Add(new TableId(gameIdValue));
     }
 
-    public List<GameRecords.ManualGame> GetManualGames()
+    public List<ManualGameRecord> GetManualGames()
     {
         using var conn = CreateConnection();
 
         try
         {
-            var games = Utils.QueryManualGamesFromDb(conn);
-            List<int> gameIdsToReset = [];
+            var games = Utils.QueryManualGames(conn);
+            List<int> gameTableIdsToReset = [];
 
             foreach (var game in games.Where(game => game.PlayTimeSec.V < 0L))
             {
-                gameIdsToReset.Add(game.Id.V);
+                gameTableIdsToReset.Add(game.TableId.V);
                 game.PlayTimeSec = ElapsedTime.Zero;
             }
 
-            if (gameIdsToReset.Count is 0)
+            if (gameTableIdsToReset.Count is 0)
                 return games;
 
             using var tran = conn.BeginTransaction();
             using var fixCmd = conn.CreateCommand();
             fixCmd.Transaction = tran;
             fixCmd.CommandText = "UPDATE ManualGames SET PlayTimeSec = 0 WHERE Id = @Id;";
-            var pId = fixCmd.Parameters.Add("@Id", SqliteType.Integer);
+            var pTableId = fixCmd.Parameters.Add("@Id", SqliteType.Integer);
 
-            foreach (var i in gameIdsToReset)
+            foreach (var i in gameTableIdsToReset)
             {
-                pId.Value = i;
+                pTableId.Value = i;
 
                 fixCmd.ExecuteNonQuery();
             }
@@ -161,37 +162,37 @@ public sealed class GameLibrary
             Utils.ExecuteNonQuery(conn, "UPDATE ManualGames SET PlayTimeSec = 0 WHERE PlayTimeSec < 0;", tran);
             tran.Commit();
 
-            return Utils.QueryManualGamesFromDb(conn);
+            return Utils.QueryManualGames(conn);
         }
     }
 
-    public List<GameRecords.AutoGame> GetAutoGames()
+    public List<AutoGameRecord> GetAutoGames()
     {
         using var conn = CreateConnection();
 
         try
         {
-            var games = Utils.QueryAutoGamesFromDb(conn);
-            List<int> gameIdsToReset = [];
+            var games = Utils.QueryAutoGames(conn);
+            List<int> gameTableIdsToReset = [];
 
             foreach (var game in games.Where(game => game.PlayTimeSec.V < 0L))
             {
-                gameIdsToReset.Add(game.Id.V);
+                gameTableIdsToReset.Add(game.TableId.V);
                 game.PlayTimeSec = ElapsedTime.Zero;
             }
 
-            if (gameIdsToReset.Count is 0)
+            if (gameTableIdsToReset.Count is 0)
                 return games;
 
             using var tran = conn.BeginTransaction();
             using var fixCmd = conn.CreateCommand();
             fixCmd.Transaction = tran;
             fixCmd.CommandText = "UPDATE AutoGames SET PlayTimeSec = 0 WHERE Id = @Id;";
-            var pId = fixCmd.Parameters.Add("@Id", SqliteType.Integer);
+            var pTableId = fixCmd.Parameters.Add("@Id", SqliteType.Integer);
 
-            foreach (var i in gameIdsToReset)
+            foreach (var i in gameTableIdsToReset)
             {
-                pId.Value = i;
+                pTableId.Value = i;
 
                 fixCmd.ExecuteNonQuery();
             }
@@ -204,24 +205,24 @@ public sealed class GameLibrary
             Utils.ExecuteNonQuery(conn, "UPDATE AutoGames SET PlayTimeSec = 0 WHERE PlayTimeSec < 0;", tran);
             tran.Commit();
 
-            return Utils.QueryAutoGamesFromDb(conn);
+            return Utils.QueryAutoGames(conn);
         }
     }
 
-    public DeleteGameResult DeleteGame(GameMode gameMode, TableId tableId, DisplayId displayId)
+    public DeleteGameResult RemoveGame(GameMode gameMode, TableId tableId)
     {
         using var conn = CreateConnection();
         using var tran = conn.BeginTransaction();
 
         var tableName = Utils.GetTableName(gameMode);
-        var gameIds = GetTableIdList(gameMode);
+        var tableIds = GetTableIdMap(gameMode);
 
         try
         {
-            var queryGameNameResult = QueryGameName(gameMode, tableId);
+            var gameNameResult = ReadGameName(gameMode, tableId);
 
-            if (!queryGameNameResult.Ok || queryGameNameResult.GameName is null)
-                return new DeleteGameResult(Ok: false, FailureReason: queryGameNameResult.FailureReason);
+            if (!gameNameResult.Ok || gameNameResult.GameName is null)
+                return new DeleteGameResult(Ok: false, FailureReason: gameNameResult.FailureReason);
 
             using var deleteCmd = conn.CreateCommand();
             deleteCmd.Transaction = tran;
@@ -231,10 +232,10 @@ public sealed class GameLibrary
 
             tran.Commit();
 
-            gameIds.RemoveAt(displayId.V - 1);
+            tableIds.Remove(tableId);
 
             return new DeleteGameResult(Ok: true,
-                                        GameName: queryGameNameResult.GameName);
+                                        GameName: gameNameResult.GameName);
         }
         catch (Exception ex)
         {
@@ -242,7 +243,7 @@ public sealed class GameLibrary
         }
     }
 
-    private List<TableId> GetTableIdList(GameMode m) => m == GameMode.Manual ? _manualGameTableIds : _autoGameTableIds;
+    private TableIdMap GetTableIdMap(GameMode m) => m == GameMode.Manual ? _manualGameTableIds : _autoGameTableIds;
 
     public DeleteAllGamesResult DeleteAllGames(GameMode gameMode)
     {
@@ -261,7 +262,7 @@ public sealed class GameLibrary
 
             tran.Commit();
 
-            GetTableIdList(gameMode).Clear();
+            GetTableIdMap(gameMode).Clear();
 
             return new DeleteAllGamesResult(Ok: true);
         }
@@ -324,7 +325,7 @@ public sealed class GameLibrary
         tran.Commit();
     }
 
-    public QueryGameNameResult QueryGameName(GameMode gameMode, TableId tableId)
+    private ReadGameNameResult ReadGameName(GameMode gameMode, TableId tableId)
     {
         var tableName = Utils.GetTableName(gameMode);
 
@@ -337,8 +338,8 @@ public sealed class GameLibrary
         using var reader = selectCmd.ExecuteReader();
 
         return !reader.Read()
-            ? new QueryGameNameResult(FailureReason: "[FAIL] Cannot find game in database. Ignoring command...")
-            : new QueryGameNameResult(Ok: true, GameName: reader.GetString(0));
+            ? new ReadGameNameResult(FailureReason: "[FAIL] Cannot find game in database. Ignoring command...")
+            : new ReadGameNameResult(Ok: true, GameName: reader.GetString(0));
     }
 
     public ResetGameResult ResetGame(GameMode gameMode, TableId tableId)
@@ -348,7 +349,7 @@ public sealed class GameLibrary
 
         try
         {
-            var queryGameNameResult = QueryGameName(gameMode, tableId);
+            var queryGameNameResult = ReadGameName(gameMode, tableId);
 
             if (!queryGameNameResult.Ok || queryGameNameResult.GameName is null)
                 return new ResetGameResult(Ok: false, FailureReason: queryGameNameResult.FailureReason);
@@ -372,7 +373,7 @@ public sealed class GameLibrary
         }
     }
 
-    public EditAutoGameResult EditGame(GameRecords.AutoGame game, TableId tableId, bool nameChanged = false, bool playTimeChanged = false, bool windowTitleChanged = false, bool windowRuleChanged = false, bool filePathChanged = false, bool pathRuleChanged = false)
+    public EditAutoGameResult EditGame(AutoGameRecord gameRecord, TableId tableId, bool nameChanged = false, bool playTimeChanged = false, bool windowTitleChanged = false, bool windowRuleChanged = false, bool filePathChanged = false, bool pathRuleChanged = false)
     {
         var setClauses = new List<string>();
         using var cmd = new SqliteCommand();
@@ -382,37 +383,37 @@ public sealed class GameLibrary
         if (nameChanged)
         {
             setClauses.Add("Name = @Name");
-            cmd.Parameters.AddWithValue("@Name", game.Name);
+            cmd.Parameters.AddWithValue("@Name", gameRecord.Name);
         }
 
         if (playTimeChanged)
         {
             setClauses.Add("PlayTimeSec = @PlayTimeSec");
-            cmd.Parameters.AddWithValue("@PlayTimeSec", game.PlayTimeSec.V);
+            cmd.Parameters.AddWithValue("@PlayTimeSec", gameRecord.PlayTimeSec.V);
         }
 
         if (windowTitleChanged)
         {
             setClauses.Add("WindowTitle = @WindowTitle");
-            cmd.Parameters.AddWithValue("@WindowTitle", game.WindowTitle);
+            cmd.Parameters.AddWithValue("@WindowTitle", gameRecord.WindowTitle);
         }
 
         if (windowRuleChanged)
         {
             setClauses.Add("WindowRule = @WindowRule");
-            cmd.Parameters.AddWithValue("@WindowRule", game.WindowRule);
+            cmd.Parameters.AddWithValue("@WindowRule", gameRecord.WindowRule);
         }
 
         if (filePathChanged)
         {
             setClauses.Add("FilePath = @FilePath");
-            cmd.Parameters.AddWithValue("@FilePath", game.FilePath);
+            cmd.Parameters.AddWithValue("@FilePath", gameRecord.FilePath);
         }
 
         if (pathRuleChanged)
         {
             setClauses.Add("PathRule = @PathRule");
-            cmd.Parameters.AddWithValue("@PathRule", game.PathRule);
+            cmd.Parameters.AddWithValue("@PathRule", gameRecord.PathRule);
         }
 
         if (setClauses.Count is 0)
@@ -440,7 +441,7 @@ public sealed class GameLibrary
         }
     }
 
-    public EditAutoGameResult EditGame(GameRecords.ManualGame game, TableId tableId, bool nameChanged = false, bool playTimeChanged = false)
+    public EditAutoGameResult EditGame(ManualGameRecord gameRecord, TableId tableId, bool nameChanged = false, bool playTimeChanged = false)
     {
         var setClauses = new List<string>();
         using var cmd = new SqliteCommand();
@@ -450,13 +451,13 @@ public sealed class GameLibrary
         if (nameChanged)
         {
             setClauses.Add("Name = @Name");
-            cmd.Parameters.AddWithValue("@Name", game.Name);
+            cmd.Parameters.AddWithValue("@Name", gameRecord.Name);
         }
 
         if (playTimeChanged)
         {
             setClauses.Add("PlayTimeSec = @PlayTimeSec");
-            cmd.Parameters.AddWithValue("@PlayTimeSec", game.PlayTimeSec.V);
+            cmd.Parameters.AddWithValue("@PlayTimeSec", gameRecord.PlayTimeSec.V);
         }
 
         if (setClauses.Count is 0)
@@ -486,25 +487,17 @@ public sealed class GameLibrary
 
     public GetTableIdResult GetTableId(GameMode gameMode, DisplayId displayId)
     {
-        var tableIdList = GetTableIdList(gameMode);
+        var tableIds = GetTableIdMap(gameMode);
 
-        return !Utils.IsDisplayIdWithinBounds(displayId, tableIdList)
-            ? new GetTableIdResult(FailureReason: "[FAIL] Cannot find game with provided id. Ignoring command...")
-            : new GetTableIdResult(Ok: true, TableId: tableIdList[displayId.V - 1]);
+        return tableIds.Contains(displayId)
+            ? new GetTableIdResult(Ok: true, TableId: tableIds[displayId])
+            : new GetTableIdResult(FailureReason: $"Cannot find game table id with provided DisplayId='{displayId.V}'");
     }
 
-    public GetDisplayIdResult GetDisplayId(GameMode gameMode, TableId tableId)
-    {
-        var tableIdList = GetTableIdList(gameMode);
-
-        var displayId = tableIdList.IndexOf(tableId);
-
-        return displayId is -1
-            ? new GetDisplayIdResult(FailureReason: "[FAIL] Cannot find table id with provided display id. Ignoring command...")
-            : new GetDisplayIdResult(Ok: true, DisplayId: new DisplayId(displayId));
-    }
-
-    public GetManualGameResult GetManualGame(TableId tableId, DisplayId displayId)
+    /// <summary>
+    /// Use this method when you have the displayId already
+    /// </summary>
+    public GetManualGameResult GetManualGame(TableId tableId)
     {
         using var conn = CreateConnection();
         using var cmd = conn.CreateCommand();
@@ -526,7 +519,7 @@ public sealed class GameLibrary
                 return new GetManualGameResult(FailureReason: "[FAIL] Cannot find game in database. Ignoring command...");
 
             return new GetManualGameResult(Ok: true,
-                                           Game: new GameRecords.ManualGame(Utils.QueryManualGameDtoFromDb(reader), displayId));
+                                           Game: new ManualGameRecord(Utils.ReadManualGame(reader)));
         }
         catch (Exception ex) when (ex is OverflowException || ex.InnerException is OverflowException)
         {
@@ -535,7 +528,7 @@ public sealed class GameLibrary
             tran.Commit();
 
             return new GetManualGameResult(Ok: true,
-                                           Game: new GameRecords.ManualGame(Utils.QueryManualGameDtoFromDb(reader), displayId));
+                                           Game: new ManualGameRecord(Utils.ReadManualGame(reader)));
         }
         catch (Exception ex)
         {
@@ -543,7 +536,10 @@ public sealed class GameLibrary
         }
     }
 
-    public GetAutoGameResult GetAutoGame(TableId tableId, DisplayId displayId)
+    /// <summary>
+    /// Use this method when you have the displayId already
+    /// </summary>
+    public GetAutoGameResult GetAutoGame(TableId tableId)
     {
         using var conn = CreateConnection();
         using var cmd = conn.CreateCommand();
@@ -569,7 +565,7 @@ public sealed class GameLibrary
                 return new GetAutoGameResult(FailureReason: "[FAIL] Cannot find game in database. Ignoring command...");
 
             return new GetAutoGameResult(Ok: true,
-                                         Game: new GameRecords.AutoGame(Utils.QueryAutoGameDtoFromDb(reader), displayId));
+                                         Game: new AutoGameRecord(Utils.ReadAutoGame(reader)));
         }
         catch (Exception ex) when (ex is OverflowException || ex.InnerException is OverflowException)
         {
@@ -578,7 +574,7 @@ public sealed class GameLibrary
             tran.Commit();
 
             return new GetAutoGameResult(Ok: true,
-                                         Game: new GameRecords.AutoGame(Utils.QueryAutoGameDtoFromDb(reader), displayId));
+                                         Game: new AutoGameRecord(Utils.ReadAutoGame(reader)));
         }
         catch (Exception ex)
         {
@@ -594,13 +590,11 @@ public sealed class GameLibrary
 
     public record struct ResetGameResult(bool Ok = false, string? GameName = null, string? FailureReason = null);
 
-    public record struct QueryGameNameResult(bool Ok = false, string? GameName = null, string? FailureReason = null);
+    private record struct ReadGameNameResult(bool Ok = false, string? GameName = null, string? FailureReason = null);
 
     public record struct GetTableIdResult(bool Ok = false, TableId? TableId = null, string? FailureReason = null);
 
-    public record struct GetDisplayIdResult(bool Ok = false, DisplayId? DisplayId = null, string? FailureReason = null);
+    public record struct GetAutoGameResult(bool Ok = false, AutoGameRecord? Game = null, string? FailureReason = null);
 
-    public record struct GetAutoGameResult(bool Ok = false, GameRecords.AutoGame? Game = null, string? FailureReason = null);
-
-    public record struct GetManualGameResult(bool Ok = false, GameRecords.ManualGame? Game = null, string? FailureReason = null);
+    public record struct GetManualGameResult(bool Ok = false, ManualGameRecord? Game = null, string? FailureReason = null);
 }

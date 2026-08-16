@@ -1,11 +1,8 @@
 ﻿using System;
 using System.CommandLine;
 using GameWatch.Core;
-using GameWatch.Core.Agents.GameMonitor;
 using GameWatch.Core.Dbs;
-using GameWatch.Core.Dto;
-using GameWatch.Core.Ipc;
-using GameWatch.Core.Wrappers;
+using GameWatch.Core.Types;
 
 namespace GameWatch.Client.Cli.Cmds;
 
@@ -38,7 +35,7 @@ public static class ToggleGame
 
             var tableId = tableIdResult.TableId.Value;
 
-            var manualGameResult = GameLibrary.Instance.GetManualGame(tableId, displayId);
+            var manualGameResult = GameLibrary.Instance.GetManualGame(tableId);
 
             if (!manualGameResult.Ok || manualGameResult.Game is null)
             {
@@ -47,16 +44,17 @@ public static class ToggleGame
             }
 
             var game = manualGameResult.Game;
+            var gameName = game.Name;
 
-            var notificationResult = await IpcClient.SendToggleManualGameSignalAsync(IpcTarget.GameWatchGameMonitorAgent,
-                                                                                     tableId,
-                                                                                     cancellationToken);
+            var notificationResult = await GameMonitorAgentIpcServer.RequestToToggleManualGameAsync(tableId,
+                                                                                                    gameName,
+                                                                                                    cancellationToken);
 
             if (notificationResult.Ok)
             {
                 Console.WriteLine(notificationResult.StartedGame
-                                      ? $"[OK] Game with Name='{game.Name}' started"
-                                      : $"[OK] Game with Name='{game.Name}' stopped");
+                                      ? $"[OK] Game with Name='{gameName}' started"
+                                      : $"[OK] Game with Name='{gameName}' stopped");
 
                 return 0;
             }

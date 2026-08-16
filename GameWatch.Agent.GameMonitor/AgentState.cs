@@ -1,8 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using System.Threading;
-using GameWatch.Core;
-using GameWatch.Core.GameRecords;
-using GameWatch.Core.Wrappers;
+using GameWatch.Core.Types;
 
 namespace GameWatch.Agent.GameMonitor;
 
@@ -10,7 +8,7 @@ public sealed class AgentState
 {
     public ConcurrentDictionary<TableId, Pid> ActiveAutoGamesPids { get; } = [];
 
-    public ConcurrentList<AutoGame> LoadedAutoGames { get; } = [];
+    public ConcurrentList<AutoGameRecord> LoadedAutoGames { get; } = [];
 
     public ConcurrentDictionary<Pid, TrackingSessions.Auto> ActiveAutoGames { get; } = [];
 
