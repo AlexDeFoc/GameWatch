@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Threading.Tasks;
 using GameWatch.Agent.GameMonitor.Ipc.Grpc;
@@ -136,9 +137,13 @@ public sealed class IpcProcessorImpl(
         var tableId = new TableId(request.TableId);
         var gameName = request.GameName;
 
-        if (state.ActiveAutoGames.TryGetValue(state.ActiveAutoGamesPids[tableId], out var gameSession))
+        if (state.ActiveAutoGamesPids.TryGetValue(tableId, out var pid) &&
+            state.ActiveAutoGames.TryGetValue(pid, out var gameSession))
         {
-            gameSession.LastTimeFlushedPlayTime = DateTime.UtcNow;
+            lock (gameSession)
+            {
+                gameSession.LastTimeFlushedPlayTime = DateTime.UtcNow;
+            }
 
             if (logger.IsEnabled(LogLevel.Information))
                 logger.LogInformation("[OK] Auto game playtime with TableId='{id}' Name='{name}' got reset",
@@ -177,11 +182,12 @@ public sealed class IpcProcessorImpl(
                 GameLibrary.Instance.IncrementPlayTime(GameMode.Auto, tableId, new ElapsedTime(elapsed));
         }
 
-        // Refresh auto games list for next heartbeat
-        state.LoadedAutoGames.ReplaceAll(GameLibrary.Instance.GetAutoGames());
+        // Refresh auto games list for next heartbeat via snapshot
+        var freshGames = GameLibrary.Instance.GetAutoGames().ToImmutableList();
+        state.LoadedAutoGames = freshGames;
 
-        // Grab target from loaded games
-        var targetGame = state.LoadedAutoGames.FirstOrDefault(g => g.TableId == tableId);
+        // Grab target from loaded games from fresh snapshot
+        var targetGame = freshGames.FirstOrDefault(g => g.TableId == tableId);
 
         if (targetGame is null)
         {

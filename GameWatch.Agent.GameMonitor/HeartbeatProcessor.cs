@@ -22,25 +22,27 @@ public sealed class HeartbeatProcessor(AgentState state, ILogger<HeartbeatProces
 
         foreach (var s in gameSessions)
         {
-            var elapsedSeconds = (long)(utcNow - s.LastTimeFlushedPlayTime).TotalSeconds;
-            if (elapsedSeconds <= 0) continue;
-
             long secondsToFlush;
-
-            if (forceFlushAll)
+            lock (s)
             {
-                secondsToFlush = elapsedSeconds;
-                s.LastTimeFlushedPlayTime = utcNow;
-            }
-            else
-            {
-                // Cap flush to exactly 60 seconds
-                secondsToFlush = Settings.Instance.GameMonitorAgentGamePlayTimeSaveThreshold;
+                var elapsedSeconds = (long)(utcNow - s.LastTimeFlushedPlayTime).TotalSeconds;
+                if (elapsedSeconds <= 0) continue;
 
-                if (elapsedSeconds < secondsToFlush) continue;
+                if (forceFlushAll)
+                {
+                    secondsToFlush = elapsedSeconds;
+                    s.LastTimeFlushedPlayTime = utcNow;
+                }
+                else
+                {
+                    // Cap flush to exactly 60 seconds
+                    secondsToFlush = Settings.Instance.GameMonitorAgentGamePlayTimeSaveThreshold;
 
-                // Advance by 60s to keep any remaining seconds for the next tick
-                s.LastTimeFlushedPlayTime = s.LastTimeFlushedPlayTime.AddSeconds(secondsToFlush);
+                    if (elapsedSeconds < secondsToFlush) continue;
+
+                    // Advance by 60s to keep any remaining seconds for the next tick
+                    s.LastTimeFlushedPlayTime = s.LastTimeFlushedPlayTime.AddSeconds(secondsToFlush);
+                }
             }
 
             gamesElapsedToFlush[s.TableId] = new ElapsedTime(secondsToFlush);
@@ -74,24 +76,26 @@ public sealed class HeartbeatProcessor(AgentState state, ILogger<HeartbeatProces
 
         foreach (var s in gameSessions)
         {
-            var elapsedSeconds = (long)(utcNow - s.LastTimeFlushedPlayTime).TotalSeconds;
-            if (elapsedSeconds <= 0) continue;
-
             long secondsToFlush;
-
-            if (forceFlushAll)
+            lock (s)
             {
-                secondsToFlush = elapsedSeconds;
-                s.LastTimeFlushedPlayTime = utcNow;
-            }
-            else
-            {
-                // Cap flush to exactly 60 seconds
-                secondsToFlush = Settings.Instance.GameMonitorAgentGamePlayTimeSaveThreshold;
-                if (elapsedSeconds < secondsToFlush) continue;
+                var elapsedSeconds = (long)(utcNow - s.LastTimeFlushedPlayTime).TotalSeconds;
+                if (elapsedSeconds <= 0) continue;
 
-                // Advance by 60s to keep any remaining seconds for the next tick
-                s.LastTimeFlushedPlayTime = s.LastTimeFlushedPlayTime.AddSeconds(secondsToFlush);
+                if (forceFlushAll)
+                {
+                    secondsToFlush = elapsedSeconds;
+                    s.LastTimeFlushedPlayTime = utcNow;
+                }
+                else
+                {
+                    // Cap flush to exactly 60 seconds
+                    secondsToFlush = Settings.Instance.GameMonitorAgentGamePlayTimeSaveThreshold;
+                    if (elapsedSeconds < secondsToFlush) continue;
+
+                    // Advance by 60s to keep any remaining seconds for the next tick
+                    s.LastTimeFlushedPlayTime = s.LastTimeFlushedPlayTime.AddSeconds(secondsToFlush);
+                }
             }
 
             gamesElapsedToFlush[s.TableId] = new ElapsedTime(secondsToFlush);
