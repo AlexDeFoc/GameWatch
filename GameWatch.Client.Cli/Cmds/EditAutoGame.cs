@@ -87,7 +87,7 @@ public static class EditAutoGame
 
             if (pid is null) return;
 
-            var proc = ProcGatherer.GetOurProcFromPid(new Pid(pid.Value));
+            var proc = ProcGatherer.GetOurProcFromPid(new ProcPid(pid.Value));
 
             if (proc is null)
             {
@@ -151,7 +151,7 @@ public static class EditAutoGame
 
             if (pid is not null)
             {
-                var targetProc = ProcGatherer.GetOurProcFromPid(new Pid(pid.Value));
+                var targetProc = ProcGatherer.GetOurProcFromPid(new ProcPid(pid.Value));
 
                 if (targetProc is null)
                 {

@@ -1,34 +1,54 @@
-﻿using System.Text.RegularExpressions;
+﻿using System;
+using System.Collections.Concurrent;
+using System.Text.RegularExpressions;
 
 namespace GameWatch.Core.Helpers;
 
 public static class RegexProcessor
 {
-    public static bool IsValidPattern(string pattern)
+    private static readonly ConcurrentDictionary<string, Regex?> RegexCache = new(StringComparer.Ordinal);
+    private static readonly TimeSpan DefaultTimeout = TimeSpan.FromMilliseconds(100);
+
+    public static bool IsValidPattern(string? pattern)
     {
         if (string.IsNullOrWhiteSpace(pattern))
             return false;
 
+        return GetOrAddRegex(pattern) is not null;
+    }
+
+    public static bool IsMatch(string pattern, string valueToCheck)
+    {
+        if (string.IsNullOrEmpty(valueToCheck))
+            return false;
+
+        var regex = GetOrAddRegex(pattern);
+        if (regex is null)
+            return false;
+
         try
         {
-            _ = new Regex(pattern);
-            return true;
+            return regex.IsMatch(valueToCheck);
         }
-        catch
+        catch (RegexMatchTimeoutException)
         {
             return false;
         }
     }
 
-    public static bool IsMatch(string pattern, string valueToCheck)
+    private static Regex? GetOrAddRegex(string pattern)
     {
-        try
+        return RegexCache.GetOrAdd(pattern, static p =>
         {
-            return Regex.IsMatch(valueToCheck, pattern, RegexOptions.IgnoreCase);
-        }
-        catch
-        {
-            return false;
-        }
+            try
+            {
+                // RegexOptions.CultureInvariant avoids culture-sensitive comparison overhead
+                return new Regex(p, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, DefaultTimeout);
+            }
+            catch
+            {
+                return null;
+            }
+        });
     }
 }

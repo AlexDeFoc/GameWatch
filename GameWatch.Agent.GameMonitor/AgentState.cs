@@ -7,17 +7,14 @@ namespace GameWatch.Agent.GameMonitor;
 
 public sealed class AgentState
 {
-    public ConcurrentDictionary<TableId, Pid> ActiveAutoGamesPids { get; } = [];
-    public ConcurrentDictionary<Pid, TrackingSessions.Auto> ActiveAutoGames { get; } = [];
+    public ConcurrentDictionary<TableId, TrackingSessions.Auto> ActiveAutoGames { get; } = [];
     public ConcurrentDictionary<TableId, TrackingSessions.Manual> ActiveManualGames { get; } = [];
-
-    private ImmutableList<AutoGameRecord> _loadedAutoGames = ImmutableList<AutoGameRecord>.Empty;
 
     public ImmutableList<AutoGameRecord> LoadedAutoGames
     {
-        get => Volatile.Read(ref _loadedAutoGames);
-        set => Volatile.Write(ref _loadedAutoGames, value);
-    }
+        get => Volatile.Read(ref field);
+        set => Volatile.Write(ref field, value);
+    } = ImmutableList<AutoGameRecord>.Empty;
 
     private int _refreshRequested;
 

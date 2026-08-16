@@ -17,26 +17,31 @@ public sealed class IpcProcessorImpl(
     AgentState state,
     ILogger<IpcProcessorImpl> logger) : IpcProcessor.IpcProcessorBase
 {
+    private static readonly Task<StatusResponse> OkStatusTask =
+        Task.FromResult(new StatusResponse { Ok = true });
+
+    private static readonly Task<StatusAndMessageResponse> OkStatusAndMessageTask =
+        Task.FromResult(new StatusAndMessageResponse { Ok = true });
+
     public override Task<StatusResponse> RemoveAutoGame(GameIdAndNameRequest request, ServerCallContext context)
     {
         var tableId = new TableId(request.TableId);
-        var gameName = request.GameName;
 
-        if (state.ActiveAutoGamesPids.TryRemove(tableId, out var gamePid)
-            && state.ActiveAutoGames.TryRemove(gamePid, out _)
+        if (state.ActiveAutoGames.TryRemove(tableId, out var s)
             && logger.IsEnabled(LogLevel.Information))
         {
             if (logger.IsEnabled(LogLevel.Information))
-                logger.LogInformation("[OK] Removed auto game with TableId='{id}' Name='{name}'", tableId.V, gameName);
+                logger.LogInformation("[OK] Removed auto game with TableId='{id}' Name='{name}'", s.TableId.V, s.GameName);
         }
         else if (logger.IsEnabled(LogLevel.Warning))
         {
+            var gameName = request.GameName;
             logger.LogWarning("[INFO] Auto game with TableId='{id}' Name='{name}' wasn't being tracked. Ignoring signal to remove auto game...", tableId.V, gameName);
         }
 
         state.RequestGameListRefresh();
 
-        return Task.FromResult(new StatusResponse { Ok = true });
+        return OkStatusTask;
     }
 
     public override Task<StatusResponse> RemoveManualGame(GameIdAndNameRequest request, ServerCallContext context)
@@ -57,7 +62,7 @@ public sealed class IpcProcessorImpl(
 
         state.RequestGameListRefresh();
 
-        return Task.FromResult(new StatusResponse { Ok = true });
+        return OkStatusTask;
     }
 
     public override Task<StatusResponse> RefreshAutoGamesList(EmptyRequest request, ServerCallContext context)
@@ -67,7 +72,7 @@ public sealed class IpcProcessorImpl(
         if (logger.IsEnabled(LogLevel.Information))
             logger.LogInformation("[INFO] Refresh auto games signal received");
 
-        return Task.FromResult(new StatusResponse { Ok = true });
+        return OkStatusTask;
     }
 
     public override Task<ToggleManualGameResponse> ToggleManualGame(GameIdAndNameRequest request, ServerCallContext context)
@@ -109,6 +114,31 @@ public sealed class IpcProcessorImpl(
         return Task.FromResult(new ToggleManualGameResponse { Ok = true, StartedGame = gameStarted });
     }
 
+    public override Task<StatusAndMessageResponse> ResetActiveAutoGame(GameIdAndNameRequest request, ServerCallContext context)
+    {
+        var tableId = new TableId(request.TableId);
+
+        if (state.ActiveAutoGames.TryGetValue(tableId, out var s))
+        {
+            lock (s)
+            {
+                s.LastTimeFlushedPlayTime = DateTime.UtcNow;
+            }
+
+            if (logger.IsEnabled(LogLevel.Information))
+                logger.LogInformation("[OK] Auto game playtime with TableId='{id}' Name='{name}' got reset",
+                                      s.TableId.V, s.GameName);
+        }
+        else if (logger.IsEnabled(LogLevel.Warning))
+        {
+            var gameName = request.GameName;
+            logger.LogWarning("[WARN] Auto GameRecord with Id='{id}' Name='{name}' wasn't being tracked. " +
+                              "Ignoring signal to reset auto GameRecord playtime...", tableId.V, gameName);
+        }
+
+        return OkStatusAndMessageTask;
+    }
+
     public override Task<StatusAndMessageResponse> ResetActiveManualGame(GameIdAndNameRequest request, ServerCallContext context)
     {
         var tableId = new TableId(request.TableId);
@@ -116,9 +146,12 @@ public sealed class IpcProcessorImpl(
 
         if (state.ActiveManualGames.TryGetValue(tableId, out var gameSession))
         {
-            gameSession.LastTimeFlushedPlayTime = DateTime.UtcNow;
+            lock (gameSession)
+            {
+                gameSession.LastTimeFlushedPlayTime = DateTime.UtcNow;
+            }
 
-            if (!logger.IsEnabled(LogLevel.Information)) return Task.FromResult(new StatusAndMessageResponse { Ok = true });
+            if (!logger.IsEnabled(LogLevel.Information)) return OkStatusAndMessageTask;
 
             logger.LogInformation("[OK] Manual game playtime with TableId='{id}' Name='{name}' got reset",
                                   tableId.V, gameName);
@@ -129,33 +162,7 @@ public sealed class IpcProcessorImpl(
                               "Ignoring signal to reset manual game playtime...", tableId.V, gameName);
         }
 
-        return Task.FromResult(new StatusAndMessageResponse { Ok = true });
-    }
-
-    public override Task<StatusAndMessageResponse> ResetActiveAutoGame(GameIdAndNameRequest request, ServerCallContext context)
-    {
-        var tableId = new TableId(request.TableId);
-        var gameName = request.GameName;
-
-        if (state.ActiveAutoGamesPids.TryGetValue(tableId, out var pid) &&
-            state.ActiveAutoGames.TryGetValue(pid, out var gameSession))
-        {
-            lock (gameSession)
-            {
-                gameSession.LastTimeFlushedPlayTime = DateTime.UtcNow;
-            }
-
-            if (logger.IsEnabled(LogLevel.Information))
-                logger.LogInformation("[OK] Auto game playtime with TableId='{id}' Name='{name}' got reset",
-                                      tableId.V, gameName);
-        }
-        else if (logger.IsEnabled(LogLevel.Warning))
-        {
-            logger.LogWarning("[WARN] Auto GameRecord with Id='{id}' Name='{name}' wasn't being tracked. " +
-                              "Ignoring signal to reset auto GameRecord playtime...", tableId.V, gameName);
-        }
-
-        return Task.FromResult(new StatusAndMessageResponse { Ok = true });
+        return OkStatusAndMessageTask;
     }
 
     public override Task<StatusAndMessageResponse> EditAutoGame(EditGameRequest request, ServerCallContext context)
@@ -170,12 +177,11 @@ public sealed class IpcProcessorImpl(
                 logger.LogInformation("Auto game with TableId='{tableId}' Name='{name}' did not have its matching rules changed. " +
                                       "Ignoring signal to refresh edited auto game...", tableId.V, gameName);
 
-            return Task.FromResult(new StatusAndMessageResponse { Ok = true });
+            return OkStatusAndMessageTask;
         }
 
         // Saved until now elapsed time
-        if (state.ActiveAutoGamesPids.TryRemove(tableId, out var currentGamePid)
-            && state.ActiveAutoGames.TryRemove(currentGamePid, out var currentGameSession))
+        if (state.ActiveAutoGames.TryRemove(tableId, out var currentGameSession))
         {
             var elapsed = (long)(DateTime.UtcNow - currentGameSession.LastTimeFlushedPlayTime).TotalSeconds;
             if (elapsed > 0)
@@ -213,26 +219,26 @@ public sealed class IpcProcessorImpl(
             if (logger.IsEnabled(LogLevel.Information))
                 logger.LogInformation("[INFO] Refreshed matching rules for auto game with TableId={id} Name='{name}' (Detected as inactive).", tableId.V, targetGame.Name);
 
-            return Task.FromResult(new StatusAndMessageResponse { Ok = true });
+            return OkStatusAndMessageTask;
         }
 
-        var gamePid = new Pid(targetGamePidValue.Value);
+        var gamePid = new ProcPid(targetGamePidValue.Value);
 
         // Create new tracking session
         var newSession = new TrackingSessions.Auto
         {
             TableId = targetGame.TableId,
             GameName = targetGame.Name,
+            Pid = gamePid,
             LastTimeFlushedPlayTime = DateTime.UtcNow
         };
 
-        state.ActiveAutoGames.TryAdd(gamePid, newSession);
-        state.ActiveAutoGamesPids.TryAdd(tableId, gamePid);
+        state.ActiveAutoGames.TryAdd(tableId, newSession);
 
         if (logger.IsEnabled(LogLevel.Information))
             logger.LogInformation("[INFO] Refreshed matching rules for auto game with TableId='{id}' Name='{name}' (Detected as active).", tableId.V, targetGame.Name);
 
-        return Task.FromResult(new StatusAndMessageResponse { Ok = true });
+        return OkStatusAndMessageTask;
     }
 
     public override Task<StatusResponse> EvictOldInstance(EmptyRequest request, ServerCallContext context)
@@ -246,6 +252,6 @@ public sealed class IpcProcessorImpl(
             lifetime.StopApplication();
         });
 
-        return Task.FromResult(new StatusResponse { Ok = true });
+        return OkStatusTask;
     }
 }

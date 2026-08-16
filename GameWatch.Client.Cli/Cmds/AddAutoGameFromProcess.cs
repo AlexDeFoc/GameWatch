@@ -88,7 +88,7 @@ public static class AddAutoGameFromProcess
 
             ProcDto? proc = null;
             if (pid is not null)
-                proc = ProcGatherer.GetOurProcFromPid(new Pid(pid.Value));
+                proc = ProcGatherer.GetOurProcFromPid(new ProcPid(pid.Value));
 
             if (proc is null && pid is not null)
             {
@@ -103,7 +103,7 @@ public static class AddAutoGameFromProcess
             ProcDto? proc = null;
 
             if (pid is not null)
-                proc = ProcGatherer.GetOurProcFromPid(new Pid(pid.Value));
+                proc = ProcGatherer.GetOurProcFromPid(new ProcPid(pid.Value));
 
             if (proc is null && pid is not null)
             {

@@ -3,9 +3,9 @@ using GameWatch.Core.Types;
 
 namespace GameWatch.Agent.GameMonitor.TrackingSessions;
 
-public sealed class Manual
+public sealed class Manual : ITrackingSession
 {
-    public TableId TableId { get; set; }
-    public string GameName { get; set; } = string.Empty;
+    public TableId TableId { get; init; }
+    public string GameName { get; init; } = string.Empty;
     public DateTime LastTimeFlushedPlayTime { get; set; } = DateTime.UtcNow;
 }

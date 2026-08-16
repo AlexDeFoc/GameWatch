@@ -12,40 +12,67 @@ public static class RuleMatcher
         var hasPathExact = gameRecord.FilePath != null;
         var hasPathRule = gameRecord.PathRule != null;
 
-        // Rule version cannot coexist with exact match version for the same field
+        // Validation rule check
         if ((hasTitleExact && hasTitleRule) || (hasPathExact && hasPathRule))
-        {
-            throw new ArgumentException($"[FATAL ERROR] GameRecord with TableId='{gameRecord.TableId}' Name='{gameRecord.Name}' " +
-                                        $"cannot have both a rule version and exact match version for the same field. " +
-                                        $"Matching rules:\n" +
-                                        $"Window Title: {gameRecord.WindowTitle}\n" +
-                                        $"Window Rule: {gameRecord.WindowRule}\n" +
-                                        $"File Path: {gameRecord.FilePath}\n" +
-                                        $"Path Rule: {gameRecord.PathRule}");
-        }
+            ThrowInvalidRuleCombination(gameRecord);
 
-        // Must have at least 1 rule configured
         if (!hasTitleExact && !hasTitleRule && !hasPathExact && !hasPathRule)
+            ThrowNoRulesConfigured(gameRecord);
+
+        // Evaluate Title Match (Window titles are always case-insensitive across OSs)
+        bool titleMatches;
+        if (hasTitleExact)
         {
-            throw new ArgumentException($"[FATAL ERROR] GameRecord with TableId='{gameRecord.TableId}' Name='{gameRecord.Name}' " +
-                                        $"must have at least one matching rule configured. " +
-                                        $"Matching rules:\n" +
-                                        $"Window Title: {gameRecord.WindowTitle}\n" +
-                                        $"Window Rule: {gameRecord.WindowRule}\n" +
-                                        $"File Path: {gameRecord.FilePath}\n" +
-                                        $"Path Rule: {gameRecord.PathRule}");
+            titleMatches = string.Equals(gameRecord.WindowTitle, procDto.WindowTitle, StringComparison.OrdinalIgnoreCase);
+        }
+        else if (hasTitleRule)
+        {
+            titleMatches = RegexProcessor.IsMatch(gameRecord.WindowTitle!, procDto.WindowTitle);
+        }
+        else
+        {
+            titleMatches = true;
         }
 
-        var titleMatches = (!hasTitleExact && !hasTitleRule) ||
-                           (hasTitleExact
-                               ? gameRecord.WindowTitle == procDto.WindowTitle
-                               : RegexProcessor.IsMatch(gameRecord.WindowRule!, procDto.WindowTitle));
+        // Short-circuit: if title doesn't match, skip path rule overhead entirely
+        if (!titleMatches)
+            return false;
 
-        var pathMatches = (!hasPathExact && !hasPathRule) ||
-                          (hasPathExact
-                              ? gameRecord.FilePath == procDto.FilePath
-                              : RegexProcessor.IsMatch(gameRecord.PathRule!, procDto.FilePath));
+        // Evaluate Path Match using OS-specific path comparison semantics
+        if (hasPathExact)
+        {
+            return string.Equals(gameRecord.FilePath, procDto.FilePath, ProcGatherer.PathComparison);
+        }
 
-        return titleMatches && pathMatches;
+        if (hasPathRule)
+        {
+            return RegexProcessor.IsMatch(gameRecord.PathRule!, procDto.FilePath);
+        }
+
+        return true;
+    }
+
+    private static void ThrowInvalidRuleCombination(AutoGameRecord gameRecord)
+    {
+        throw new ArgumentException(
+            $"[FATAL ERROR] Game with TableId='{gameRecord.TableId}' Name='{gameRecord.Name}' " +
+            $"cannot have both a rule version and exact match version for the same field.\n" +
+            $"Matching rules:\n" +
+            $"* Window Title: {gameRecord.WindowTitle}\n" +
+            $"* Window Rule: {gameRecord.WindowRule}\n" +
+            $"* File Path: {gameRecord.FilePath}\n" +
+            $"* Path Rule: {gameRecord.PathRule}");
+    }
+
+    private static void ThrowNoRulesConfigured(AutoGameRecord gameRecord)
+    {
+        throw new ArgumentException(
+            $"[FATAL ERROR] Game with TableId='{gameRecord.TableId}' Name='{gameRecord.Name}' " +
+            $"must have at least one matching rule configured.\n" +
+            $"Matching rules:\n" +
+            $"* Window Title: {gameRecord.WindowTitle}\n" +
+            $"* Window Rule: {gameRecord.WindowRule}\n" +
+            $"* File Path: {gameRecord.FilePath}\n" +
+            $"* Path Rule: {gameRecord.PathRule}");
     }
 }
