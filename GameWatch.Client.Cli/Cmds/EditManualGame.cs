@@ -1,7 +1,7 @@
 ﻿using System;
 using System.CommandLine;
 using GameWatch.Core.Dbs;
-using GameWatch.Core.Wrappers;
+using GameWatch.Core.Types;
 
 namespace GameWatch.Client.Cli.Cmds;
 
@@ -9,13 +9,13 @@ public static class EditManualGame
 {
     public static Command Build()
     {
-        var idOption = new Option<int>("--id", "-i")
+        var displayIdOption = new Option<int>("--id", "-i")
         {
             Description = "The game id from (see 'list games -m')",
             Required = true
         };
 
-        var nameOption = new Option<string>("--name", "-n")
+        var newGameNameOption = new Option<string>("--name", "-n")
         {
             Description = "New name for the game"
         };
@@ -27,54 +27,57 @@ public static class EditManualGame
 
         var cmd = new Command("manual", "Edit manual game")
         {
-            idOption,
-            nameOption,
+            displayIdOption,
+            newGameNameOption,
             playTimeOption
         };
         cmd.Aliases.Add("m");
 
         cmd.SetAction(result =>
         {
-            var gameIdx = new GameIdx(result.GetRequiredValue(idOption) - 1);
-            var gameIdResult = GameLibrary.Instance.GetManualGameByIdx(gameIdx);
+            var displayId = new DisplayId(result.GetRequiredValue(displayIdOption));
 
-            if (!gameIdResult.HasSucceeded || gameIdResult.Game is null)
+            var tableIdResult = GameLibrary.Instance.GetTableId(GameMode.Manual, displayId);
+
+            if (!tableIdResult.Ok || tableIdResult.TableId is null)
             {
-                Console.WriteLine(gameIdResult.FailureReason);
+                Console.WriteLine(tableIdResult.FailureReason);
                 return 1;
             }
 
-            var name = result.GetValue(nameOption);
-            var playTime = result.GetValue(playTimeOption);
+            var tableId = tableIdResult.TableId.Value;
 
-            var nameForLogging = name;
-            if (name is null)
+            var manualGameResult = GameLibrary.Instance.GetManualGame(tableId);
+
+            if (!manualGameResult.Ok || manualGameResult.Game is null)
             {
-                var gameQueryResult = GameLibrary.Instance.GetManualGameByIdx(gameIdx);
-
-                if (gameQueryResult is { HasSucceeded: true, Game: not null })
-                {
-                    nameForLogging = gameQueryResult.Game.Name;
-                }
-            }
-
-            var status = GameLibrary.Instance.ChangeGameProperty(GameMode.Manual,
-                                                                 gameIdResult.Game.Id,
-                                                                 name,
-                                                                 playTime is null
-                                                                     ? null
-                                                                     : new ElapsedTime(playTime.Value)
-            );
-
-            if (!status.HasSucceeded)
-            {
-                Console.WriteLine(status.FailureReason);
+                Console.WriteLine(manualGameResult.FailureReason);
                 return 1;
             }
 
-            Console.WriteLine(nameForLogging is not null
-                                  ? $"[OK] Game with Name='{nameForLogging}' edited successfully"
-                                  : "[OK] Manual game edited successfully");
+            var game = manualGameResult.Game;
+
+            var newGameName = result.GetValue(newGameNameOption);
+            var playTimeValue = result.GetValue(playTimeOption);
+
+            if (newGameName is not null)
+                game.Name = newGameName;
+
+            if (playTimeValue is not null)
+                game.PlayTimeSec = new ElapsedTime(playTimeValue.Value);
+
+            var editedGameResult = GameLibrary.Instance.EditGame(game,
+                                                                 tableId,
+                                                                 nameChanged: newGameName is not null,
+                                                                 playTimeChanged: playTimeValue is not null);
+
+            if (!editedGameResult.Ok)
+            {
+                Console.WriteLine(editedGameResult.FailureReason);
+                return 1;
+            }
+
+            Console.WriteLine($"[OK] Game with Name='{game.Name}' edited successfully");
 
             return 0;
         });

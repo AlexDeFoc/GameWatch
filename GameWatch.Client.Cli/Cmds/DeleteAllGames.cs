@@ -1,9 +1,8 @@
 ﻿using System;
 using System.CommandLine;
-using GameWatch.Core.Agents.GameMonitor;
+using GameWatch.Core;
 using GameWatch.Core.Dbs;
-using GameWatch.Core.Ipc;
-using GameWatch.Core.Wrappers;
+using GameWatch.Core.Types;
 
 namespace GameWatch.Client.Cli.Cmds;
 
@@ -33,20 +32,14 @@ public static class DeleteAllGames
             var clearManualGames = result.GetValue(manualOption);
             var clearAutoGames = result.GetValue(autoOption);
 
-            if (!clearAutoGames && !clearManualGames)
-            {
-                clearManualGames = true;
-                clearAutoGames = true;
-            }
-
-            GameLibrary.DeleteAllGamesResult? status;
+            GameLibrary.DeleteAllGamesResult deletedAllGamesResult;
             if (clearManualGames)
             {
-                status = GameLibrary.Instance.DeleteAllGames(GameMode.Manual);
+                deletedAllGamesResult = GameLibrary.Instance.DeleteAllGames(GameMode.Manual);
 
-                if (!status.HasSucceeded)
+                if (!deletedAllGamesResult.Ok)
                 {
-                    Console.WriteLine(status.FailureReason);
+                    Console.WriteLine(deletedAllGamesResult.FailureReason);
                     return 1;
                 }
 
@@ -55,39 +48,22 @@ public static class DeleteAllGames
 
             if (!clearAutoGames) return 0;
 
-            status = GameLibrary.Instance.DeleteAllGames(GameMode.Auto);
+            deletedAllGamesResult = GameLibrary.Instance.DeleteAllGames(GameMode.Auto);
 
-            if (!status.HasSucceeded)
+            if (!deletedAllGamesResult.Ok)
             {
-                Console.WriteLine(status.FailureReason);
+                Console.WriteLine(deletedAllGamesResult.FailureReason);
                 return 1;
             }
 
             Console.WriteLine("[OK] Deleted all auto games");
 
-            const IpcTarget target = IpcTarget.GameWatchGameMonitorAgent;
-            try
-            {
-                var notified = await IpcClient.SendRefreshSignalForAutoGamesListAsync(target, cancellationToken);
+            var notificationResult = await GameMonitorAgentIpcServer.RequestToRefreshAutoGamesCacheAsync(cancellationToken);
 
-                if (!notified)
-                {
-                    Console.WriteLine("[WARN] Unable to communicate with the GameWatch background service. Please ensure the agent is running.");
-                    return 1;
-                }
-            }
-            catch (OperationCanceledException)
-            {
-                Console.WriteLine("[WARN] Operation canceled.");
-                return 1;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[FAIL] Unhandled exception during IPC call to target '{nameof(target)}': {ex}");
-                return 1;
-            }
+            if (notificationResult.Ok) return 0;
 
-            return 0;
+            Console.WriteLine(notificationResult.FailureReason);
+            return 1;
         });
 
         return cmd;

@@ -1,10 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using GameWatch.Core;
-using GameWatch.Core.Agents.GameMonitor;
 using GameWatch.Core.Dbs;
-using GameWatch.Core.Ipc;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
@@ -17,10 +14,21 @@ public static class Program
         // Step 1: Evict old instance using a dedicated, short-lived token
         using (var evictionCts = new CancellationTokenSource(TimeSpan.FromMilliseconds(500)))
         {
-            var evicted = await IpcClient.SendEvictAgentSignalAsync(IpcTarget.GameWatchGameMonitorAgent, evictionCts.Token);
-            if (evicted)
+            var evictResult = await Core.GameMonitorAgentIpcServer.RequestOldInstanceEvictionAsync(evictionCts.Token);
+
+            if (!evictResult.Ok)
             {
-                Console.WriteLine("♻️ Previous agent evicted. Waiting for pipe release...");
+                Console.WriteLine(evictResult.FailureReason);
+            }
+            else if (evictResult.InstanceWasPresent)
+            {
+                Console.WriteLine("[INFO] Previous agent evicted. Waiting for pipe release...");
+                // Option to add a tiny Task.Delay if needed for the OS pipe teardown
+                await Task.Delay(150, evictionCts.Token);
+            }
+            else
+            {
+                Console.WriteLine("[INFO] No existing agent found running. Starting fresh...");
             }
         }
 
@@ -37,7 +45,7 @@ public static class Program
         builder.Services.AddSingleton<ProcessScanner>();
         builder.Services.AddSingleton<HeartbeatProcessor>();
 
-        builder.Services.AddHostedService<IpcServer>();
+        builder.Services.AddHostedService<IpcSignalCollector>();
         builder.Services.AddHostedService<Worker>();
 
         var host = builder.Build();

@@ -10,181 +10,155 @@ public static class ListGames
     {
         var verboseOption = new Option<bool>("--verbose", "-v")
         {
-            Description = "List auto games matching rules."
+            Description = "When listing games and/or records, display additionally the matching rules."
         };
 
-        var manualOnlyOption = new Option<bool>("--manual-only", "-m")
+        var showManualGamesOption = new Option<bool>("--manual-only", "-m")
         {
-            Description = "Sets whether to only display manual game records."
+            Description = "Display only manual game records if specified alone, or along side other games if specified along other flags"
         };
 
-        var autoOnlyOption = new Option<bool>("--auto-only", "-a")
+        var showAutoGamesOption = new Option<bool>("--auto-only", "-a")
         {
-            Description = "Sets whether to only display auto game records."
+            Description = "Display only auto game records if specified alone, or along side other games if specified along other flags"
         };
 
         var showPresetsOption = new Option<bool>("--show-presets", "-p")
         {
-            Description = "Additionally display presets"
+            Description = "Display only presets if specified alone, or along side other games if specified along other flags"
         };
 
         var cmd = new Command("games", "List all or filtered games in the library")
         {
             verboseOption,
-            manualOnlyOption,
-            autoOnlyOption,
+            showManualGamesOption,
+            showAutoGamesOption,
             showPresetsOption
         };
 
         cmd.Aliases.Add("g");
 
-
-        cmd.Validators.Add(result =>
-        {
-            var isManual = result.GetValue(manualOnlyOption);
-            var isAuto = result.GetValue(autoOnlyOption);
-
-            if (isManual && isAuto)
-            {
-                result.AddError("[FAIL] --manual-only and --auto-only are mutually exclusive flags.");
-            }
-        });
-
         cmd.SetAction(parseResult =>
         {
             var verbose = parseResult.GetValue(verboseOption);
-            var manualOnly = parseResult.GetValue(manualOnlyOption);
-            var autoOnly = parseResult.GetValue(autoOnlyOption);
-            var shouldShowPresets = parseResult.GetValue(showPresetsOption);
+            var showManualGames = parseResult.GetValue(showManualGamesOption);
+            var showAutoGames = parseResult.GetValue(showAutoGamesOption);
+            var showPresets = parseResult.GetValue(showPresetsOption);
 
-            var shouldDisplayBothGameModes = !manualOnly && !autoOnly;
-            var gamesHaveBeenDisplayed = false;
+            // Default category selection no flag behavior
+            if (!showManualGames && !showAutoGames && !showPresets)
+            {
+                showManualGames = true;
+                showAutoGames = true;
+            }
 
-            if (shouldDisplayBothGameModes || manualOnly)
+            var anyGamesDisplayed = false;
+
+            if (showManualGames)
             {
                 var manualGames = GameLibrary.Instance.GetManualGames();
 
                 if (manualGames.Count > 0)
                 {
-                    gamesHaveBeenDisplayed = true;
+                    anyGamesDisplayed = true;
                     Console.WriteLine("--- Manual games ---");
-                    foreach (var game in manualGames)
+                    for (var i = 0; i < manualGames.Count; ++i)
                     {
-                        Console.WriteLine($"{game.Id}. {TimeSpan.FromSeconds(game.PlayTimeSec.V)} - {game.Name}");
+                        var game = manualGames[i];
+                        Console.WriteLine($"{i + 1}. {TimeSpan.FromSeconds(game.PlayTimeSec.V)} - {game.Name}");
                     }
+
+                    if (showAutoGames || showPresets)
+                        Console.WriteLine();
                 }
             }
 
-            if (shouldDisplayBothGameModes || autoOnly)
+            if (showAutoGames)
             {
                 var autoGames = GameLibrary.Instance.GetAutoGames();
-
                 if (autoGames.Count > 0)
                 {
-                    if (shouldDisplayBothGameModes && gamesHaveBeenDisplayed)
-                        Console.WriteLine();
-
-                    gamesHaveBeenDisplayed = true;
+                    anyGamesDisplayed = true;
                     Console.WriteLine("--- Auto games ---");
 
-                    if (verbose)
+                    if (!verbose)
                     {
-                        foreach (var game in autoGames)
+                        for (var i = 0; i < autoGames.Count; ++i)
                         {
-                            Console.WriteLine($"{game.Id}. {TimeSpan.FromSeconds(game.PlayTimeSec.V)} - {game.Name}");
-                            Console.WriteLine("   Matching rules:");
-
-                            if (game.WindowTitle != null)
-                            {
-                                Console.WriteLine("      Window Title: should match fully");
-                                Console.WriteLine($"         Value: {game.WindowTitle}");
-                            }
-
-                            if (game.FilePath != null)
-                            {
-                                Console.WriteLine("      File Path: should match fully");
-                                Console.WriteLine($"         Value: {game.FilePath}");
-                            }
-
-                            if (game.WindowRule != null)
-                            {
-                                Console.WriteLine("      Window Title: should match using pattern");
-                                Console.WriteLine($"         Value: {game.WindowRule}");
-                            }
-
-                            if (game.PathRule != null)
-                            {
-                                Console.WriteLine("      File Path: should match using pattern");
-                                Console.WriteLine($"         Value: {game.PathRule}");
-                            }
+                            var game = autoGames[i];
+                            Console.WriteLine($"{i + 1}. {TimeSpan.FromSeconds(game.PlayTimeSec.V)} - {game.Name}");
                         }
                     }
                     else
                     {
-                        foreach (var game in autoGames)
+                        for (var i = 0; i < autoGames.Count; ++i)
                         {
-                            Console.WriteLine($"{game.Id}. {TimeSpan.FromSeconds(game.PlayTimeSec.V)} - {game.Name}");
+                            var game = autoGames[i];
+                            Console.WriteLine($"{i + 1}. {TimeSpan.FromSeconds(game.PlayTimeSec.V)} - {game.Name}");
+
+                            Console.WriteLine("  Matching rules:");
+                            if (game.WindowTitle is not null)
+                                Console.WriteLine($"* Window title={game.WindowTitle}");
+                            if (game.WindowRule is not null)
+                                Console.WriteLine($"* Window title rule={game.WindowRule}");
+                            if (game.FilePath is not null)
+                                Console.WriteLine($"* File path={game.FilePath}");
+                            if (game.PathRule is not null)
+                                Console.WriteLine($"* File path rule={game.PathRule}");
+
+                            if (i < autoGames.Count - 1)
+                                Console.WriteLine();
                         }
                     }
+
+                    if (showPresets)
+                        Console.WriteLine();
                 }
             }
 
-            if (shouldShowPresets)
+            if (showPresets)
             {
-                if (gamesHaveBeenDisplayed)
-                    Console.WriteLine();
-
-                var presets = GamePresets.GetPresets();
-
+                var presets = GamePresets.GetPreMadePresets();
                 if (presets.Count > 0)
                 {
-                    gamesHaveBeenDisplayed = true;
-                    Console.WriteLine("--- Auto game presets ---");
+                    anyGamesDisplayed = true;
+                    Console.WriteLine("--- Presets ---");
 
-                    if (verbose)
+                    if (!verbose)
                     {
-                        foreach (var game in presets)
+                        for (var i = 0; i < presets.Count; ++i)
                         {
-                            Console.WriteLine($"{game.Id}. {TimeSpan.FromSeconds(game.PlayTimeSec)} - {game.Name}");
-                            Console.WriteLine("   Matching rules:");
-
-                            if (game.WindowTitle != null)
-                            {
-                                Console.WriteLine("      Window Title: should match fully");
-                                Console.WriteLine($"         Value: {game.WindowTitle}");
-                            }
-
-                            if (game.FilePath != null)
-                            {
-                                Console.WriteLine("      File Path: should match fully");
-                                Console.WriteLine($"         Value: {game.FilePath}");
-                            }
-
-                            if (game.WindowRule != null)
-                            {
-                                Console.WriteLine("      Window Title: should match using pattern");
-                                Console.WriteLine($"         Value: {game.WindowRule}");
-                            }
-
-                            if (game.PathRule == null) continue;
-
-                            Console.WriteLine("      File Path: should match using pattern");
-                            Console.WriteLine($"         Value: {game.PathRule}");
+                            var game = presets[i];
+                            Console.WriteLine($"{i + 1}. {TimeSpan.FromSeconds(game.PlayTimeSec)} - {game.Name}");
                         }
                     }
                     else
                     {
-                        foreach (var game in presets)
+                        for (var i = 0; i < presets.Count; ++i)
                         {
-                            Console.WriteLine($"{game.Id}. {TimeSpan.FromSeconds(game.PlayTimeSec)} - {game.Name}");
+                            var game = presets[i];
+                            Console.WriteLine($"{i + 1}. {TimeSpan.FromSeconds(game.PlayTimeSec)} - {game.Name}");
+
+                            Console.WriteLine("  Matching rules:");
+                            if (game.WindowTitle is not null)
+                                Console.WriteLine($"* Window title={game.WindowTitle}");
+                            if (game.WindowRule is not null)
+                                Console.WriteLine($"* Window title rule={game.WindowRule}");
+                            if (game.FilePath is not null)
+                                Console.WriteLine($"* File path={game.FilePath}");
+                            if (game.PathRule is not null)
+                                Console.WriteLine($"* File path rule={game.PathRule}");
+
+                            if (i < presets.Count - 1)
+                                Console.WriteLine();
                         }
                     }
                 }
             }
 
-            if (!gamesHaveBeenDisplayed)
+            if (!anyGamesDisplayed)
             {
-                Console.WriteLine("[INFO] No games found which to list");
+                Console.WriteLine("[INFO] No games or presets found which to list");
             }
 
             return 0;

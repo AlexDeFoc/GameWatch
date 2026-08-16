@@ -18,7 +18,7 @@ public sealed class Worker(
         if (logger.IsEnabled(LogLevel.Information))
             logger.LogInformation("[INFO] Agent started. Loading important stuff...");
 
-        state.LoadedAutoGames.ReplaceAll(GameLibrary.Instance.GetAutoGames());
+        state.LoadedAutoGames = [.. GameLibrary.Instance.GetAutoGames()];
 
         if (logger.IsEnabled(LogLevel.Information))
             logger.LogInformation("[OK]️ Loaded auto games from db. Found={count} games", state.LoadedAutoGames.Count);
@@ -31,13 +31,16 @@ public sealed class Worker(
             while (!stoppingToken.IsCancellationRequested && await timer.WaitForNextTickAsync(stoppingToken))
             {
                 // Check if refresh auto games signal was triggered
-                if (state.GameListRefreshToken.IsCancellationRequested)
+                if (state.ConsumeRefreshRequest())
                 {
                     if (logger.IsEnabled(LogLevel.Information))
                         logger.LogInformation("[INFO] Reloading auto games from db...");
-                    state.LoadedAutoGames.ReplaceAll(GameLibrary.Instance.GetAutoGames());
-                    logger.LogInformation("[OK] Finished reloading auto games from db...");
-                    state.ResetGameListRefresh();
+
+                    // Any ongoing foreach loops keep looking at the old snapshot until their next execution
+                    state.LoadedAutoGames = [.. GameLibrary.Instance.GetAutoGames()];
+
+                    if (logger.IsEnabled(LogLevel.Information))
+                        logger.LogInformation("[OK] Finished reloading auto games.");
                 }
 
                 secondsElapsed++;

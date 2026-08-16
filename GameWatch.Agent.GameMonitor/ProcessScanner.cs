@@ -1,10 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using GameWatch.Core;
 using GameWatch.Core.Dbs;
-using GameWatch.Core.Dto;
-using GameWatch.Core.Wrappers;
+using GameWatch.Core.Helpers;
+using GameWatch.Core.Types;
 using Microsoft.Extensions.Logging;
 
 namespace GameWatch.Agent.GameMonitor;
@@ -13,58 +10,52 @@ public sealed class ProcessScanner(AgentState state, ILogger<ProcessScanner> log
 {
     public void Scan()
     {
-        // Idx = GameId
-        List<TrackingSessions.Auto> recentlyInactiveAutoGames = [];
         var availableProcs = ProcGatherer.GetDictOfAvailableProcesses();
+        var now = DateTime.UtcNow;
 
-        // 'remove inactives' step:
-        // perform 'remove inactives' step:
-        foreach (var pid in state.ActiveAutoGames.Keys)
+        // Remove inactives & flush playtime
+        foreach (var (tableId, session) in state.ActiveAutoGames)
         {
-            if (availableProcs.ContainsKey(pid.V)) continue;
+            if (availableProcs.ContainsKey(session.Pid.V))
+                continue;
 
-            if (!state.ActiveAutoGames.TryRemove(pid, out var session)) continue;
-            state.ActiveAutoGamesPids.TryRemove(session.Game.Id, out _);
-            recentlyInactiveAutoGames.Add(session);
-        }
+            // Process termination: remove session
+            if (!state.ActiveAutoGames.TryRemove(tableId, out var removedSession))
+                continue;
 
-        // perform 'save recent inactives' step:
-        foreach (var session in recentlyInactiveAutoGames)
-        {
-            var elapsed = (long)(DateTime.UtcNow - session.LastTimeFlushedPlayTime).TotalSeconds;
-            if (elapsed <= 0) continue;
-
-            GameLibrary.Instance.IncrementPlayTime(GameMode.Auto, session.Game.Id, elapsed);
+            var elapsed = (long)(now - removedSession.LastTimeFlushedPlayTime).TotalSeconds;
+            if (elapsed <= 0)
+            {
+                GameLibrary.Instance.IncrementPlayTime(GameMode.Auto, removedSession.TableId, new ElapsedTime(elapsed));
+            }
 
             if (logger.IsEnabled(LogLevel.Information))
-                logger.LogInformation("[INFO] Auto Game Id={id} Name='{name}' has stopped. Elapsed={elapsed}s", session.Game.Id, session.Game.Name, elapsed);
+                logger.LogInformation("[INFO] Auto game TableId='{id}' Name='{name}' has stopped. Elapsed={elapsed}s", removedSession.TableId.V, removedSession.GameName, elapsed);
         }
 
-        // 'search match' step:
-        // 'create skip set' step:
-        var activeGameIds = state.ActiveAutoGames.Values
-                                 .Select(s => s.Game.Id)
-                                 .ToHashSet();
-
-        // 'perform actual search match' step:
-        foreach (var game in state.LoadedAutoGames)
+        // Search & match new games (Allows multiple TableIds to bind to the same PID)
+        var loadedGames = state.LoadedAutoGames;
+        for (var i = 0; i < loadedGames.Count; ++i)
         {
-            if (activeGameIds.Contains(game.Id))
+            var game = loadedGames[i];
+
+            if (state.ActiveAutoGames.ContainsKey(game.TableId))
                 continue;
 
             foreach (var (pid, proc) in availableProcs)
             {
-                if (!RuleMatcher.IsMatch(proc, game)) continue;
+                if (!RuleMatcher.IsMatch(proc, game))
+                    continue;
 
-                var newSession = new TrackingSessions.Auto { Game = game };
-                var gamePid = new Pid(pid);
-                state.ActiveAutoGames.TryAdd(gamePid, newSession);
-                state.ActiveAutoGamesPids.TryAdd(game.Id, gamePid);
+                var newSession = new TrackingSessions.Auto { TableId = game.TableId, GameName = game.Name, Pid = new ProcPid(pid) };
 
-                if (logger.IsEnabled(LogLevel.Information))
-                    logger.LogInformation("[INFO] Auto Game Id={id} Name='{name}' has started.", game.Id, game.Name);
+                if (state.ActiveAutoGames.TryAdd(game.TableId, newSession))
+                {
+                    if (logger.IsEnabled(LogLevel.Information))
+                        logger.LogInformation("[INFO] Auto GameRecord TableId='{id}' Name='{name}' bound to PID='{pid}' (Game has started).", game.TableId.V, game.Name, pid);
+                }
 
-                break;
+                break; // Match found for this game record, move to the next record
             }
         }
     }

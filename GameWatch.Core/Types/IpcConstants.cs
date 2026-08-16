@@ -1,4 +1,4 @@
-﻿namespace GameWatch.Core.Ipc;
+﻿namespace GameWatch.Core.Types;
 
 public static class IpcConstants
 {

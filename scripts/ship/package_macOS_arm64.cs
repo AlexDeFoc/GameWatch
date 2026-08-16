@@ -1,5 +1,3 @@
-using System;
-using System.IO;
 using System.IO.Compression;
 using System.Runtime.CompilerServices;
 
@@ -13,6 +11,7 @@ var archiveOutputDir = Path.Combine(rootDir, "out", "ship", "archives");
 var archivePath = Path.Combine(archiveOutputDir, "GameWatch.CliSuite-macOS-arm64.zip");
 
 CompressFolderWithSubfolder(shippedDir, shipComponentDir, archivePath);
+return;
 
 static void CompressFolderWithSubfolder(string srcDir, string baseDir, string dstZipPath)
 {

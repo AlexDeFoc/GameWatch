@@ -1,12 +1,11 @@
 ﻿using System;
-using GameWatch.Core;
-using GameWatch.Core.Dto;
-using GameWatch.Core.Wrappers;
+using GameWatch.Core.Types;
 
 namespace GameWatch.Agent.GameMonitor.TrackingSessions;
 
-public sealed class Manual
+public sealed class Manual : ITrackingSession
 {
-    public required GameId Id { get; init; }
+    public TableId TableId { get; init; }
+    public string GameName { get; init; } = string.Empty;
     public DateTime LastTimeFlushedPlayTime { get; set; } = DateTime.UtcNow;
 }

@@ -1,9 +1,8 @@
 ﻿using System;
 using System.CommandLine;
-using GameWatch.Core.Agents.GameMonitor;
+using GameWatch.Core;
 using GameWatch.Core.Dbs;
-using GameWatch.Core.Ipc;
-using GameWatch.Core.Wrappers;
+using GameWatch.Core.Types;
 
 namespace GameWatch.Client.Cli.Cmds;
 
@@ -11,7 +10,7 @@ public static class RemoveGame
 {
     public static Command Build()
     {
-        var idOption = new Option<int>("--id", "-i")
+        var displayIdOption = new Option<int>("--id", "-i")
         {
             Description = "The game id from (see 'list games')",
             Required = true
@@ -19,17 +18,17 @@ public static class RemoveGame
 
         var manualOption = new Option<bool>("--manual", "-m")
         {
-            Description = "Sets whether provided game id corresponds to a manual game"
+            Description = "Should delete manual game"
         };
 
         var autoOption = new Option<bool>("--auto", "-a")
         {
-            Description = "Sets whether provided game id corresponds to an auto game"
+            Description = "Should delete auto game"
         };
 
         var cmd = new Command("remove", "Remove game")
         {
-            idOption,
+            displayIdOption,
             manualOption,
             autoOption
         };
@@ -53,45 +52,44 @@ public static class RemoveGame
 
         cmd.SetAction(async (result, cancellationToken) =>
         {
-            var shouldRemoveManualGame = result.GetValue(manualOption);
-            var gameMode = shouldRemoveManualGame ? GameMode.Manual : GameMode.Auto;
-            var gameIdx = new GameIdx(result.GetRequiredValue(idOption) - 1);
+            var removeManual = result.GetValue(manualOption);
+            var gameMode = removeManual ? GameMode.Manual : GameMode.Auto;
 
-            var (hasSucceeded, gameId, deletedGameTitle, failureReason) = GameLibrary.Instance.DeleteGame(gameMode, gameIdx);
+            var displayId = new DisplayId(result.GetRequiredValue(displayIdOption));
+            var tableIdResult = GameLibrary.Instance.GetTableId(GameMode.Manual, displayId);
 
-            if (!hasSucceeded || gameId is null)
+            if (!tableIdResult.Ok || tableIdResult.TableId is null)
             {
-                Console.WriteLine(failureReason);
+                Console.WriteLine(tableIdResult.FailureReason);
                 return 1;
             }
 
-            Console.WriteLine($"[OK] Game with Name='{deletedGameTitle}' deleted");
+            var tableId = tableIdResult.TableId.Value;
 
-            const IpcTarget target = IpcTarget.GameWatchGameMonitorAgent;
-            try
-            {
-                var notified = shouldRemoveManualGame
-                    ? await IpcClient.SendRemoveManualGameSignalAsync(target, gameId.Value, cancellationToken)
-                    : await IpcClient.SendRemoveAutoGameSignalAsync(target, gameId.Value, cancellationToken);
+            var deletedGameResult = GameLibrary.Instance.RemoveGame(gameMode, tableId);
 
-                if (!notified)
-                {
-                    Console.WriteLine("[WARN] Unable to communicate with the GameWatch background service. Please ensure the agent is running.");
-                    return 1;
-                }
-            }
-            catch (OperationCanceledException)
+            if (!deletedGameResult.Ok || deletedGameResult.GameName is null)
             {
-                Console.WriteLine("[WARN] Operation canceled.");
-                return 1;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[FAIL] Unhandled exception during IPC call to target '{nameof(target)}': {ex}");
+                Console.WriteLine(deletedGameResult.FailureReason);
                 return 1;
             }
 
-            return 0;
+            var gameName = deletedGameResult.GameName;
+
+            Console.WriteLine($"[OK] Game with Name='{gameName}' deleted");
+
+            var notificationResult = removeManual
+                ? await GameMonitorAgentIpcServer.NotifyThatManualGameGotRemovedAsync(tableId,
+                                                                                      gameName,
+                                                                                      cancellationToken)
+                : await GameMonitorAgentIpcServer.NotifyThatAutoGameGotRemovedAsync(tableId,
+                                                                                    gameName,
+                                                                                    cancellationToken);
+
+            if (notificationResult.Ok) return 0;
+
+            Console.WriteLine(notificationResult.FailureReason);
+            return 1;
         });
 
         return cmd;

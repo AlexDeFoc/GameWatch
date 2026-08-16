@@ -1,110 +1,86 @@
 ﻿using System;
 using System.Collections.Generic;
+using GameWatch.Agent.GameMonitor.TrackingSessions;
 using GameWatch.Core.Dbs;
-using GameWatch.Core.Wrappers;
+using GameWatch.Core.Types;
 using Microsoft.Extensions.Logging;
 
 namespace GameWatch.Agent.GameMonitor;
 
 public sealed class HeartbeatProcessor(AgentState state, ILogger<HeartbeatProcessor> logger)
 {
-    /// <summary>
-    /// Checks all active sessions. Flushes save increments for auto sessions,
-    /// full accumulated time for manual sessions, or forces a full flush of all
-    /// accumulated seconds during shutdown.
-    /// </summary>
     public void FlushHeartbeats(bool forceFlushAll = false)
     {
         var now = DateTime.UtcNow;
-        FlushAutoGames(state.ActiveAutoGames.Values, now, forceFlushAll);
-        FlushManualGames(state.ActiveManualGames.Values, now, forceFlushAll);
+        FlushSessions(state.ActiveAutoGames, GameMode.Auto, "Auto", now, forceFlushAll);
+        FlushSessions(state.ActiveManualGames, GameMode.Manual, "Manual", now, forceFlushAll);
     }
 
-    private void FlushAutoGames(IEnumerable<TrackingSessions.Auto> gameSessions, DateTime utcNow, bool forceFlushAll)
+    private void FlushSessions<T>(ICollection<KeyValuePair<TableId, T>> gameSessions, GameMode gameMode, string modeLabel, DateTime utcNow, bool forceFlushAll)
+        where T : class, ITrackingSession
     {
-        var gamesToFlush = new Dictionary<GameId, ElapsedTime>();
+        Dictionary<TableId, ElapsedTime>? gamesElapsedToFlush = null;
 
-        foreach (var s in gameSessions)
+        // Parallel tracking array/list for logging ONLY if logging is enabled (Lazy)
+        List<(TableId Id, string Name, ElapsedTime Elapsed)>? logBuffer = null;
+
+        var threshold = Settings.Instance.GameMonitorAgentGamePlayTimeSaveThreshold;
+        var isLogging = logger.IsEnabled(LogLevel.Information);
+
+        // Enumerating KeyValuePair directly over ConcurrentDictionary avoids .Values allocation
+        foreach (var (tableId, session) in gameSessions)
         {
-            var elapsedSeconds = (long)(utcNow - s.LastTimeFlushedPlayTime).TotalSeconds;
-            if (elapsedSeconds <= 0) continue;
-
             long secondsToFlush;
-
-            if (forceFlushAll)
+            lock (session)
             {
-                secondsToFlush = elapsedSeconds;
-                s.LastTimeFlushedPlayTime = utcNow;
+                var elapsedSeconds = (long)(utcNow - session.LastTimeFlushedPlayTime).TotalSeconds;
+                if (elapsedSeconds <= 0) continue;
+
+                if (forceFlushAll)
+                {
+                    secondsToFlush = elapsedSeconds;
+                    session.LastTimeFlushedPlayTime = utcNow;
+                }
+                else
+                {
+                    secondsToFlush = threshold;
+                    if (elapsedSeconds < secondsToFlush) continue;
+
+                    session.LastTimeFlushedPlayTime = session.LastTimeFlushedPlayTime.AddSeconds(secondsToFlush);
+                }
             }
-            else
-            {
-                // Cap flush to exactly 60 seconds
-                secondsToFlush = Settings.Instance.GameMonitorAgentGamePlayTimeSaveThreshold;
 
-                if (elapsedSeconds < secondsToFlush) continue;
+            var elapsedTime = new ElapsedTime(secondsToFlush);
 
-                // Advance by 60s to keep any remaining seconds for the next tick
-                s.LastTimeFlushedPlayTime = s.LastTimeFlushedPlayTime.AddSeconds(secondsToFlush);
-            }
+            // Lazy init primary payload
+            gamesElapsedToFlush ??= [];
+            gamesElapsedToFlush[tableId] = elapsedTime;
 
-            gamesToFlush[s.Game.Id] = new ElapsedTime(secondsToFlush);
+            // Only track names if LogLevel.Information is enabled
+            if (!isLogging) continue;
+
+            logBuffer ??= [];
+            logBuffer.Add((tableId, session.GameName, elapsedTime));
         }
 
-        if (gamesToFlush.Count == 0) return;
+        if (gamesElapsedToFlush is null) return;
 
         try
         {
-            GameLibrary.Instance.IncrementPlayTime(GameMode.Auto, gamesToFlush);
+            GameLibrary.Instance.IncrementPlayTime(gameMode, gamesElapsedToFlush);
 
-            if (!logger.IsEnabled(LogLevel.Information)) return;
+            if (logBuffer is null || !logger.IsEnabled(LogLevel.Information)) return;
 
-            foreach (var (gameId, elapsed) in gamesToFlush)
+            foreach (var (id, name, elapsed) in logBuffer)
             {
-                logger.LogInformation("{timestamp} [INFO] Activity: Auto Game Id={id} Elapsed={elapsed}s", utcNow.TimeOfDay, gameId, elapsed);
+                logger.LogInformation("[INFO] Activity: {mode} game with TableId='{id}' Name='{name}', Elapsed={elapsed}s",
+                                      modeLabel, id.V, name, elapsed.V);
             }
         }
         catch (Exception ex)
         {
             if (logger.IsEnabled(LogLevel.Error))
-                logger.LogError(ex, "[FAIL] Failed to flush playtime for Active auto games");
-        }
-    }
-
-    private void FlushManualGames(IEnumerable<TrackingSessions.Manual> gameSessions, DateTime utcNow, bool forceFlushAll)
-    {
-        var gamesToFlush = new Dictionary<GameId, ElapsedTime>();
-
-        foreach (var s in gameSessions)
-        {
-            var elapsedSeconds = (long)(utcNow - s.LastTimeFlushedPlayTime).TotalSeconds;
-            if (elapsedSeconds <= 0) continue;
-
-            if (!forceFlushAll && elapsedSeconds < Settings.Instance.GameMonitorAgentGamePlayTimeSaveThreshold) continue;
-
-            // Manual games flush all accumulated seconds without capping
-            gamesToFlush[s.Id] = new ElapsedTime(elapsedSeconds);
-
-            // Advance by exact elapsed time to preserve fractional-second precision
-            s.LastTimeFlushedPlayTime = s.LastTimeFlushedPlayTime.AddSeconds(elapsedSeconds);
-        }
-
-        if (gamesToFlush.Count == 0) return;
-
-        try
-        {
-            GameLibrary.Instance.IncrementPlayTime(GameMode.Manual, gamesToFlush);
-
-            if (!logger.IsEnabled(LogLevel.Information)) return;
-
-            foreach (var (gameId, elapsed) in gamesToFlush)
-            {
-                logger.LogInformation("{timestamp} [INFO] Activity: Manual Game Id={id} Elapsed={elapsed}s", utcNow.TimeOfDay, gameId, elapsed);
-            }
-        }
-        catch (Exception ex)
-        {
-            if (logger.IsEnabled(LogLevel.Error))
-                logger.LogError(ex, "[FAIL] Failed to flush playtime for active manual games");
+                logger.LogError(ex, "[FAIL] Failed to flush playtime for active {mode} games", modeLabel);
         }
     }
 }

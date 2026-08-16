@@ -1,0 +1,50 @@
+﻿syntax = "proto3";
+
+package gamewatch.ipc;
+
+option csharp_namespace = "GameWatch.Agent.GameMonitor.Ipc.Grpc";
+
+service IpcProcessor {
+  rpc ToggleManualGame (GameIdAndNameRequest) returns (ToggleManualGameResponse);
+  rpc RemoveManualGame (GameIdAndNameRequest) returns (StatusResponse);
+  rpc RemoveAutoGame (GameIdAndNameRequest) returns (StatusResponse);
+  rpc RefreshAutoGamesList (EmptyRequest) returns (StatusResponse);
+  rpc ResetActiveManualGame (GameIdAndNameRequest) returns (StatusAndMessageResponse);
+  rpc ResetActiveAutoGame (GameIdAndNameRequest) returns (StatusAndMessageResponse);
+  rpc EditAutoGame (EditGameRequest) returns (StatusAndMessageResponse);
+  rpc EvictOldInstance (EmptyRequest) returns (StatusResponse);
+}
+
+// Requests
+message EmptyRequest {}
+
+message TableIdRequest {
+  int32 table_id = 1;
+}
+
+message EditGameRequest {
+  int32 table_id = 1;
+  string game_name = 2;
+  bool matching_rules_changed = 3;
+}
+
+message GameIdAndNameRequest {
+  int32 table_id = 1;
+  string game_name = 2;
+}
+
+// Responses
+message StatusResponse {
+  bool ok = 1;
+}
+
+message StatusAndMessageResponse {
+  bool ok = 1;
+  string msg = 2;
+}
+
+message ToggleManualGameResponse {
+  bool ok = 1;
+  bool started_game = 2;
+  string failure_reason = 3;
+}

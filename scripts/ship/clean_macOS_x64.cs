@@ -1,4 +1,3 @@
-using System.IO;
 using System.Runtime.CompilerServices;
 
 var scriptFolderPath = Path.GetDirectoryName(GetScriptFilePath())!;
@@ -10,6 +9,7 @@ var archiveFile = Path.Combine(rootDir, "out", "ship", "archives", "GameWatch.Cl
 ForceDeleteFile(archiveFile);
 ForceDeleteDirectory(portableBaseDir);
 Directory.CreateDirectory(portableBaseDir);
+return;
 
 // --- Helper Functions ---
 static void ForceDeleteFile(string filePath)

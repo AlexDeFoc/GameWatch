@@ -1,6 +1,4 @@
 using System.Diagnostics;
-using System.Collections.Generic;
-using System.IO;
 using System.Runtime.CompilerServices;
 
 var scriptFolderPath = Path.GetDirectoryName(GetScriptFilePath())!;
@@ -18,6 +16,7 @@ var launchArgs = new List<string>
 };
 
 Run("dotnet", string.Join(" ", launchArgs));
+return;
 
 static string GetScriptFilePath([CallerFilePath] string path = "") => path;
 

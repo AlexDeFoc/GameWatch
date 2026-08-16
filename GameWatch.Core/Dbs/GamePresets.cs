@@ -1,176 +1,161 @@
-﻿// TODO: Ability to get preset by idx
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using Dapper;
-using GameWatch.Core.SqlParams;
-using GameWatch.Core.Wrappers;
+using GameWatch.Core.Helpers;
+using GameWatch.Core.Types;
 using Microsoft.Data.Sqlite;
 
 namespace GameWatch.Core.Dbs;
 
-[DapperAot]
-public partial class GamePresets
+public sealed class GamePresets
 {
     public static GamePresets Instance { get; private set; } = null!;
 
-    private readonly string _connString;
-
-    public static void Init(string relPathToParent) => Instance = new GamePresets(relPathToParent);
-
-    private readonly ConcurrentList<GameId> _presetIds = [];
+    private readonly string _connStr;
+    private readonly List<TableId> _presetIds;
 
     private GamePresets(string relPathToParent)
     {
         var dbParentPath = PathResolver.ResolveRelativePath(relPathToParent);
-        var dbPath = Path.Combine(dbParentPath, "GamePresets.db");
+        var dbPath = Path.Join(dbParentPath, "GamePresets.db");
 
-        _connString = $"Data Source={dbPath}";
+        _connStr = $"Data Source={dbPath}";
 
         if (!string.IsNullOrEmpty(dbParentPath) && !Directory.Exists(dbParentPath))
             Directory.CreateDirectory(dbParentPath);
 
-        if (File.Exists(dbPath))
-            return;
-
         using var conn = CreateConnection();
-        using var tran = conn.BeginTransaction();
 
-        const string oneTimePragmas = """
-                                      PRAGMA journal_mode = WAL;
-                                      PRAGMA user_version = 1;
-                                      PRAGMA encoding = UTF-8;
-                                      """;
-        conn.Execute(oneTimePragmas, transaction: tran);
+        Utils.ExecuteNonQuery(conn, """
+                                    PRAGMA journal_mode = WAL;
+                                    PRAGMA user_version = 1;
+                                    PRAGMA encoding = UTF-8;
+                                    """);
 
-        const string createTableSql = """
-                                      CREATE TABLE IF NOT EXISTS AutoGamePresets (
-                                          Id INTEGER PRIMARY KEY,
-                                          Name TEXT NOT NULL,
-                                          PlayTimeSec INTEGER NOT NULL DEFAULT 0,
-                                          WindowTitle TEXT DEFAULT NULL,
-                                          FilePath TEXT DEFAULT NULL,
-                                          WindowRule TEXT DEFAULT NULL,
-                                          PathRule TEXT DEFAULT NULL
-                                      ) STRICT;
-                                      """;
+        using (var tran = conn.BeginTransaction())
+        {
+            Utils.ExecuteNonQuery(conn, """
+                                        CREATE TABLE IF NOT EXISTS AutoGamePresets (
+                                            Id INTEGER PRIMARY KEY,
+                                            Name TEXT NOT NULL,
+                                            PlayTimeSec INTEGER NOT NULL DEFAULT 0,
+                                            WindowTitle TEXT DEFAULT NULL,
+                                            FilePath TEXT DEFAULT NULL,
+                                            WindowRule TEXT DEFAULT NULL,
+                                            PathRule TEXT DEFAULT NULL
+                                        ) STRICT;
+                                        """, tran);
 
-        conn.Execute(createTableSql, transaction: tran);
+            using var insertPreMadePresetsCmd = conn.CreateCommand();
+            insertPreMadePresetsCmd.Transaction = tran;
+            insertPreMadePresetsCmd.CommandText = """
+                                                  INSERT INTO AutoGamePresets (
+                                                      Id,
+                                                      Name,
+                                                      PlayTimeSec,
+                                                      WindowTitle,
+                                                      FilePath,
+                                                      WindowRule,
+                                                      PathRule
+                                                  )
+                                                  VALUES (
+                                                      @Id,
+                                                      @Name,
+                                                      @PlayTimeSec,
+                                                      @WindowTitle,
+                                                      @FilePath,
+                                                      @WindowRule,
+                                                      @PathRule
+                                                  ) ON CONFLICT(Id) DO NOTHING;
+                                                  """;
 
-        const string insertSql = """
-                                 INSERT INTO AutoGamePresets (
-                                     Name,
-                                     PlayTimeSec,
-                                     WindowTitle,
-                                     FilePath,
-                                     WindowRule,
-                                     PathRule
-                                 )
-                                 VALUES (
-                                     @Name,
-                                     @PlayTimeSec,
-                                     @WindowTitle,
-                                     @FilePath,
-                                     @WindowRule,
-                                     @PathRule
-                                 );
-                                 """;
+            var presets = GetPreMadePresets();
 
-        conn.Execute(insertSql, GetPresets(), transaction: tran);
+            var pTableId = insertPreMadePresetsCmd.Parameters.Add("@Id", SqliteType.Integer);
+            var pName = insertPreMadePresetsCmd.Parameters.Add("@Name", SqliteType.Text);
+            var pPlayTimeSec = insertPreMadePresetsCmd.Parameters.Add("@PlayTimeSec", SqliteType.Integer);
+            var pWindowTitle = insertPreMadePresetsCmd.Parameters.Add("@WindowTitle", SqliteType.Text);
+            var pFilePath = insertPreMadePresetsCmd.Parameters.Add("@FilePath", SqliteType.Text);
+            var pWindowRule = insertPreMadePresetsCmd.Parameters.Add("@WindowRule", SqliteType.Text);
+            var pPathRule = insertPreMadePresetsCmd.Parameters.Add("@PathRule", SqliteType.Text);
 
-        const string readTableIdsSql = """
-                                       SELECT Id
-                                       FROM AutoGamePresets
-                                       ORDER BY Id ASC;
-                                       """;
+            foreach (var p in presets)
+            {
+                pTableId.Value = p.TableId;
+                pName.Value = p.Name;
+                pPlayTimeSec.Value = p.PlayTimeSec;
+                pWindowTitle.Value = (object?)p.WindowTitle ?? DBNull.Value;
+                pWindowRule.Value = (object?)p.WindowRule ?? DBNull.Value;
+                pFilePath.Value = (object?)p.FilePath ?? DBNull.Value;
+                pPathRule.Value = (object?)p.PathRule ?? DBNull.Value;
 
-        var ids = conn.Query<int>(readTableIdsSql, transaction: tran)
-                      .Select(v => new GameId(v));
+                insertPreMadePresetsCmd.ExecuteNonQuery();
+            }
 
-        _presetIds.ReplaceAll(ids);
+            tran.Commit();
+        }
 
-        tran.Commit();
+        _presetIds = Utils.FetchTableIds(conn, "AutoGamePresets");
     }
 
-    public static List<Dto.AutoGame> GetPresets() =>
+    public static void Init(string relPathToParent) => Instance = new GamePresets(relPathToParent);
+
+    public static List<AutoGameDto> GetPreMadePresets() =>
     [
         new()
         {
+            TableId = 1,
             Name = "Spotify",
             PathRule = @"[/\\]spotify(\.exe)?$"
         }
     ];
 
-    public GetPresetByIdxResult GetPresetByIdx(GameIdx idx)
+    public QueryTableIdResult GetTableId(DisplayId displayId)
     {
-        var id = GetPresetIdByIdx(idx);
+        return !Utils.IsWithinBounds(displayId, _presetIds)
+            ? new QueryTableIdResult(FailureReason: $"[FAIL] Cannot find game with provided id because its outside the possible values range. (Max value is {_presetIds.Count}). Ignoring command...")
+            : new QueryTableIdResult(Ok: true, TableId: _presetIds[displayId.V - 1]);
+    }
 
-        if (id is null)
-            return new GetPresetByIdxResult(FailureReason: "[FAIL] Cannot find preset with provided id. Ignoring command...");
+    public QueryPresetResult GetPreset(TableId tableId)
+    {
+        using var conn = CreateConnection(queryOnly: true);
+        using var cmd = conn.CreateCommand();
 
-        using var conn = CreateConnection();
-
-        const string sql = """
-                           SELECT
-                               Id,
-                               Name,
-                               PlayTimeSec,
-                               WindowTitle,
-                               FilePath,
-                               WindowRule,
-                               PathRule
-                           FROM AutoGamePresets
-                           WHERE Id = @Id;
-                           """;
+        cmd.CommandText = """
+                          SELECT
+                              Id,
+                              Name,
+                              PlayTimeSec,
+                              WindowTitle,
+                              FilePath,
+                              WindowRule,
+                              PathRule
+                          FROM AutoGamePresets
+                          WHERE Id = @Id;
+                          """;
+        cmd.Parameters.AddWithValue("@Id", tableId.V);
 
         try
         {
-            var dto = conn.QueryFirstOrDefault<Dto.AutoGame>(sql, new IdParam(id.Value));
+            using var reader = cmd.ExecuteReader();
 
-            if (dto is null)
-                return new GetPresetByIdxResult(FailureReason: "[FAIL] Preset not found in database. Ignoring command...");
+            if (!reader.Read())
+                return new QueryPresetResult(FailureReason: "[FAIL] Preset not found in database. Ignoring command...");
 
-            return new GetPresetByIdxResult(HasSucceeded: true,
-                                                        Game: new GameRecords.AutoGame(dto));
+            return new QueryPresetResult(Ok: true,
+                                         GamePreset: new AutoGameRecord(Utils.ReadAutoGame(reader)));
         }
         catch (Exception ex)
         {
-            return new GetPresetByIdxResult(FailureReason: $"[FAIL] Database error msg: {ex.Message}. Ignoring command...");
+            return new QueryPresetResult(FailureReason: $"[FAIL] Database error msg: {ex.Message}. Ignoring command...");
         }
     }
 
-    private GameId? GetPresetIdByIdx(GameIdx idx)
-    {
-        if (!Utils.IsIdxWithinBounds(idx, _presetIds))
-            return null;
-
-        return _presetIds[idx];
-    }
-
-    private SqliteConnection CreateConnection(bool queryOnly = false)
-    {
-        var conn = new SqliteConnection(_connString);
-        conn.Open();
-
-        var sb = new StringBuilder();
-
-        sb.Append("""
-                  PRAGMA synchronous = NORMAL;
-                  PRAGMA busy_timeout = 5000;
-                  PRAGMA temp_store = MEMORY;
-                  PRAGMA foreign_keys = ON;
-                  """);
-
-        if (queryOnly)
-            sb.Append("PRAGMA query_only = ON;");
-
-        conn.Execute(sb.ToString());
-        return conn;
-    }
+    private SqliteConnection CreateConnection(bool queryOnly = false) => Utils.CreateSqlConnection(_connStr, queryOnly);
 
     // Results
-    public record GetPresetByIdxResult(bool HasSucceeded = false, GameRecords.AutoGame? Game = null, string? FailureReason = null);
+    public record struct QueryTableIdResult(bool Ok = false, TableId? TableId = null, string? FailureReason = null);
+
+    public record struct QueryPresetResult(bool Ok = false, AutoGameRecord? GamePreset = null, string? FailureReason = null);
 }

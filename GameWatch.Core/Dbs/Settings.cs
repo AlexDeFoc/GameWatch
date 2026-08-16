@@ -1,75 +1,115 @@
 ﻿using System.IO;
-using System.Text;
 using System.Threading;
-using Dapper;
+using GameWatch.Core.Helpers;
 using Microsoft.Data.Sqlite;
 
 namespace GameWatch.Core.Dbs;
 
-[DapperAot]
-public partial class Settings
+public sealed class Settings
 {
-    public int GameMonitorAgentGamePlayTimeSaveThreshold
-    {
-        get => Interlocked.CompareExchange(ref field, 60, 60);
-        private set => Interlocked.Exchange(ref field, value);
-    }
-
     public static Settings Instance { get; private set; } = null!;
 
-    private readonly string _connString;
-
-    public static void Init(string relPathToParent) => Instance = new Settings(relPathToParent);
+    private readonly string _connStr;
 
     private Settings(string relPathToParent)
     {
-        var dbParentPath = PathResolver.ResolveRelativePath(relPathToParent);
-        var dbPath = Path.Join(dbParentPath, "Settings.db");
+        var dbFolderPath = PathResolver.ResolveRelativePath(relPathToParent);
+        var dbPath = Path.Join(dbFolderPath, "Settings.db");
+        _connStr = $"Data Source={dbPath}";
 
-        _connString = $"Data Source={dbPath}";
+        if (!string.IsNullOrEmpty(dbFolderPath) && !Directory.Exists(dbFolderPath))
+            Directory.CreateDirectory(dbFolderPath);
 
-        if (!string.IsNullOrEmpty(dbParentPath) && !Directory.Exists(dbParentPath))
-            Directory.CreateDirectory(dbParentPath);
+        EnsureDatabaseCreatedAndSeeded();
 
         using var conn = CreateConnection();
+
+        const string readGameMonitorAgentSettings = """
+                                                    SELECT
+                                                        GamePlayTimeSaveThreshold
+                                                    FROM GameMonitorAgent
+                                                    WHERE Id = @Id
+                                                    """;
+
+        using var cmd = conn.CreateCommand();
+        cmd.Parameters.AddWithValue("@Id", 1);
+        cmd.CommandText = readGameMonitorAgentSettings;
+
+        using var reader = cmd.ExecuteReader();
+
+        if (reader.Read())
+        {
+            var threshold = reader.GetInt64(0);
+            GameMonitorAgentGamePlayTimeSaveThreshold = threshold < 1L
+                ? GetGameMonitorAgentDefaults().GamePlayTimeSaveThreshold
+                : threshold;
+        }
+        else
+        {
+            GameMonitorAgentGamePlayTimeSaveThreshold = GetGameMonitorAgentDefaults().GamePlayTimeSaveThreshold;
+        }
+    }
+
+    public long GameMonitorAgentGamePlayTimeSaveThreshold
+    {
+        get => Interlocked.CompareExchange(ref field, 0L, 0L);
+        private set => Interlocked.Exchange(ref field, value);
+    }
+
+    public static void Init(string relPathToParent) => Instance = new Settings(relPathToParent);
+
+    private void EnsureDatabaseCreatedAndSeeded()
+    {
+        using var conn = CreateConnection();
+
+        Utils.ExecuteNonQuery(conn, """
+                              PRAGMA journal_mode = WAL;
+                              PRAGMA user_version = 1;
+                              PRAGMA encoding = UTF-8;
+                              """);
+
         using var tran = conn.BeginTransaction();
 
-        const string oneTimePragmas = """
-                                      PRAGMA journal_mode = WAL;
-                                      PRAGMA user_version = 1;
-                                      PRAGMA encoding = UTF-8;
-                                      """;
-        conn.Execute(oneTimePragmas, transaction: tran);
+        Utils.ExecuteNonQuery(conn, """
+                              CREATE TABLE IF NOT EXISTS GameMonitorAgent (
+                                  Id INTEGER PRIMARY KEY CHECK (Id = 1),
+                                  GamePlayTimeSaveThreshold INTEGER NOT NULL DEFAULT 60
+                              ) STRICT;
+                              """, tran);
 
-        const string createTableSql = """
-                                       CREATE TABLE IF NOT EXISTS GameMonitorAgent (
-                                           Id INTEGER PRIMARY KEY,
-                                           AutoSaveOnDiskSec INTEGER NOT NULL DEFAULT 60
-                                       ) STRICT;
-                                       """;
+        const string insertIntoGameMonitorAgentSql = """
+                                                     INSERT INTO GameMonitorAgent (
+                                                         Id,
+                                                         GamePlayTimeSaveThreshold
+                                                     )
+                                                     VALUES (
+                                                         1,
+                                                         @GamePlayTimeSaveThreshold
+                                                     )
+                                                     ON CONFLICT(Id) DO NOTHING;
+                                                     """;
 
-        conn.Execute(createTableSql, transaction: tran);
+        using var cmd = conn.CreateCommand();
+        cmd.Transaction = tran;
+        cmd.CommandText = insertIntoGameMonitorAgentSql;
+        cmd.Parameters.AddWithValue("@GamePlayTimeSaveThreshold", GetGameMonitorAgentDefaults().GamePlayTimeSaveThreshold);
+        cmd.ExecuteNonQuery();
+
         tran.Commit();
     }
 
-    private SqliteConnection CreateConnection(bool queryOnly = false)
+    private static GameMonitorAgentSettingsDto GetGameMonitorAgentDefaults()
     {
-        var conn = new SqliteConnection(_connString);
-        conn.Open();
+        return new GameMonitorAgentSettingsDto
+        {
+            GamePlayTimeSaveThreshold = 60
+        };
+    }
 
-        var sb = new StringBuilder();
+    private SqliteConnection CreateConnection(bool queryOnly = false) => Utils.CreateSqlConnection(_connStr, queryOnly);
 
-        sb.Append("""
-                  PRAGMA synchronous = NORMAL;
-                  PRAGMA busy_timeout = 5000;
-                  PRAGMA temp_store = MEMORY;
-                  PRAGMA foreign_keys = ON;
-                  """);
-
-        if (queryOnly)
-            sb.Append("PRAGMA query_only = ON;");
-
-        conn.Execute(sb.ToString());
-        return conn;
+    private sealed class GameMonitorAgentSettingsDto
+    {
+        public long GamePlayTimeSaveThreshold { get; init; }
     }
 }

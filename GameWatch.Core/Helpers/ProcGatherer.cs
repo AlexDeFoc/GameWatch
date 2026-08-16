@@ -4,10 +4,9 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
-using GameWatch.Core.Dto;
-using GameWatch.Core.Wrappers;
+using GameWatch.Core.Types;
 
-namespace GameWatch.Core;
+namespace GameWatch.Core.Helpers;
 
 public static class ProcGatherer
 {
@@ -21,44 +20,48 @@ public static class ProcGatherer
             ? StringComparer.OrdinalIgnoreCase
             : StringComparer.Ordinal;
 
-    private static readonly List<string> ExcludedSystemDirectories = InitializeSystemDirectories();
+    private static readonly string[] ExcludedSystemDirectories = InitializeSystemDirectories();
 
-    public static Dictionary<int, OurProc> GetDictOfAvailableProcesses()
+    public static Dictionary<int, ProcDto> GetDictOfAvailableProcesses()
     {
-        var result = new Dictionary<int, OurProc>();
-        var procs = Process.GetProcesses().ToList();
+        var result = new Dictionary<int, ProcDto>();
+        var procs = Process.GetProcesses();
 
-        foreach (var proc in procs)
+        for (var i = 0; i < procs.Length; ++i)
         {
+            var proc = procs[i];
+
             try
             {
-                // 1. Fast check: If it doesn't have a window handle or title, drop it
-                if (proc.MainWindowHandle == IntPtr.Zero || string.IsNullOrWhiteSpace(proc.MainWindowTitle))
+                // Fast check: Drop immediately if no window handle exists
+                if (proc.MainWindowHandle == IntPtr.Zero)
                     continue;
 
-                // Slow check: Only read MainModule for the ~5-10 processes that passed the window check
-                // This completely eliminates Access Denied exceptions on system processes
+                // Cache title string to avoid duplicate property reads / allocations
+                var windowTitle = proc.MainWindowTitle;
+                if (string.IsNullOrWhiteSpace(windowTitle))
+                    continue;
+
+                // Slow check: Only read MainModule for processes passing window check
                 var filePath = proc.MainModule?.FileName;
                 if (string.IsNullOrEmpty(filePath))
                     continue;
 
-                // 3. System path check: filter against cached system paths
+                // System path check
                 if (IsSystemProcess(filePath))
                     continue;
 
-                result.Add(proc.Id,
-                           new OurProc(
-                               Pid: proc.Id,
-                               WindowTitle: proc.MainWindowTitle,
-                               FilePath: filePath));
+                var pid = proc.Id;
+                result[pid] = new ProcDto(Pid: pid,
+                                          WindowTitle: windowTitle,
+                                          FilePath: filePath);
             }
             catch
             {
-                // Ignore processes that closed mid-check or restricted by OS
+                // Process closed mid-check or restricted by OS permissions
             }
             finally
             {
-                // Dispose OS handle to prevent leaks
                 proc.Dispose();
             }
         }
@@ -66,41 +69,46 @@ public static class ProcGatherer
         return result;
     }
 
-    public static List<OurProc> GetListOfAvailableProcesses()
+    public static List<ProcDto> GetListOfAvailableProcesses()
     {
-        var result = new List<OurProc>();
-        var procs = Process.GetProcesses().ToList();
+        var result = new List<ProcDto>();
+        var procs = Process.GetProcesses();
 
-        foreach (var proc in procs)
+        for (var i = 0; i < procs.Length; ++i)
         {
+            var proc = procs[i];
+
             try
             {
-                // 1. Fast check: If it doesn't have a window handle or title, drop it
-                if (proc.MainWindowHandle == IntPtr.Zero || string.IsNullOrWhiteSpace(proc.MainWindowTitle))
+                // Fast check: Drop immediately if no window handle exists
+                if (proc.MainWindowHandle == IntPtr.Zero)
                     continue;
 
-                // Slow check: Only read MainModule for the ~5-10 processes that passed the window check
-                // This completely eliminates Access Denied exceptions on system processes
+                // Cache title string to avoid duplicate property reads / allocations
+                var windowTitle = proc.MainWindowTitle;
+                if (string.IsNullOrWhiteSpace(windowTitle))
+                    continue;
+
+                // Slow check: Only read MainModule for processes passing window check
                 var filePath = proc.MainModule?.FileName;
                 if (string.IsNullOrEmpty(filePath))
                     continue;
 
-                // 3. System path check: filter against cached system paths
+                // System path check
                 if (IsSystemProcess(filePath))
                     continue;
 
-                result.Add(new OurProc(
-                               Pid: proc.Id,
-                               WindowTitle: proc.MainWindowTitle,
-                               FilePath: filePath));
+                var pid = proc.Id;
+                result.Add(new ProcDto(Pid: pid,
+                                       WindowTitle: windowTitle,
+                                       FilePath: filePath));
             }
             catch
             {
-                // Ignore processes that closed mid-check or restricted by OS
+                // Process closed mid-check or restricted by OS permissions
             }
             finally
             {
-                // Dispose OS handle to prevent leaks
                 proc.Dispose();
             }
         }
@@ -108,7 +116,7 @@ public static class ProcGatherer
         return result;
     }
 
-    public static OurProc? GetOurProcFromPid(Pid pid)
+    public static ProcDto? GetOurProcFromPid(ProcPid pid)
     {
         try
         {
@@ -118,7 +126,7 @@ public static class ProcGatherer
             if (string.IsNullOrEmpty(filePath) || string.IsNullOrEmpty(proc.MainWindowTitle))
                 return null;
 
-            return new OurProc(Pid: proc.Id,
+            return new ProcDto(Pid: proc.Id,
                                WindowTitle: proc.MainWindowTitle,
                                FilePath: filePath);
         }
@@ -139,7 +147,7 @@ public static class ProcGatherer
         return ExcludedSystemDirectories.Any(dir => fullPath.StartsWith(dir, StringComparison.OrdinalIgnoreCase));
     }
 
-    private static List<string> InitializeSystemDirectories()
+    private static string[] InitializeSystemDirectories()
     {
         var potentialDirs = new List<string>();
 
@@ -159,11 +167,20 @@ public static class ProcGatherer
             potentialDirs.Add("/System"); // macOS System folder
         }
 
-        return potentialDirs
-               .Where(Directory.Exists)
-               .Select(Path.GetFullPath)
-               .Select(dir => dir.EndsWith(Path.DirectorySeparatorChar) ? dir : dir + Path.DirectorySeparatorChar)
-               .Distinct(PathEqualityComparer)
-               .ToList();
+        var result = new List<string>();
+        foreach (var dir in potentialDirs)
+        {
+            if (!Directory.Exists(dir)) continue;
+
+            var fullPath = Path.GetFullPath(dir);
+            var normalized = fullPath.EndsWith(Path.DirectorySeparatorChar)
+                ? fullPath
+                : fullPath + Path.DirectorySeparatorChar;
+
+            if (!result.Contains(normalized, PathEqualityComparer))
+                result.Add(normalized);
+        }
+
+        return [.. result];
     }
 }

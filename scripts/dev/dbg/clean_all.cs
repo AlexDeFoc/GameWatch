@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-using System.IO;
 using System.Runtime.CompilerServices;
 using System.Diagnostics;
 
@@ -20,6 +18,8 @@ foreach (var script in scriptNames)
 
     Run("dotnet", $"run \"{scriptPath}\"", workingDirectory: scriptFolderPath);
 }
+
+return;
 
 static string GetScriptFilePath([CallerFilePath] string path = "") => path;
 
