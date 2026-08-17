@@ -1,0 +1,9 @@
+﻿<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="[Dev Rel] Build all" type="RunDotNetFile" factoryName="RunDotNetFile">
+    <option name="filePath" value="$PROJECT_DIR$/scripts/dev/rel/build_all.cs" />
+    <option name="programParameters" value="" />
+    <option name="terminalMode" value="Auto" />
+    <option name="workingDirectory" value="$PROJECT_DIR$/scripts/dev/rel" />
+    <method v="2" />
+  </configuration>
+</component>

@@ -1,0 +1,9 @@
+﻿<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="[Ship] win-x64" type="RunDotNetFile" factoryName="RunDotNetFile">
+    <option name="filePath" value="$PROJECT_DIR$/scripts/ship/ship_windows_x64.cs" />
+    <option name="programParameters" value="" />
+    <option name="terminalMode" value="Auto" />
+    <option name="workingDirectory" value="$PROJECT_DIR$/scripts/ship" />
+    <method v="2" />
+  </configuration>
+</component>
