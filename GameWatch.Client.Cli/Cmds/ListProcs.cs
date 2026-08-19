@@ -1,22 +1,25 @@
 ﻿using System;
 using System.CommandLine;
+using System.Threading;
+using System.Threading.Tasks;
 using GameWatch.Core.Helpers;
 
 namespace GameWatch.Client.Cli.Cmds;
 
 public static class ListProcs
 {
-    public static Command Build()
+    public static Task<Command> BuildAsync(CancellationToken callerCancellationToken)
     {
         var cmd = new Command("procs", "List all active processes with properties" +
                                        "that can be used to match against when monitoring auto games.");
         cmd.Aliases.Add("p");
 
-        cmd.SetAction(_ =>
+        cmd.SetAction(async (_, cliCt) =>
         {
-            var procs = ProcGatherer.GetListOfAvailableProcesses();
+            using var ctSrc = CancellationTokenSource.CreateLinkedTokenSource(callerCancellationToken, cliCt);
+            var ct = ctSrc.Token;
 
-            foreach (var proc in procs)
+            await foreach (var proc in ProcGatherer.StreamAvailableProcessesAsync(ct))
             {
                 Console.WriteLine($"Pid: {proc.Pid}");
                 Console.WriteLine($"Window Title: {proc.WindowTitle}");
@@ -27,6 +30,6 @@ public static class ListProcs
             return 0;
         });
 
-        return cmd;
+        return Task.FromResult(cmd);
     }
 }

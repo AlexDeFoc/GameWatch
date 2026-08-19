@@ -1,5 +1,7 @@
 ﻿using System;
 using System.CommandLine;
+using System.Threading;
+using System.Threading.Tasks;
 using GameWatch.Core;
 using GameWatch.Core.Dbs;
 using GameWatch.Core.Types;
@@ -8,7 +10,7 @@ namespace GameWatch.Client.Cli.Cmds;
 
 public static class ResetGame
 {
-    public static Command Build()
+    public static Task<Command> BuildAsync(CancellationToken callerCancellationToken)
     {
         var displayIdOption = new Option<int>("--id", "-i")
         {
@@ -50,13 +52,16 @@ public static class ResetGame
             }
         });
 
-        cmd.SetAction(async (result, cancellationToken) =>
+        cmd.SetAction(async (result, cliCt) =>
         {
+            using var ctSrc = CancellationTokenSource.CreateLinkedTokenSource(callerCancellationToken, cliCt);
+            var ct = ctSrc.Token;
+
             var resetManual = result.GetValue(manualOption);
             var gameMode = resetManual ? GameMode.Manual : GameMode.Auto;
 
             var displayId = new DisplayId(result.GetRequiredValue(displayIdOption));
-            var tableIdResult = GameLibrary.Instance.GetTableId(GameMode.Manual, displayId);
+            var tableIdResult = GameLibrary.Instance.GetTableId(gameMode, displayId);
 
             if (!tableIdResult.Ok || tableIdResult.TableId is null)
             {
@@ -66,7 +71,7 @@ public static class ResetGame
 
             var tableId = tableIdResult.TableId.Value;
 
-            var resetGameResult = GameLibrary.Instance.ResetGame(gameMode, tableId);
+            var resetGameResult = await GameLibrary.Instance.ResetGameAsync(gameMode, tableId, ct);
 
             if (!resetGameResult.Ok || resetGameResult.GameName is null)
             {
@@ -81,10 +86,10 @@ public static class ResetGame
             var notificationResult = resetManual
                 ? await GameMonitorAgentIpcServer.NotifyThatManualGameGotResetAsync(tableId,
                                                                                     gameName,
-                                                                                    cancellationToken)
+                                                                                    ct)
                 : await GameMonitorAgentIpcServer.NotifyThatAutoGameGotResetAsync(tableId,
                                                                                   gameName,
-                                                                                  cancellationToken);
+                                                                                  ct);
 
             if (notificationResult.Ok) return 0;
 
@@ -92,6 +97,6 @@ public static class ResetGame
             return 1;
         });
 
-        return cmd;
+        return Task.FromResult(cmd);
     }
 }

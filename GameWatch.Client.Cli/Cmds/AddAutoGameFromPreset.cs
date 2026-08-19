@@ -1,5 +1,7 @@
 ﻿using System;
 using System.CommandLine;
+using System.Threading;
+using System.Threading.Tasks;
 using GameWatch.Core;
 using GameWatch.Core.Dbs;
 using GameWatch.Core.Types;
@@ -8,7 +10,7 @@ namespace GameWatch.Client.Cli.Cmds;
 
 public static class AddAutoGameFromPreset
 {
-    public static Command Build()
+    public static Task<Command> BuildAsync(CancellationToken callerCancellationToken)
     {
         var displayIdOption = new Option<int>("--id", "-i")
         {
@@ -22,8 +24,11 @@ public static class AddAutoGameFromPreset
         };
         cmd.Aliases.Add("p");
 
-        cmd.SetAction(async (result, cancellationToken) =>
+        cmd.SetAction(async (result, cliCt) =>
         {
+            using var ctSrc = CancellationTokenSource.CreateLinkedTokenSource(callerCancellationToken, cliCt);
+            var ct = ctSrc.Token;
+
             var displayId = new DisplayId(result.GetValue(displayIdOption));
 
             var tableIdResult = GamePresets.Instance.GetTableId(displayId);
@@ -36,7 +41,7 @@ public static class AddAutoGameFromPreset
 
             var tableId = tableIdResult.TableId.Value;
 
-            var gamePresetResult = GamePresets.Instance.GetPreset(tableId);
+            var gamePresetResult = await GamePresets.Instance.GetPresetAsync(tableId, ct);
 
             if (!gamePresetResult.Ok || gamePresetResult.GamePreset is null)
             {
@@ -46,11 +51,12 @@ public static class AddAutoGameFromPreset
 
             var gamePreset = gamePresetResult.GamePreset;
 
-            GameLibrary.Instance.AddGame(gamePreset);
+            await GameLibrary.Instance.AddGameAsync(gamePreset, ct);
 
             Console.WriteLine($"[OK] Game with Name='{gamePreset.Name}' added successfully");
 
-            var notificationResult = await GameMonitorAgentIpcServer.RequestToRefreshAutoGamesCacheAsync(cancellationToken);
+            var notificationResult = await GameMonitorAgentIpcServer.RequestToTrackNewlyAddedAutoGameAsync(
+                new AutoGameDto(gamePreset), ct);
 
             if (notificationResult.Ok) return 0;
 
@@ -58,6 +64,6 @@ public static class AddAutoGameFromPreset
             return 1;
         });
 
-        return cmd;
+        return Task.FromResult(cmd);
     }
 }

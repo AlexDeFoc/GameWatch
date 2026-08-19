@@ -5,14 +5,15 @@ package gamewatch.ipc;
 option csharp_namespace = "GameWatch.Agent.GameMonitor.Ipc.Grpc";
 
 service IpcProcessor {
-  rpc ToggleManualGame (GameIdAndNameRequest) returns (ToggleManualGameResponse);
-  rpc RemoveManualGame (GameIdAndNameRequest) returns (StatusResponse);
-  rpc RemoveAutoGame (GameIdAndNameRequest) returns (StatusResponse);
-  rpc RefreshAutoGamesList (EmptyRequest) returns (StatusResponse);
-  rpc ResetActiveManualGame (GameIdAndNameRequest) returns (StatusAndMessageResponse);
-  rpc ResetActiveAutoGame (GameIdAndNameRequest) returns (StatusAndMessageResponse);
+  rpc ToggleManualGame (TableIdAndNameRequest) returns (ToggleManualGameResponse);
+  rpc RemoveManualGame (TableIdAndNameRequest) returns (StatusResponse);
+  rpc RemoveAutoGame (TableIdAndNameRequest) returns (StatusResponse);
+  rpc ResetActiveManualGame (TableIdAndNameRequest) returns (StatusAndMessageResponse);
+  rpc ResetActiveAutoGame (TableIdAndNameRequest) returns (StatusAndMessageResponse);
   rpc EditAutoGame (EditGameRequest) returns (StatusAndMessageResponse);
   rpc EvictOldInstance (EmptyRequest) returns (StatusResponse);
+  rpc TrackNewlyAddedAutoGame (AutoGameDtoRequest) returns (StatusAndMessageResponse);
+  rpc StopTrackingAllGames (StopTrackingAllGamesRequest) returns (StatusAndMessageResponse);
 }
 
 // Requests
@@ -28,9 +29,24 @@ message EditGameRequest {
   bool matching_rules_changed = 3;
 }
 
-message GameIdAndNameRequest {
+message TableIdAndNameRequest {
   int32 table_id = 1;
   string game_name = 2;
+}
+
+message StopTrackingAllGamesRequest {
+  bool stop_tracking_auto_games = 1;
+  bool stop_tracking_manual_games = 2;
+}
+
+message AutoGameDtoRequest {
+  int32 table_id = 1;
+  string game_name = 2;
+  int64 play_time_sec = 3;
+  string window_title = 4;
+  string window_rule = 5;
+  string file_path = 6;
+  string path_rule = 7;
 }
 
 // Responses

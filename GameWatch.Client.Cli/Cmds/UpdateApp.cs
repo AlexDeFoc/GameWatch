@@ -1,12 +1,13 @@
 ﻿using System;
 using System.CommandLine;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace GameWatch.Client.Cli.Cmds;
 
 public static class UpdateApp
 {
-    public static Command Build()
+    public static Task<Command> BuildAsync(CancellationToken cancellationToken)
     {
         var dryOption = new Option<bool>("--dry", "-d")
         {
@@ -18,6 +19,6 @@ public static class UpdateApp
 
         cmd.SetAction(_ => Task.FromException<int>(new NotImplementedException()));
 
-        return cmd;
+        return Task.FromResult(cmd);
     }
 }

@@ -1,6 +1,5 @@
 ﻿using System.Collections.Concurrent;
 using System.Collections.Immutable;
-using System.Threading;
 using GameWatch.Core.Types;
 
 namespace GameWatch.Agent.GameMonitor;
@@ -10,16 +9,36 @@ public sealed class AgentState
     public ConcurrentDictionary<TableId, TrackingSessions.Auto> ActiveAutoGames { get; } = [];
     public ConcurrentDictionary<TableId, TrackingSessions.Manual> ActiveManualGames { get; } = [];
 
-    public ImmutableList<AutoGameRecord> LoadedAutoGames
+    private ImmutableArray<AutoGameRecord> _loadedAutoGames = [];
+
+    public ImmutableArray<AutoGameRecord> GetLoadedAutoGames() => _loadedAutoGames;
+
+    public int LoadedAutoGamesCount() => _loadedAutoGames.Length;
+
+    public void ReplaceAllAutoGames(AutoGameRecord[] newRecords)
     {
-        get => Volatile.Read(ref field);
-        set => Volatile.Write(ref field, value);
-    } = ImmutableList<AutoGameRecord>.Empty;
+        _loadedAutoGames = [.. newRecords];
+    }
 
-    private int _refreshRequested;
+    public void AddAutoGame(AutoGameRecord record)
+    {
+        ImmutableInterlocked.Update(ref _loadedAutoGames, static (list, item) => list.Add(item), record);
+    }
 
-    public void RequestGameListRefresh() => Interlocked.Exchange(ref _refreshRequested, 1);
+    public void RemoveAutoGame(TableId tableId)
+    {
+        ImmutableInterlocked.Update(ref _loadedAutoGames, static (list, id) =>
+        {
+            for (var i = 0; i < list.Length; i++)
+            {
+                if (list[i].TableId == id) return list.RemoveAt(i);
+            }
+            return list;
+        }, tableId);
+    }
 
-    /// <summary> Returns true if a refresh was pending, and atomically resets it to 0 </summary>
-    public bool ConsumeRefreshRequest() => Interlocked.Exchange(ref _refreshRequested, 0) == 1;
+    public void RemoveAllAutoGames()
+    {
+        _loadedAutoGames = [];
+    }
 }

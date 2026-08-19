@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 using GameWatch.Core.Helpers;
 using GameWatch.Core.Types;
 using Microsoft.Data.Sqlite;
@@ -11,10 +13,22 @@ public sealed class GamePresets
 {
     public static GamePresets Instance { get; private set; } = null!;
 
-    private readonly string _connStr;
-    private readonly List<TableId> _presetIds;
+    private string _connStr = null!;
+    private List<TableId> _presetIds = null!;
 
-    private GamePresets(string relPathToParent)
+    private GamePresets()
+    {
+    }
+
+    public static async Task CreateAndInitAsync(string relPathToParent, CancellationToken cancellationToken)
+    {
+        var library = new GamePresets();
+        await library.InitAsync(relPathToParent, cancellationToken);
+
+        Instance = library;
+    }
+
+    private async Task InitAsync(string relPathToParent, CancellationToken cancellationToken)
     {
         var dbParentPath = PathResolver.ResolveRelativePath(relPathToParent);
         var dbPath = Path.Join(dbParentPath, "GamePresets.db");
@@ -24,29 +38,29 @@ public sealed class GamePresets
         if (!string.IsNullOrEmpty(dbParentPath) && !Directory.Exists(dbParentPath))
             Directory.CreateDirectory(dbParentPath);
 
-        using var conn = CreateConnection();
+        await using var conn = await Utils.CreateSqlConnAsync(_connStr, cancellationToken: cancellationToken);
 
-        Utils.ExecuteNonQuery(conn, """
-                                    PRAGMA journal_mode = WAL;
-                                    PRAGMA user_version = 1;
-                                    PRAGMA encoding = UTF-8;
-                                    """);
+        await Utils.ExecuteNonQueryAsync(conn, """
+                                               PRAGMA journal_mode = WAL;
+                                               PRAGMA user_version = 1;
+                                               PRAGMA encoding = UTF-8;
+                                               """, cancellationToken: cancellationToken);
 
-        using (var tran = conn.BeginTransaction())
+        await using (var tran = conn.BeginTransaction())
         {
-            Utils.ExecuteNonQuery(conn, """
-                                        CREATE TABLE IF NOT EXISTS AutoGamePresets (
-                                            Id INTEGER PRIMARY KEY,
-                                            Name TEXT NOT NULL,
-                                            PlayTimeSec INTEGER NOT NULL DEFAULT 0,
-                                            WindowTitle TEXT DEFAULT NULL,
-                                            FilePath TEXT DEFAULT NULL,
-                                            WindowRule TEXT DEFAULT NULL,
-                                            PathRule TEXT DEFAULT NULL
-                                        ) STRICT;
-                                        """, tran);
+            await Utils.ExecuteNonQueryAsync(conn, """
+                                                   CREATE TABLE IF NOT EXISTS AutoGamePresets (
+                                                       Id INTEGER PRIMARY KEY,
+                                                       Name TEXT NOT NULL,
+                                                       PlayTimeSec INTEGER NOT NULL DEFAULT 0,
+                                                       WindowTitle TEXT DEFAULT NULL,
+                                                       FilePath TEXT DEFAULT NULL,
+                                                       WindowRule TEXT DEFAULT NULL,
+                                                       PathRule TEXT DEFAULT NULL
+                                                   ) STRICT;
+                                                   """, cancellationToken, tran);
 
-            using var insertPreMadePresetsCmd = conn.CreateCommand();
+            await using var insertPreMadePresetsCmd = conn.CreateCommand();
             insertPreMadePresetsCmd.Transaction = tran;
             insertPreMadePresetsCmd.CommandText = """
                                                   INSERT INTO AutoGamePresets (
@@ -89,16 +103,14 @@ public sealed class GamePresets
                 pFilePath.Value = (object?)p.FilePath ?? DBNull.Value;
                 pPathRule.Value = (object?)p.PathRule ?? DBNull.Value;
 
-                insertPreMadePresetsCmd.ExecuteNonQuery();
+                await insertPreMadePresetsCmd.ExecuteNonQueryAsync(cancellationToken);
             }
 
-            tran.Commit();
+            await tran.CommitAsync(cancellationToken);
         }
 
-        _presetIds = Utils.FetchTableIds(conn, "AutoGamePresets");
+        _presetIds = await Utils.FetchTableIdsAsync(conn, PresetNames.AutoGame, cancellationToken);
     }
-
-    public static void Init(string relPathToParent) => Instance = new GamePresets(relPathToParent);
 
     public static List<AutoGameDto> GetPreMadePresets() =>
     [
@@ -117,10 +129,10 @@ public sealed class GamePresets
             : new QueryTableIdResult(Ok: true, TableId: _presetIds[displayId.V - 1]);
     }
 
-    public QueryPresetResult GetPreset(TableId tableId)
+    public async Task<QueryPresetResult> GetPresetAsync(TableId tableId, CancellationToken cancellationToken)
     {
-        using var conn = CreateConnection(queryOnly: true);
-        using var cmd = conn.CreateCommand();
+        await using var conn = await Utils.CreateSqlConnAsync(_connStr, cancellationToken, queryOnly: true);
+        await using var cmd = conn.CreateCommand();
 
         cmd.CommandText = """
                           SELECT
@@ -138,21 +150,25 @@ public sealed class GamePresets
 
         try
         {
-            using var reader = cmd.ExecuteReader();
+            await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
 
-            if (!reader.Read())
+            if (!await reader.ReadAsync(cancellationToken))
                 return new QueryPresetResult(FailureReason: "[FAIL] Preset not found in database. Ignoring command...");
 
             return new QueryPresetResult(Ok: true,
                                          GamePreset: new AutoGameRecord(Utils.ReadAutoGame(reader)));
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
             return new QueryPresetResult(FailureReason: $"[FAIL] Database error msg: {ex.Message}. Ignoring command...");
         }
     }
 
-    private SqliteConnection CreateConnection(bool queryOnly = false) => Utils.CreateSqlConnection(_connStr, queryOnly);
+    // Types
+    public enum PresetNames
+    {
+        AutoGame
+    }
 
     // Results
     public record struct QueryTableIdResult(bool Ok = false, TableId? TableId = null, string? FailureReason = null);

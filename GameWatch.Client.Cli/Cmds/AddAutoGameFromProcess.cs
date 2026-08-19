@@ -1,5 +1,7 @@
 ﻿using System;
 using System.CommandLine;
+using System.Threading;
+using System.Threading.Tasks;
 using GameWatch.Core;
 using GameWatch.Core.Dbs;
 using GameWatch.Core.Helpers;
@@ -9,7 +11,7 @@ namespace GameWatch.Client.Cli.Cmds;
 
 public static class AddAutoGameFromProcess
 {
-    public static Command Build()
+    public static Task<Command> BuildAsync(CancellationToken callerCancellationToken)
     {
         var nameOption = new Option<string>("--name", "-n")
         {
@@ -96,8 +98,11 @@ public static class AddAutoGameFromProcess
             }
         });
 
-        cmd.SetAction(async (result, cancellationToken) =>
+        cmd.SetAction(async (result, cliCt) =>
         {
+            using var ctSrc = CancellationTokenSource.CreateLinkedTokenSource(callerCancellationToken, cliCt);
+            var ct = ctSrc.Token;
+
             var pid = result.GetValue(pidOption);
 
             ProcDto? proc = null;
@@ -148,11 +153,12 @@ public static class AddAutoGameFromProcess
                 }
             }
 
-            GameLibrary.Instance.AddGame(game);
+            await GameLibrary.Instance.AddGameAsync(game, ct);
 
             Console.WriteLine($"[OK] Game with Name='{game.Name}' added successfully");
 
-            var notificationResult = await GameMonitorAgentIpcServer.RequestToRefreshAutoGamesCacheAsync(cancellationToken);
+            var notificationResult = await GameMonitorAgentIpcServer.RequestToTrackNewlyAddedAutoGameAsync(
+                new AutoGameDto(game), ct);
 
             if (notificationResult.Ok) return 0;
 
@@ -160,6 +166,6 @@ public static class AddAutoGameFromProcess
             return 1;
         });
 
-        return cmd;
+        return Task.FromResult(cmd);
     }
 }

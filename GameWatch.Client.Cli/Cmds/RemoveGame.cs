@@ -1,5 +1,7 @@
 ﻿using System;
 using System.CommandLine;
+using System.Threading;
+using System.Threading.Tasks;
 using GameWatch.Core;
 using GameWatch.Core.Dbs;
 using GameWatch.Core.Types;
@@ -8,7 +10,7 @@ namespace GameWatch.Client.Cli.Cmds;
 
 public static class RemoveGame
 {
-    public static Command Build()
+    public static Task<Command> BuildAsync(CancellationToken callerCancellationToken)
     {
         var displayIdOption = new Option<int>("--id", "-i")
         {
@@ -50,13 +52,16 @@ public static class RemoveGame
             }
         });
 
-        cmd.SetAction(async (result, cancellationToken) =>
+        cmd.SetAction(async (result, cliCt) =>
         {
+            using var ctSrc = CancellationTokenSource.CreateLinkedTokenSource(callerCancellationToken, cliCt);
+            var ct = ctSrc.Token;
+
             var removeManual = result.GetValue(manualOption);
             var gameMode = removeManual ? GameMode.Manual : GameMode.Auto;
 
             var displayId = new DisplayId(result.GetRequiredValue(displayIdOption));
-            var tableIdResult = GameLibrary.Instance.GetTableId(GameMode.Manual, displayId);
+            var tableIdResult = GameLibrary.Instance.GetTableId(gameMode, displayId);
 
             if (!tableIdResult.Ok || tableIdResult.TableId is null)
             {
@@ -66,7 +71,7 @@ public static class RemoveGame
 
             var tableId = tableIdResult.TableId.Value;
 
-            var deletedGameResult = GameLibrary.Instance.RemoveGame(gameMode, tableId);
+            var deletedGameResult = await GameLibrary.Instance.RemoveGameAsync(gameMode, tableId, ct);
 
             if (!deletedGameResult.Ok || deletedGameResult.GameName is null)
             {
@@ -81,10 +86,10 @@ public static class RemoveGame
             var notificationResult = removeManual
                 ? await GameMonitorAgentIpcServer.NotifyThatManualGameGotRemovedAsync(tableId,
                                                                                       gameName,
-                                                                                      cancellationToken)
+                                                                                      ct)
                 : await GameMonitorAgentIpcServer.NotifyThatAutoGameGotRemovedAsync(tableId,
                                                                                     gameName,
-                                                                                    cancellationToken);
+                                                                                    ct);
 
             if (notificationResult.Ok) return 0;
 
@@ -92,6 +97,6 @@ public static class RemoveGame
             return 1;
         });
 
-        return cmd;
+        return Task.FromResult(cmd);
     }
 }

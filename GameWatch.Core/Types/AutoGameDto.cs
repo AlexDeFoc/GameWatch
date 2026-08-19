@@ -9,4 +9,19 @@ public sealed class AutoGameDto
     public string? FilePath { get; init; }
     public string? WindowRule { get; init; }
     public string? PathRule { get; init; }
+
+    public AutoGameDto()
+    {
+    }
+
+    public AutoGameDto(AutoGameRecord g)
+    {
+        TableId = g.TableId.V;
+        Name = g.Name;
+        PlayTimeSec = g.PlayTimeSec.V;
+        WindowTitle = g.WindowTitle;
+        WindowRule = g.WindowRule;
+        FilePath = g.FilePath;
+        PathRule = g.PathRule;
+    }
 }

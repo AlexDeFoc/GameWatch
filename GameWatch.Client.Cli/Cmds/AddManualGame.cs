@@ -1,5 +1,7 @@
 ﻿using System;
 using System.CommandLine;
+using System.Threading;
+using System.Threading.Tasks;
 using GameWatch.Core.Dbs;
 using GameWatch.Core.Types;
 
@@ -7,7 +9,7 @@ namespace GameWatch.Client.Cli.Cmds;
 
 public static class AddManualGame
 {
-    public static Command Build()
+    public static Task<Command> BuildAsync(CancellationToken callerCancellationToken)
     {
         var nameOption = new Option<string>("--name", "-n")
         {
@@ -27,20 +29,23 @@ public static class AddManualGame
         };
         cmd.Aliases.Add("m");
 
-        cmd.SetAction(result =>
+        cmd.SetAction(async (result, cliCt) =>
         {
+            using var ctSrc = CancellationTokenSource.CreateLinkedTokenSource(callerCancellationToken, cliCt);
+            var ct = ctSrc.Token;
+
             var name = result.GetRequiredValue(nameOption);
             var initialPlayTime = result.GetValue(playTimeOption);
 
             var gameRecord = new ManualGameRecord { Name = name, PlayTimeSec = new ElapsedTime(initialPlayTime) };
 
-            GameLibrary.Instance.AddGame(gameRecord);
+            await GameLibrary.Instance.AddGameAsync(gameRecord, ct);
 
             Console.WriteLine("[OK] Manual game added to database");
 
             return 0;
         });
 
-        return cmd;
+        return Task.FromResult(cmd);
     }
 }

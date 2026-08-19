@@ -1,7 +1,7 @@
 ﻿using System.IO;
 using System.Threading;
+using System.Threading.Tasks;
 using GameWatch.Core.Helpers;
-using Microsoft.Data.Sqlite;
 
 namespace GameWatch.Core.Dbs;
 
@@ -9,9 +9,21 @@ public sealed class Settings
 {
     public static Settings Instance { get; private set; } = null!;
 
-    private readonly string _connStr;
+    private string _connStr = null!;
 
-    private Settings(string relPathToParent)
+    private Settings()
+    {
+    }
+
+    public static async Task CreateAndInitAsync(string relPathToParent, CancellationToken cancellationToken)
+    {
+        var settings = new Settings();
+        await settings.InitAsync(relPathToParent, cancellationToken);
+
+        Instance = settings;
+    }
+
+    private async Task InitAsync(string relPathToParent, CancellationToken cancellationToken)
     {
         var dbFolderPath = PathResolver.ResolveRelativePath(relPathToParent);
         var dbPath = Path.Join(dbFolderPath, "Settings.db");
@@ -20,9 +32,9 @@ public sealed class Settings
         if (!string.IsNullOrEmpty(dbFolderPath) && !Directory.Exists(dbFolderPath))
             Directory.CreateDirectory(dbFolderPath);
 
-        EnsureDatabaseCreatedAndSeeded();
+        await EnsureDatabaseCreatedAndSeeded(cancellationToken);
 
-        using var conn = CreateConnection();
+        await using var conn = await Utils.CreateSqlConnAsync(_connStr, cancellationToken: cancellationToken);
 
         const string readGameMonitorAgentSettings = """
                                                     SELECT
@@ -31,13 +43,13 @@ public sealed class Settings
                                                     WHERE Id = @Id
                                                     """;
 
-        using var cmd = conn.CreateCommand();
+        await using var cmd = conn.CreateCommand();
         cmd.Parameters.AddWithValue("@Id", 1);
         cmd.CommandText = readGameMonitorAgentSettings;
 
-        using var reader = cmd.ExecuteReader();
+        await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
 
-        if (reader.Read())
+        if (await reader.ReadAsync(cancellationToken))
         {
             var threshold = reader.GetInt64(0);
             GameMonitorAgentGamePlayTimeSaveThreshold = threshold < 1L
@@ -56,26 +68,24 @@ public sealed class Settings
         private set => Interlocked.Exchange(ref field, value);
     }
 
-    public static void Init(string relPathToParent) => Instance = new Settings(relPathToParent);
-
-    private void EnsureDatabaseCreatedAndSeeded()
+    private async Task EnsureDatabaseCreatedAndSeeded(CancellationToken cancellationToken)
     {
-        using var conn = CreateConnection();
+        await using var conn = await Utils.CreateSqlConnAsync(_connStr, cancellationToken: cancellationToken);
 
-        Utils.ExecuteNonQuery(conn, """
-                              PRAGMA journal_mode = WAL;
-                              PRAGMA user_version = 1;
-                              PRAGMA encoding = UTF-8;
-                              """);
+        await Utils.ExecuteNonQueryAsync(conn, """
+                                               PRAGMA journal_mode = WAL;
+                                               PRAGMA user_version = 1;
+                                               PRAGMA encoding = UTF-8;
+                                               """, cancellationToken: cancellationToken);
 
-        using var tran = conn.BeginTransaction();
+        await using var tran = conn.BeginTransaction();
 
-        Utils.ExecuteNonQuery(conn, """
-                              CREATE TABLE IF NOT EXISTS GameMonitorAgent (
-                                  Id INTEGER PRIMARY KEY CHECK (Id = 1),
-                                  GamePlayTimeSaveThreshold INTEGER NOT NULL DEFAULT 60
-                              ) STRICT;
-                              """, tran);
+        await Utils.ExecuteNonQueryAsync(conn, """
+                                               CREATE TABLE IF NOT EXISTS GameMonitorAgent (
+                                                   Id INTEGER PRIMARY KEY CHECK (Id = 1),
+                                                   GamePlayTimeSaveThreshold INTEGER NOT NULL DEFAULT 60
+                                               ) STRICT;
+                                               """, cancellationToken, tran);
 
         const string insertIntoGameMonitorAgentSql = """
                                                      INSERT INTO GameMonitorAgent (
@@ -89,13 +99,13 @@ public sealed class Settings
                                                      ON CONFLICT(Id) DO NOTHING;
                                                      """;
 
-        using var cmd = conn.CreateCommand();
+        await using var cmd = conn.CreateCommand();
         cmd.Transaction = tran;
         cmd.CommandText = insertIntoGameMonitorAgentSql;
         cmd.Parameters.AddWithValue("@GamePlayTimeSaveThreshold", GetGameMonitorAgentDefaults().GamePlayTimeSaveThreshold);
-        cmd.ExecuteNonQuery();
+        await cmd.ExecuteNonQueryAsync(cancellationToken);
 
-        tran.Commit();
+        await tran.CommitAsync(cancellationToken);
     }
 
     private static GameMonitorAgentSettingsDto GetGameMonitorAgentDefaults()
@@ -105,8 +115,6 @@ public sealed class Settings
             GamePlayTimeSaveThreshold = 60
         };
     }
-
-    private SqliteConnection CreateConnection(bool queryOnly = false) => Utils.CreateSqlConnection(_connStr, queryOnly);
 
     private sealed class GameMonitorAgentSettingsDto
     {

@@ -1,12 +1,14 @@
 ﻿using System;
 using System.CommandLine;
+using System.Threading;
+using System.Threading.Tasks;
 using GameWatch.Core.Dbs;
 
 namespace GameWatch.Client.Cli.Cmds;
 
 public static class ListGames
 {
-    public static Command Build()
+    public static Task<Command> BuildAsync(CancellationToken callerCancellationToken)
     {
         var verboseOption = new Option<bool>("--verbose", "-v")
         {
@@ -38,8 +40,11 @@ public static class ListGames
 
         cmd.Aliases.Add("g");
 
-        cmd.SetAction(parseResult =>
+        cmd.SetAction(async (parseResult, cliCt) =>
         {
+            using var ctSrc = CancellationTokenSource.CreateLinkedTokenSource(callerCancellationToken, cliCt);
+            var ct = ctSrc.Token;
+
             var verbose = parseResult.GetValue(verboseOption);
             var showManualGames = parseResult.GetValue(showManualGamesOption);
             var showAutoGames = parseResult.GetValue(showAutoGamesOption);
@@ -54,9 +59,18 @@ public static class ListGames
 
             var anyGamesDisplayed = false;
 
-            if (showManualGames)
+            // Kick off only needed tasks in parallel
+            var manualGamesTask = showManualGames
+                ? GameLibrary.Instance.GetManualGamesAsync(ct)
+                : null;
+
+            var autoGamesTask = showAutoGames
+                ? GameLibrary.Instance.GetAutoGamesAsync(ct)
+                : null;
+
+            if (manualGamesTask is not null)
             {
-                var manualGames = GameLibrary.Instance.GetManualGames();
+                var manualGames = await manualGamesTask;
 
                 if (manualGames.Count > 0)
                 {
@@ -73,17 +87,17 @@ public static class ListGames
                 }
             }
 
-            if (showAutoGames)
+            if (autoGamesTask is not null)
             {
-                var autoGames = GameLibrary.Instance.GetAutoGames();
-                if (autoGames.Count > 0)
+                var autoGames = await autoGamesTask;
+                if (autoGames.Length > 0)
                 {
                     anyGamesDisplayed = true;
                     Console.WriteLine("--- Auto games ---");
 
                     if (!verbose)
                     {
-                        for (var i = 0; i < autoGames.Count; ++i)
+                        for (var i = 0; i < autoGames.Length; ++i)
                         {
                             var game = autoGames[i];
                             Console.WriteLine($"{i + 1}. {TimeSpan.FromSeconds(game.PlayTimeSec.V)} - {game.Name}");
@@ -91,7 +105,7 @@ public static class ListGames
                     }
                     else
                     {
-                        for (var i = 0; i < autoGames.Count; ++i)
+                        for (var i = 0; i < autoGames.Length; ++i)
                         {
                             var game = autoGames[i];
                             Console.WriteLine($"{i + 1}. {TimeSpan.FromSeconds(game.PlayTimeSec.V)} - {game.Name}");
@@ -106,7 +120,7 @@ public static class ListGames
                             if (game.PathRule is not null)
                                 Console.WriteLine($"* File path rule={game.PathRule}");
 
-                            if (i < autoGames.Count - 1)
+                            if (i < autoGames.Length - 1)
                                 Console.WriteLine();
                         }
                     }
@@ -164,6 +178,6 @@ public static class ListGames
             return 0;
         });
 
-        return cmd;
+        return Task.FromResult(cmd);
     }
 }

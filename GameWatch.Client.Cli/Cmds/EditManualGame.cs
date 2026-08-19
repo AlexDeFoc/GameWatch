@@ -1,5 +1,7 @@
 ﻿using System;
 using System.CommandLine;
+using System.Threading;
+using System.Threading.Tasks;
 using GameWatch.Core.Dbs;
 using GameWatch.Core.Types;
 
@@ -7,7 +9,7 @@ namespace GameWatch.Client.Cli.Cmds;
 
 public static class EditManualGame
 {
-    public static Command Build()
+    public static Task<Command> BuildAsync(CancellationToken callerCancellationToken)
     {
         var displayIdOption = new Option<int>("--id", "-i")
         {
@@ -33,8 +35,11 @@ public static class EditManualGame
         };
         cmd.Aliases.Add("m");
 
-        cmd.SetAction(result =>
+        cmd.SetAction(async (result, cliCt) =>
         {
+            using var ctSrc = CancellationTokenSource.CreateLinkedTokenSource(callerCancellationToken, cliCt);
+            var ct = ctSrc.Token;
+
             var displayId = new DisplayId(result.GetRequiredValue(displayIdOption));
 
             var tableIdResult = GameLibrary.Instance.GetTableId(GameMode.Manual, displayId);
@@ -47,7 +52,7 @@ public static class EditManualGame
 
             var tableId = tableIdResult.TableId.Value;
 
-            var manualGameResult = GameLibrary.Instance.GetManualGame(tableId);
+            var manualGameResult = await GameLibrary.Instance.GetManualGameAsync(tableId, ct);
 
             if (!manualGameResult.Ok || manualGameResult.Game is null)
             {
@@ -66,10 +71,11 @@ public static class EditManualGame
             if (playTimeValue is not null)
                 game.PlayTimeSec = new ElapsedTime(playTimeValue.Value);
 
-            var editedGameResult = GameLibrary.Instance.EditGame(game,
-                                                                 tableId,
-                                                                 nameChanged: newGameName is not null,
-                                                                 playTimeChanged: playTimeValue is not null);
+            var editedGameResult = await GameLibrary.Instance.EditGameAsync(game,
+                                                                            tableId,
+                                                                            ct,
+                                                                            nameChanged: newGameName is not null,
+                                                                            playTimeChanged: playTimeValue is not null);
 
             if (!editedGameResult.Ok)
             {
@@ -82,6 +88,6 @@ public static class EditManualGame
             return 0;
         });
 
-        return cmd;
+        return Task.FromResult(cmd);
     }
 }

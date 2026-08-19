@@ -11,45 +11,72 @@ public static class Program
 {
     public static async Task Main(string[] args)
     {
-        // Step 1: Evict old instance using a dedicated, short-lived token
-        using (var evictionCts = new CancellationTokenSource(TimeSpan.FromMilliseconds(500)))
-        {
-            var evictResult = await Core.GameMonitorAgentIpcServer.RequestOldInstanceEvictionAsync(evictionCts.Token);
+        using var cts = new CancellationTokenSource();
 
-            if (!evictResult.Ok)
+        Console.CancelKeyPress += CancelHandler;
+
+        try
+        {
+            // Step 1: Evict old instance using a dedicated, short-lived token
+            using (var evictionCts = CancellationTokenSource.CreateLinkedTokenSource(
+                       cts.Token,
+                       new CancellationTokenSource(TimeSpan.FromMilliseconds(500)).Token))
             {
-                Console.WriteLine(evictResult.FailureReason);
+                var evictResult = await Core.GameMonitorAgentIpcServer.RequestOldInstanceEvictionAsync(evictionCts.Token);
+
+                if (!evictResult.Ok)
+                {
+                    Console.WriteLine(evictResult.FailureReason);
+                }
+                else if (evictResult.InstanceWasPresent)
+                {
+                    Console.WriteLine("[INFO] Previous agent evicted. Waiting for pipe release...");
+                    await Task.Delay(150, evictionCts.Token);
+                }
+                else
+                {
+                    Console.WriteLine("[INFO] No existing agent found running. Starting fresh...");
+                }
             }
-            else if (evictResult.InstanceWasPresent)
-            {
-                Console.WriteLine("[INFO] Previous agent evicted. Waiting for pipe release...");
-                // Option to add a tiny Task.Delay if needed for the OS pipe teardown
-                await Task.Delay(150, evictionCts.Token);
-            }
-            else
-            {
-                Console.WriteLine("[INFO] No existing agent found running. Starting fresh...");
-            }
+
+
+            // Step 2: Initialize DB
+            await GameLibrary.CreateAndInitAsync("../../UserData", cts.Token);
+            await GamePresets.CreateAndInitAsync("../../AppData", cts.Token);
+            await Settings.CreateAndInitAsync("../../AppData", cts.Token);
+
+            var builder = Host.CreateApplicationBuilder(args);
+
+            // Registered state & services
+            builder.Services.AddSingleton<AgentState>();
+            builder.Services.AddSingleton<IpcProcessorImpl>();
+            builder.Services.AddSingleton<ProcessScanner>();
+            builder.Services.AddSingleton<HeartbeatProcessor>();
+
+            builder.Services.AddHostedService<IpcSignalCollector>();
+            builder.Services.AddHostedService<Worker>();
+
+            var host = builder.Build();
+            // Step 3: Run Host. host.RunAsync listens to host shutdown signals
+            // AND respects cts.Token if canceled early.
+            await host.RunAsync(cts.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            Console.WriteLine("[INFO] Agent startup or execution was cancelled.");
+        }
+        finally
+        {
+            Console.CancelKeyPress -= CancelHandler;
         }
 
-        // Step 2: Initialize DB
-        GameLibrary.Init("../../UserData");
-        GamePresets.Init("../../AppData");
-        Settings.Init("../../AppData");
+        return;
 
-        var builder = Host.CreateApplicationBuilder(args);
-
-        // Registered state & services
-        builder.Services.AddSingleton<AgentState>();
-        builder.Services.AddSingleton<IpcProcessorImpl>();
-        builder.Services.AddSingleton<ProcessScanner>();
-        builder.Services.AddSingleton<HeartbeatProcessor>();
-
-        builder.Services.AddHostedService<IpcSignalCollector>();
-        builder.Services.AddHostedService<Worker>();
-
-        var host = builder.Build();
-        // Step 3: Run Host using its default lifecycle (Listens for Ctrl+C, StopApplication, etc.)
-        await host.RunAsync();
+        void CancelHandler(object? _, ConsoleCancelEventArgs e)
+        {
+            e.Cancel = true; // Prevent abrupt OS exit so cleanup/finally runs
+            // ReSharper disable once AccessToDisposedClosure
+            cts.Cancel();
+        }
     }
 }
