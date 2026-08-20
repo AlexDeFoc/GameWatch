@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Threading;
 using System.Threading.Tasks;
 using GameWatch.Agent.GameMonitor.TrackingSessions;
@@ -20,7 +21,7 @@ public sealed class HeartbeatProcessor(AgentState state, ILogger<HeartbeatProces
     }
 
     private async Task FlushSessionsAsync<T>(
-        ICollection<KeyValuePair<TableId, T>> gameSessions,
+        ImmutableArray<T> gameSessions,
         GameMode gameMode,
         string modeLabel,
         DateTime utcNow,
@@ -28,7 +29,7 @@ public sealed class HeartbeatProcessor(AgentState state, ILogger<HeartbeatProces
         CancellationToken cancellationToken)
         where T : class, ITrackingSession
     {
-        if (gameSessions.Count == 0) return;
+        if (gameSessions.IsEmpty) return;
 
         Dictionary<TableId, ElapsedTime>? gamesElapsedToFlush = null;
         List<(TableId Id, string Name, ElapsedTime Elapsed)>? logBuffer = null;
@@ -36,7 +37,7 @@ public sealed class HeartbeatProcessor(AgentState state, ILogger<HeartbeatProces
         var threshold = Settings.Instance.GameMonitorAgentGamePlayTimeSaveThreshold;
         var isLogging = logger.IsEnabled(LogLevel.Information);
 
-        foreach (var (tableId, session) in gameSessions)
+        foreach (var session in gameSessions)
         {
             long secondsToFlush;
             lock (session)
@@ -61,12 +62,12 @@ public sealed class HeartbeatProcessor(AgentState state, ILogger<HeartbeatProces
             var elapsedTime = new ElapsedTime(secondsToFlush);
 
             gamesElapsedToFlush ??= [];
-            gamesElapsedToFlush[tableId] = elapsedTime;
+            gamesElapsedToFlush[session.TableId] = elapsedTime;
 
             if (!isLogging) continue;
 
             logBuffer ??= [];
-            logBuffer.Add((tableId, session.GameName, elapsedTime));
+            logBuffer.Add((session.TableId, session.GameName, elapsedTime));
         }
 
         if (gamesElapsedToFlush is null) return;

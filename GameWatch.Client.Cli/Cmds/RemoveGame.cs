@@ -1,7 +1,5 @@
 ﻿using System;
 using System.CommandLine;
-using System.Threading;
-using System.Threading.Tasks;
 using GameWatch.Core;
 using GameWatch.Core.Dbs;
 using GameWatch.Core.Types;
@@ -10,7 +8,7 @@ namespace GameWatch.Client.Cli.Cmds;
 
 public static class RemoveGame
 {
-    public static Task<Command> BuildAsync(CancellationToken callerCancellationToken)
+    public static Command Build()
     {
         var displayIdOption = new Option<int>("--id", "-i")
         {
@@ -54,9 +52,6 @@ public static class RemoveGame
 
         cmd.SetAction(async (result, cliCt) =>
         {
-            using var ctSrc = CancellationTokenSource.CreateLinkedTokenSource(callerCancellationToken, cliCt);
-            var ct = ctSrc.Token;
-
             var removeManual = result.GetValue(manualOption);
             var gameMode = removeManual ? GameMode.Manual : GameMode.Auto;
 
@@ -71,7 +66,7 @@ public static class RemoveGame
 
             var tableId = tableIdResult.TableId.Value;
 
-            var deletedGameResult = await GameLibrary.Instance.RemoveGameAsync(gameMode, tableId, ct);
+            var deletedGameResult = await GameLibrary.Instance.RemoveGameAsync(gameMode, tableId, cliCt);
 
             if (!deletedGameResult.Ok || deletedGameResult.GameName is null)
             {
@@ -86,10 +81,10 @@ public static class RemoveGame
             var notificationResult = removeManual
                 ? await GameMonitorAgentIpcServer.NotifyThatManualGameGotRemovedAsync(tableId,
                                                                                       gameName,
-                                                                                      ct)
+                                                                                      cliCt)
                 : await GameMonitorAgentIpcServer.NotifyThatAutoGameGotRemovedAsync(tableId,
                                                                                     gameName,
-                                                                                    ct);
+                                                                                    cliCt);
 
             if (notificationResult.Ok) return 0;
 
@@ -97,6 +92,6 @@ public static class RemoveGame
             return 1;
         });
 
-        return Task.FromResult(cmd);
+        return cmd;
     }
 }

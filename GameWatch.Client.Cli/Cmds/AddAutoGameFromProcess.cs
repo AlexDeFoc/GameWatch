@@ -1,7 +1,5 @@
 ﻿using System;
 using System.CommandLine;
-using System.Threading;
-using System.Threading.Tasks;
 using GameWatch.Core;
 using GameWatch.Core.Dbs;
 using GameWatch.Core.Helpers;
@@ -11,7 +9,7 @@ namespace GameWatch.Client.Cli.Cmds;
 
 public static class AddAutoGameFromProcess
 {
-    public static Task<Command> BuildAsync(CancellationToken callerCancellationToken)
+    public static Command Build()
     {
         var nameOption = new Option<string>("--name", "-n")
         {
@@ -100,9 +98,6 @@ public static class AddAutoGameFromProcess
 
         cmd.SetAction(async (result, cliCt) =>
         {
-            using var ctSrc = CancellationTokenSource.CreateLinkedTokenSource(callerCancellationToken, cliCt);
-            var ct = ctSrc.Token;
-
             var pid = result.GetValue(pidOption);
 
             ProcDto? proc = null;
@@ -153,12 +148,12 @@ public static class AddAutoGameFromProcess
                 }
             }
 
-            await GameLibrary.Instance.AddGameAsync(game, ct);
+            await GameLibrary.Instance.AddGameAsync(game, cliCt);
 
             Console.WriteLine($"[OK] Game with Name='{game.Name}' added successfully");
 
             var notificationResult = await GameMonitorAgentIpcServer.RequestToTrackNewlyAddedAutoGameAsync(
-                new AutoGameDto(game), ct);
+                new AutoGameDto(game), cliCt);
 
             if (notificationResult.Ok) return 0;
 
@@ -166,6 +161,6 @@ public static class AddAutoGameFromProcess
             return 1;
         });
 
-        return Task.FromResult(cmd);
+        return cmd;
     }
 }

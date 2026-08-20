@@ -25,7 +25,7 @@ public sealed class ProcessScanner(AgentState state, ILogger<ProcessScanner> log
             // Match against loaded games that aren't currently active
             foreach (var game in loadedGames)
             {
-                if (state.ActiveAutoGames.ContainsKey(game.TableId))
+                if (state.TryGetActiveAutoGame(game.TableId, out _))
                     continue;
 
                 if (!RuleMatcher.IsMatch(proc, game))
@@ -39,7 +39,7 @@ public sealed class ProcessScanner(AgentState state, ILogger<ProcessScanner> log
                     LastTimeFlushedPlayTime = now
                 };
 
-                if (!state.ActiveAutoGames.TryAdd(game.TableId, newSession)) continue;
+                if (!state.AddActiveAutoGame(newSession)) continue;
                 if (logger.IsEnabled(LogLevel.Information))
                 {
                     logger.LogInformation("[INFO] Auto GameRecord TableId='{id}' Name='{name}' bound to PID='{pid}' " +
@@ -49,7 +49,7 @@ public sealed class ProcessScanner(AgentState state, ILogger<ProcessScanner> log
         }
 
         // Cleanup pass: Check active sessions against the seen PIDs
-        foreach (var (tableId, session) in state.ActiveAutoGames)
+        foreach (var session in state.ActiveAutoGames)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -57,7 +57,7 @@ public sealed class ProcessScanner(AgentState state, ILogger<ProcessScanner> log
                 continue;
 
             // Process no longer exists in seenPids -> Terminated
-            if (!state.ActiveAutoGames.TryRemove(tableId, out var removedSession))
+            if (!state.RemoveActiveAutoGame(session.TableId, out var removedSession))
                 continue;
 
             var elapsed = (long)(now - removedSession.LastTimeFlushedPlayTime).TotalSeconds;
@@ -70,7 +70,7 @@ public sealed class ProcessScanner(AgentState state, ILogger<ProcessScanner> log
                 catch (OperationCanceledException)
                 {
                     // Restore session so unsaved elapsed time isn't lost
-                    state.ActiveAutoGames.TryAdd(tableId, removedSession);
+                    state.AddActiveAutoGame(removedSession);
                     throw;
                 }
             }

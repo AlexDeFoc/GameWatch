@@ -28,7 +28,7 @@ public sealed class IpcProcessorImpl(
     {
         var tableId = new TableId(request.TableId);
 
-        if (state.ActiveAutoGames.TryRemove(tableId, out var s)
+        if (state.RemoveActiveAutoGame(tableId, out var s)
             && logger.IsEnabled(LogLevel.Information))
         {
             logger.LogInformation("[OK] Removed auto game with TableId='{id}' Name='{name}'", s.TableId.V, s.GameName);
@@ -49,7 +49,7 @@ public sealed class IpcProcessorImpl(
         var tableId = new TableId(request.TableId);
         var gameName = request.GameName;
 
-        if (state.ActiveManualGames.TryRemove(tableId, out _)
+        if (state.RemoveActiveManualGame(tableId, out _)
             && logger.IsEnabled(LogLevel.Information))
         {
             logger.LogInformation("[OK] Removed manual game with TableId='{id}' Name='{name}'", tableId.V, gameName);
@@ -66,13 +66,13 @@ public sealed class IpcProcessorImpl(
     {
         if (request.StopTrackingAutoGames)
         {
-            state.ActiveAutoGames.Clear();
+            state.RemoveAllActiveAutoGames();
             state.RemoveAllAutoGames();
         }
 
         if (request.StopTrackingManualGames)
         {
-            state.ActiveManualGames.Clear();
+            state.RemoveAllActiveManualGames();
         }
 
         return OkStatusAndMessageTask;
@@ -100,7 +100,7 @@ public sealed class IpcProcessorImpl(
         var gameName = request.GameName;
         bool gameStarted;
 
-        if (state.ActiveManualGames.TryRemove(tableId, out var gameSession))
+        if (state.RemoveActiveManualGame(tableId, out var gameSession))
         {
             var elapsed = (long)(DateTime.UtcNow - gameSession.LastTimeFlushedPlayTime).TotalSeconds;
             if (elapsed > 0)
@@ -119,7 +119,7 @@ public sealed class IpcProcessorImpl(
         else
         {
             var newSession = new TrackingSessions.Manual { TableId = tableId, GameName = gameName };
-            state.ActiveManualGames.TryAdd(tableId, newSession);
+            state.AddActiveManualGame(newSession);
 
             if (logger.IsEnabled(LogLevel.Information))
             {
@@ -137,7 +137,7 @@ public sealed class IpcProcessorImpl(
     {
         var tableId = new TableId(request.TableId);
 
-        if (state.ActiveAutoGames.TryGetValue(tableId, out var s))
+        if (state.RemoveActiveAutoGame(tableId, out var s))
         {
             lock (s)
             {
@@ -163,7 +163,7 @@ public sealed class IpcProcessorImpl(
         var tableId = new TableId(request.TableId);
         var gameName = request.GameName;
 
-        if (state.ActiveManualGames.TryGetValue(tableId, out var gameSession))
+        if (state.RemoveActiveManualGame(tableId, out var gameSession))
         {
             lock (gameSession)
             {
@@ -200,7 +200,7 @@ public sealed class IpcProcessorImpl(
         }
 
         // Saved until now elapsed time
-        if (state.ActiveAutoGames.TryRemove(tableId, out var currentGameSession))
+        if (state.RemoveActiveAutoGame(tableId, out var currentGameSession))
         {
             var elapsed = (long)(DateTime.UtcNow - currentGameSession.LastTimeFlushedPlayTime).TotalSeconds;
             if (elapsed > 0)
@@ -211,7 +211,7 @@ public sealed class IpcProcessorImpl(
                 }
                 catch (OperationCanceledException)
                 {
-                    state.ActiveAutoGames.TryAdd(tableId, currentGameSession);
+                    state.AddActiveAutoGame(currentGameSession);
                     throw;
                 }
             }
@@ -276,7 +276,7 @@ public sealed class IpcProcessorImpl(
             LastTimeFlushedPlayTime = DateTime.UtcNow
         };
 
-        state.ActiveAutoGames.TryAdd(tableId, newSession);
+        state.AddActiveAutoGame(newSession);
 
         if (logger.IsEnabled(LogLevel.Information))
             logger.LogInformation("[INFO] Refreshed matching rules for auto game with TableId='{id}' Name='{name}' (Detected as active).", tableId.V, targetGame.Name);

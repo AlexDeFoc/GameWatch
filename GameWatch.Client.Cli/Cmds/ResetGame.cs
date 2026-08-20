@@ -1,7 +1,5 @@
 ﻿using System;
 using System.CommandLine;
-using System.Threading;
-using System.Threading.Tasks;
 using GameWatch.Core;
 using GameWatch.Core.Dbs;
 using GameWatch.Core.Types;
@@ -10,7 +8,7 @@ namespace GameWatch.Client.Cli.Cmds;
 
 public static class ResetGame
 {
-    public static Task<Command> BuildAsync(CancellationToken callerCancellationToken)
+    public static Command Build()
     {
         var displayIdOption = new Option<int>("--id", "-i")
         {
@@ -54,9 +52,6 @@ public static class ResetGame
 
         cmd.SetAction(async (result, cliCt) =>
         {
-            using var ctSrc = CancellationTokenSource.CreateLinkedTokenSource(callerCancellationToken, cliCt);
-            var ct = ctSrc.Token;
-
             var resetManual = result.GetValue(manualOption);
             var gameMode = resetManual ? GameMode.Manual : GameMode.Auto;
 
@@ -71,7 +66,7 @@ public static class ResetGame
 
             var tableId = tableIdResult.TableId.Value;
 
-            var resetGameResult = await GameLibrary.Instance.ResetGameAsync(gameMode, tableId, ct);
+            var resetGameResult = await GameLibrary.Instance.ResetGameAsync(gameMode, tableId, cliCt);
 
             if (!resetGameResult.Ok || resetGameResult.GameName is null)
             {
@@ -86,10 +81,10 @@ public static class ResetGame
             var notificationResult = resetManual
                 ? await GameMonitorAgentIpcServer.NotifyThatManualGameGotResetAsync(tableId,
                                                                                     gameName,
-                                                                                    ct)
+                                                                                    cliCt)
                 : await GameMonitorAgentIpcServer.NotifyThatAutoGameGotResetAsync(tableId,
                                                                                   gameName,
-                                                                                  ct);
+                                                                                  cliCt);
 
             if (notificationResult.Ok) return 0;
 
@@ -97,6 +92,6 @@ public static class ResetGame
             return 1;
         });
 
-        return Task.FromResult(cmd);
+        return cmd;
     }
 }

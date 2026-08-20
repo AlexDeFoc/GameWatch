@@ -1,7 +1,5 @@
 ﻿using System;
 using System.CommandLine;
-using System.Threading;
-using System.Threading.Tasks;
 using GameWatch.Core;
 using GameWatch.Core.Dbs;
 using GameWatch.Core.Types;
@@ -10,7 +8,7 @@ namespace GameWatch.Client.Cli.Cmds;
 
 public static class ToggleGame
 {
-    public static Task<Command> BuildAsync(CancellationToken callerCancellationToken)
+    public static Command Build()
     {
         var displayIdOption = new Option<int>("--id", "-i")
         {
@@ -26,9 +24,6 @@ public static class ToggleGame
 
         cmd.SetAction(async (parseResult, cliCt) =>
         {
-            using var ctSrc = CancellationTokenSource.CreateLinkedTokenSource(callerCancellationToken, cliCt);
-            var ct = ctSrc.Token;
-
             var displayId = new DisplayId(parseResult.GetValue(displayIdOption));
             var tableIdResult = GameLibrary.Instance.GetTableId(GameMode.Manual, displayId);
 
@@ -40,7 +35,7 @@ public static class ToggleGame
 
             var tableId = tableIdResult.TableId.Value;
 
-            var manualGameResult = await GameLibrary.Instance.GetManualGameAsync(tableId, ct);
+            var manualGameResult = await GameLibrary.Instance.GetManualGameAsync(tableId, cliCt);
 
             if (!manualGameResult.Ok || manualGameResult.Game is null)
             {
@@ -53,7 +48,7 @@ public static class ToggleGame
 
             var notificationResult = await GameMonitorAgentIpcServer.RequestToToggleManualGameAsync(tableId,
                                                                                                     gameName,
-                                                                                                    ct);
+                                                                                                    cliCt);
 
             if (notificationResult.Ok)
             {
@@ -68,6 +63,6 @@ public static class ToggleGame
             return 1;
         });
 
-        return Task.FromResult(cmd);
+        return cmd;
     }
 }

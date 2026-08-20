@@ -1,14 +1,12 @@
 ﻿using System;
 using System.CommandLine;
-using System.Threading;
-using System.Threading.Tasks;
 using GameWatch.Core.Dbs;
 
 namespace GameWatch.Client.Cli.Cmds;
 
 public static class ListGames
 {
-    public static Task<Command> BuildAsync(CancellationToken callerCancellationToken)
+    public static Command Build()
     {
         var verboseOption = new Option<bool>("--verbose", "-v")
         {
@@ -42,9 +40,6 @@ public static class ListGames
 
         cmd.SetAction(async (parseResult, cliCt) =>
         {
-            using var ctSrc = CancellationTokenSource.CreateLinkedTokenSource(callerCancellationToken, cliCt);
-            var ct = ctSrc.Token;
-
             var verbose = parseResult.GetValue(verboseOption);
             var showManualGames = parseResult.GetValue(showManualGamesOption);
             var showAutoGames = parseResult.GetValue(showAutoGamesOption);
@@ -61,11 +56,11 @@ public static class ListGames
 
             // Kick off only needed tasks in parallel
             var manualGamesTask = showManualGames
-                ? GameLibrary.Instance.GetManualGamesAsync(ct)
+                ? GameLibrary.Instance.GetManualGamesAsync(cliCt)
                 : null;
 
             var autoGamesTask = showAutoGames
-                ? GameLibrary.Instance.GetAutoGamesAsync(ct)
+                ? GameLibrary.Instance.GetAutoGamesAsync(cliCt)
                 : null;
 
             if (manualGamesTask is not null)
@@ -178,6 +173,6 @@ public static class ListGames
             return 0;
         });
 
-        return Task.FromResult(cmd);
+        return cmd;
     }
 }

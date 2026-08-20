@@ -1,7 +1,5 @@
 ﻿using System;
 using System.CommandLine;
-using System.Threading;
-using System.Threading.Tasks;
 using GameWatch.Core;
 using GameWatch.Core.Dbs;
 using GameWatch.Core.Helpers;
@@ -11,7 +9,7 @@ namespace GameWatch.Client.Cli.Cmds;
 
 public static class EditAutoGame
 {
-    public static Task<Command> BuildAsync(CancellationToken callerCancellationToken)
+    public static Command Build()
     {
         var displayIdOption = new Option<int>("--id", "-i")
         {
@@ -99,9 +97,6 @@ public static class EditAutoGame
 
         cmd.SetAction(async (result, cliCt) =>
         {
-            using var ctSrc = CancellationTokenSource.CreateLinkedTokenSource(callerCancellationToken, cliCt);
-            var ct = ctSrc.Token;
-
             var displayId = new DisplayId(result.GetValue(displayIdOption));
 
             var tableIdResult = GameLibrary.Instance.GetTableId(GameMode.Auto, displayId);
@@ -114,7 +109,7 @@ public static class EditAutoGame
 
             var tableId = tableIdResult.TableId.Value;
 
-            var autoGameResult = await GameLibrary.Instance.GetAutoGameAsync(tableId, ct);
+            var autoGameResult = await GameLibrary.Instance.GetAutoGameAsync(tableId, cliCt);
 
             if (!autoGameResult.Ok || autoGameResult.Game is null)
             {
@@ -189,7 +184,7 @@ public static class EditAutoGame
 
             var editedGameResult = await GameLibrary.Instance.EditGameAsync(game,
                                                                             tableId,
-                                                                            ct,
+                                                                            cliCt,
                                                                             nameChanged: newGameName is not null,
                                                                             playTimeChanged: playTimeValue is not null,
                                                                             windowTitleChanged: windowTitleChanged,
@@ -215,7 +210,7 @@ public static class EditAutoGame
             var notificationResult = await GameMonitorAgentIpcServer.NotifyThatAutoGameGotEditedAsync(tableId,
                                                                                                       game.Name,
                                                                                                       matchingRulesChanged,
-                                                                                                      ct);
+                                                                                                      cliCt);
 
             if (notificationResult.Ok) return 0;
 
@@ -223,6 +218,6 @@ public static class EditAutoGame
             return 1;
         });
 
-        return Task.FromResult(cmd);
+        return cmd;
     }
 }

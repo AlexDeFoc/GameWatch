@@ -18,7 +18,7 @@ public static class Program
         {
             await InitializeDatabasesAsync(cts.Token);
 
-            var rootCmd = await BuildRootCommandAsync(cts.Token);
+            var rootCmd = BuildRootCommand();
             return await rootCmd.Parse(args).InvokeAsync(cancellationToken: cts.Token);
         }
         catch (OperationCanceledException)
@@ -41,86 +41,60 @@ public static class Program
 
     private static async Task InitializeDatabasesAsync(CancellationToken cancellationToken)
     {
-        await GameLibrary.CreateAndInitAsync("../../UserData", cancellationToken);
-        await GamePresets.CreateAndInitAsync("../../AppData", cancellationToken);
-        await Settings.CreateAndInitAsync("../../AppData", cancellationToken);
+        var libraryTask = GameLibrary.CreateAndInitAsync("../../UserData", cancellationToken);
+        var presetsTask = GamePresets.CreateAndInitAsync("../../AppData", cancellationToken);
+        var settingsTask = Settings.CreateAndInitAsync("../../AppData", cancellationToken);
+
+        await Task.WhenAll(libraryTask, presetsTask, settingsTask);
     }
 
-    private static async Task<RootCommand> BuildRootCommandAsync(CancellationToken cancellationToken)
+    private static RootCommand BuildRootCommand()
     {
-        var rootCmd = new RootCommand("GameWatch CLI Client - Control and query active tracking routines.");
-
-        var removeTask = Cmds.RemoveGame.BuildAsync(cancellationToken);
-        var deleteAllTask = Cmds.DeleteAllGames.BuildAsync(cancellationToken);
-        var resetTask = Cmds.ResetGame.BuildAsync(cancellationToken);
-        var updateTask = Cmds.UpdateApp.BuildAsync(cancellationToken);
-        var toggleTask = Cmds.ToggleGame.BuildAsync(cancellationToken);
-
-        var editTask = BuildEditCommandAsync(cancellationToken);
-        var addTask = BuildAddCommandAsync(cancellationToken);
-        var listTask = BuildListCommandAsync(cancellationToken);
-
-        await Task.WhenAll(
-            removeTask,
-            deleteAllTask,
-            resetTask,
-            updateTask,
-            toggleTask,
-            editTask,
-            addTask,
-            listTask
-        );
-
-        rootCmd.Add(removeTask.Result);
-        rootCmd.Add(deleteAllTask.Result);
-        rootCmd.Add(resetTask.Result);
-        rootCmd.Add(updateTask.Result);
-        rootCmd.Add(toggleTask.Result);
-        rootCmd.Add(editTask.Result);
-        rootCmd.Add(addTask.Result);
-        rootCmd.Add(listTask.Result);
+        var rootCmd = new RootCommand("GameWatch CLI Client - Control and query active tracking routines.")
+        {
+            BuildListCommand(),
+            Cmds.ToggleGame.Build(),
+            BuildEditCommand(),
+            BuildAddCommand(),
+            Cmds.RemoveGame.Build(),
+            Cmds.ResetGame.Build(),
+            Cmds.DeleteAllGames.Build(),
+            Cmds.UpdateApp.Build()
+        };
 
         return rootCmd;
     }
 
-    private static async Task<Command> BuildListCommandAsync(CancellationToken cancellationToken)
+    private static Command BuildListCommand()
     {
         var listCmd = new Command(
             name: "list",
             description: "List recorded games, Game details, or active processes\n" +
                          "Note: If no flags are provided, the cmd will list all games from all user created collections in simplified form"
-        );
+        )
+        {
+            Cmds.ListGames.Build(),
+            Cmds.ListProcs.Build()
+        };
+
         listCmd.Aliases.Add("ls");
-
-        var listGamesTask = Cmds.ListGames.BuildAsync(cancellationToken);
-        var listProcsTask = Cmds.ListProcs.BuildAsync(cancellationToken);
-
-        await Task.WhenAll(listGamesTask, listProcsTask);
-
-        listCmd.Add(listGamesTask.Result);
-        listCmd.Add(listProcsTask.Result);
 
         return listCmd;
     }
 
-    private static async Task<Command> BuildAddCommandAsync(CancellationToken cancellationToken)
+    private static Command BuildAddCommand()
     {
-        var addAutoGameCmd = new Command("auto", "Command for adding a Game in auto mode");
+        var addAutoGameCmd = new Command("auto", "Command for adding a Game in auto mode")
+        {
+            Cmds.AddAutoGameFromPreset.Build(),
+            Cmds.AddAutoGameFromProcess.Build()
+        };
+
         addAutoGameCmd.Aliases.Add("a");
-
-        var addFromPresetTask = Cmds.AddAutoGameFromPreset.BuildAsync(cancellationToken);
-        var addFromProcTask = Cmds.AddAutoGameFromProcess.BuildAsync(cancellationToken);
-
-        await Task.WhenAll(addFromPresetTask, addFromProcTask);
-
-        addAutoGameCmd.Add(addFromPresetTask.Result);
-        addAutoGameCmd.Add(addFromProcTask.Result);
-
-        var addManualGameTask = Cmds.AddManualGame.BuildAsync(cancellationToken);
 
         var addCmd = new Command("add", "Command for adding games");
 
-        var addManualGameCmd = await addManualGameTask;
+        var addManualGameCmd = Cmds.AddManualGame.Build();
 
         addCmd.Add(addManualGameCmd);
         addCmd.Add(addAutoGameCmd);
@@ -128,17 +102,13 @@ public static class Program
         return addCmd;
     }
 
-    private static async Task<Command> BuildEditCommandAsync(CancellationToken cancellationToken)
+    private static Command BuildEditCommand()
     {
-        var cmd = new Command("edit", "Command for editing Game recorded properties");
-
-        var editManualGameTask = Cmds.EditManualGame.BuildAsync(cancellationToken);
-        var editAutoGameTask = Cmds.EditAutoGame.BuildAsync(cancellationToken);
-
-        await Task.WhenAll(editManualGameTask, editAutoGameTask);
-
-        cmd.Add(editManualGameTask.Result);
-        cmd.Add(editAutoGameTask.Result);
+        var cmd = new Command("edit", "Command for editing Game recorded properties")
+        {
+            Cmds.EditManualGame.Build(),
+            Cmds.EditAutoGame.Build()
+        };
 
         return cmd;
     }
