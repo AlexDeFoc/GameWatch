@@ -27,42 +27,29 @@ public static class DeleteAllGames
         };
         cmd.Aliases.Add("cl");
 
-        cmd.SetAction(async (result, cancellationToken) =>
+        cmd.SetAction(async (result, cliCt) =>
         {
             var clearManualGames = result.GetValue(manualOption);
             var clearAutoGames = result.GetValue(autoOption);
 
-            GameLibrary.DeleteAllGamesResult deletedAllGamesResult;
             if (clearManualGames)
             {
-                deletedAllGamesResult = GameLibrary.Instance.DeleteAllGames(GameMode.Manual);
-
-                if (!deletedAllGamesResult.Ok)
-                {
-                    Console.WriteLine(deletedAllGamesResult.FailureReason);
-                    return 1;
-                }
-
+                var res = await GameLibrary.Instance.DeleteAllGamesAsync(GameMode.Manual, cliCt);
+                if (!res.Ok) { Console.WriteLine(res.FailureReason); return 1; }
                 Console.WriteLine("[OK] Deleted all manual games");
             }
 
-            if (!clearAutoGames) return 0;
-
-            deletedAllGamesResult = GameLibrary.Instance.DeleteAllGames(GameMode.Auto);
-
-            if (!deletedAllGamesResult.Ok)
+            if (clearAutoGames)
             {
-                Console.WriteLine(deletedAllGamesResult.FailureReason);
-                return 1;
+                var res = await GameLibrary.Instance.DeleteAllGamesAsync(GameMode.Auto, cliCt);
+                if (!res.Ok) { Console.WriteLine(res.FailureReason); return 1; }
+                Console.WriteLine("[OK] Deleted all auto games");
             }
 
-            Console.WriteLine("[OK] Deleted all auto games");
-
-            var notificationResult = await GameMonitorAgentIpcServer.RequestToRefreshAutoGamesCacheAsync(cancellationToken);
-
+            var notificationResult = await GameMonitorAgentIpcServer.RequestToStopTrackingAllGamesAsync(clearAutoGames, clearManualGames, cliCt);
             if (notificationResult.Ok) return 0;
-
             Console.WriteLine(notificationResult.FailureReason);
+
             return 1;
         });
 

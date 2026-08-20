@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using GameWatch.Core.Dbs;
 using GameWatch.Core.Types;
 using Microsoft.Data.Sqlite;
 
@@ -9,7 +11,13 @@ namespace GameWatch.Core;
 
 public static class Utils
 {
-    public static bool IsWithinBounds(DisplayId i, IEnumerable<TableId> collection) => i.V >= 1 && i.V - 1 < collection.Count();
+    public static bool IsWithinBounds(DisplayId i, List<TableId> collection) => i.V >= 1 && i.V - 1 < collection.Count;
+
+    public static Task<List<TableId>> FetchTableIdsAsync(SqliteConnection conn, GameMode gameMode, CancellationToken cancellationToken)
+        => FetchTableIdsByTableAsync(conn, GetTableName(gameMode), cancellationToken);
+
+    public static Task<List<TableId>> FetchTableIdsAsync(SqliteConnection conn, GamePresets.PresetNames preset, CancellationToken cancellationToken)
+        => FetchTableIdsByTableAsync(conn, GetTableName(preset), cancellationToken);
 
     public static string GetTableName(GameMode gameMode) => gameMode switch
     {
@@ -36,55 +44,50 @@ public static class Utils
         PlayTimeSec = r.GetInt64(2)
     };
 
-    public static int ExecuteNonQuery(SqliteConnection conn, string sql, SqliteTransaction? tran = null)
+    public static async Task<int> ExecuteNonQueryAsync(SqliteConnection conn, string sql, CancellationToken cancellationToken, SqliteTransaction? tran = null)
     {
-        using var cmd = conn.CreateCommand();
+        await using var cmd = conn.CreateCommand();
+
         cmd.CommandText = sql;
+
         if (tran != null) cmd.Transaction = tran;
-        return cmd.ExecuteNonQuery();
+
+        return await cmd.ExecuteNonQueryAsync(cancellationToken);
     }
 
-    public static SqliteConnection CreateSqlConnection(string connStr, bool queryOnly = false)
+    public static async Task<SqliteConnection> CreateSqlConnAsync(string connStr, CancellationToken cancellationToken, bool queryOnly = false)
     {
         var conn = new SqliteConnection(connStr);
-        conn.DefaultTimeout = 30;
-        conn.Open();
-
-        var sb = new StringBuilder();
-
-        sb.Append("""
-                  PRAGMA synchronous = NORMAL;
-                  PRAGMA busy_timeout = 30000;
-                  PRAGMA temp_store = MEMORY;
-                  PRAGMA foreign_keys = ON;
-                  """);
-
-        if (queryOnly)
-            sb.Append("PRAGMA query_only = ON;");
-
-        ExecuteNonQuery(conn, sb.ToString());
-
-        return conn;
-    }
-
-    public static List<TableId> FetchTableIds(SqliteConnection conn, string tableName)
-    {
-        using var cmd = conn.CreateCommand();
-        cmd.CommandText = $"SELECT Id FROM {tableName} ORDER BY Id ASC;";
-
-        using var reader = cmd.ExecuteReader();
-        var list = new List<TableId>();
-        while (reader.Read())
+        try
         {
-            list.Add(new TableId(reader.GetInt32(0)));
-        }
+            conn.DefaultTimeout = 30;
+            await conn.OpenAsync(cancellationToken);
 
-        return list;
+            var sb = new StringBuilder();
+            sb.Append("""
+                      PRAGMA synchronous = NORMAL;
+                      PRAGMA busy_timeout = 30000;
+                      PRAGMA temp_store = MEMORY;
+                      PRAGMA foreign_keys = ON;
+                      """);
+
+            if (queryOnly)
+                sb.Append("PRAGMA query_only = ON;");
+
+            await ExecuteNonQueryAsync(conn, sb.ToString(), cancellationToken: cancellationToken);
+            return conn;
+        }
+        catch
+        {
+            await conn.DisposeAsync();
+            throw;
+        }
     }
 
-    public static List<AutoGameRecord> QueryAutoGames(SqliteConnection conn)
+
+    public static async Task<AutoGameRecord[]> QueryAutoGamesAsync(SqliteConnection conn, CancellationToken cancellationToken)
     {
-        using var cmd = conn.CreateCommand();
+        await using var cmd = conn.CreateCommand();
         cmd.CommandText = """
                           SELECT
                               Id,
@@ -98,20 +101,20 @@ public static class Utils
                           ORDER BY Id ASC;
                           """;
 
-        using var reader = cmd.ExecuteReader();
+        await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
         var list = new List<AutoGameRecord>();
 
-        while (reader.Read())
+        while (await reader.ReadAsync(cancellationToken))
         {
             list.Add(new AutoGameRecord(ReadAutoGame(reader)));
         }
 
-        return list;
+        return [.. list];
     }
 
-    public static List<ManualGameRecord> QueryManualGames(SqliteConnection conn)
+    public static async Task<List<ManualGameRecord>> QueryManualGamesAsync(SqliteConnection conn, CancellationToken cancellationToken)
     {
-        using var cmd = conn.CreateCommand();
+        await using var cmd = conn.CreateCommand();
         cmd.CommandText = """
                           SELECT
                               Id,
@@ -121,14 +124,37 @@ public static class Utils
                           ORDER BY Id ASC;
                           """;
 
-        using var reader = cmd.ExecuteReader();
+        await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
         var list = new List<ManualGameRecord>();
 
-        while (reader.Read())
+        while (await reader.ReadAsync(cancellationToken))
         {
             list.Add(new ManualGameRecord(ReadManualGame(reader)));
         }
 
         return list;
     }
+
+    private static async Task<List<TableId>> FetchTableIdsByTableAsync(SqliteConnection conn, string tableName, CancellationToken cancellationToken)
+    {
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = $"SELECT Id FROM {tableName} ORDER BY Id ASC;";
+
+        await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
+
+        var list = new List<TableId>();
+
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            list.Add(new TableId(reader.GetInt32(0)));
+        }
+
+        return list;
+    }
+
+    private static string GetTableName(GamePresets.PresetNames preset) => preset switch
+    {
+        GamePresets.PresetNames.AutoGame => "AutoGamePresets",
+        _ => throw new ArgumentOutOfRangeException(nameof(preset), preset, "Unsupported preset provided.")
+    };
 }

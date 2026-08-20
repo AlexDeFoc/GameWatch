@@ -95,7 +95,7 @@ public static class EditAutoGame
             }
         });
 
-        cmd.SetAction(async (result, cancellationToken) =>
+        cmd.SetAction(async (result, cliCt) =>
         {
             var displayId = new DisplayId(result.GetValue(displayIdOption));
 
@@ -109,7 +109,7 @@ public static class EditAutoGame
 
             var tableId = tableIdResult.TableId.Value;
 
-            var autoGameResult = GameLibrary.Instance.GetAutoGame(tableId);
+            var autoGameResult = await GameLibrary.Instance.GetAutoGameAsync(tableId, cliCt);
 
             if (!autoGameResult.Ok || autoGameResult.Game is null)
             {
@@ -127,28 +127,38 @@ public static class EditAutoGame
             var matchPathPattern = result.GetValue(matchPathPatternOption);
             var playTimeValue = result.GetValue(playTimeOption);
 
+            // 1. Basic properties update
             if (newGameName is not null)
                 game.Name = newGameName;
 
             if (playTimeValue is not null)
                 game.PlayTimeSec = new ElapsedTime(playTimeValue.Value);
 
-            if (matchTitleExact is not null && game.WindowRule is not null)
-                game.WindowRule = null;
-            else if (matchTitlePattern is not null && game.WindowTitle is not null)
-                game.WindowTitle = null;
+            // 2. Track option requests
+            var titleExactRequested = matchTitleExact is not null;
+            var titlePatternRequested = matchTitlePattern is not null;
+            var pathExactRequested = matchPathExact is not null;
+            var pathPatternRequested = matchPathPattern is not null;
 
-            if (matchPathExact is not null && game.PathRule is not null)
-                game.PathRule = null;
-            else if (matchPathPattern is not null && game.PathRule is not null)
-                game.FilePath = null;
+            // 3. Detect if we need to clear an old opposite property in memory
+            var clearWindowRule = titleExactRequested && game.WindowRule is not null;
+            var clearWindowTitle = titlePatternRequested && game.WindowTitle is not null;
+            var clearPathRule = pathExactRequested && game.PathRule is not null;
+            var clearFilePath = pathPatternRequested && game.FilePath is not null;
 
-            if (matchTitlePattern is not null)
+            if (clearWindowRule) game.WindowRule = null;
+            if (clearWindowTitle) game.WindowTitle = null;
+            if (clearPathRule) game.PathRule = null;
+            if (clearFilePath) game.FilePath = null;
+
+            // 4. Assign new pattern rules if provided directly
+            if (titlePatternRequested)
                 game.WindowRule = matchTitlePattern;
 
-            if (matchPathPattern is not null)
+            if (pathPatternRequested)
                 game.PathRule = matchPathPattern;
 
+            // 5. Query target process if PID or exact rules were provided
             if (pid is not null)
             {
                 var targetProc = ProcGatherer.GetOurProcFromPid(new ProcPid(pid.Value));
@@ -159,21 +169,28 @@ public static class EditAutoGame
                     return 1;
                 }
 
-                if (matchTitleExact is not null)
+                if (titleExactRequested)
                     game.WindowTitle = targetProc.WindowTitle;
 
-                if (matchPathExact is not null)
+                if (pathExactRequested)
                     game.FilePath = targetProc.FilePath;
             }
 
-            var editedGameResult = GameLibrary.Instance.EditGame(game,
-                                                                 tableId,
-                                                                 playTimeChanged: playTimeValue is not null,
-                                                                 nameChanged: newGameName is null,
-                                                                 windowTitleChanged: matchTitleExact is not null,
-                                                                 windowRuleChanged: matchTitlePattern is not null,
-                                                                 filePathChanged: matchPathExact is not null,
-                                                                 pathRuleChanged: matchPathPattern is not null);
+            // 6. Execute DB update (Pass true if setting a new value OR clearing an old value to NULL)
+            var windowTitleChanged = titleExactRequested || clearWindowTitle;
+            var windowRuleChanged = titlePatternRequested || clearWindowRule;
+            var filePathChanged = pathExactRequested || clearFilePath;
+            var pathRuleChanged = pathPatternRequested || clearPathRule;
+
+            var editedGameResult = await GameLibrary.Instance.EditGameAsync(game,
+                                                                            tableId,
+                                                                            cliCt,
+                                                                            nameChanged: newGameName is not null,
+                                                                            playTimeChanged: playTimeValue is not null,
+                                                                            windowTitleChanged: windowTitleChanged,
+                                                                            windowRuleChanged: windowRuleChanged,
+                                                                            filePathChanged: filePathChanged,
+                                                                            pathRuleChanged: pathRuleChanged);
 
             if (!editedGameResult.Ok)
             {
@@ -185,15 +202,15 @@ public static class EditAutoGame
 
             var matchingRulesChanged = playTimeValue is not null
                                        || newGameName is not null
-                                       || matchTitleExact is not null
-                                       || matchTitlePattern is not null
-                                       || matchPathExact is not null
-                                       || matchPathPattern is not null;
+                                       || windowTitleChanged
+                                       || windowRuleChanged
+                                       || filePathChanged
+                                       || pathRuleChanged;
 
             var notificationResult = await GameMonitorAgentIpcServer.NotifyThatAutoGameGotEditedAsync(tableId,
                                                                                                       game.Name,
                                                                                                       matchingRulesChanged,
-                                                                                                      cancellationToken);
+                                                                                                      cliCt);
 
             if (notificationResult.Ok) return 0;
 

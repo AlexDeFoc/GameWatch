@@ -50,13 +50,13 @@ public static class ResetGame
             }
         });
 
-        cmd.SetAction(async (result, cancellationToken) =>
+        cmd.SetAction(async (result, cliCt) =>
         {
             var resetManual = result.GetValue(manualOption);
             var gameMode = resetManual ? GameMode.Manual : GameMode.Auto;
 
             var displayId = new DisplayId(result.GetRequiredValue(displayIdOption));
-            var tableIdResult = GameLibrary.Instance.GetTableId(GameMode.Manual, displayId);
+            var tableIdResult = GameLibrary.Instance.GetTableId(gameMode, displayId);
 
             if (!tableIdResult.Ok || tableIdResult.TableId is null)
             {
@@ -66,7 +66,7 @@ public static class ResetGame
 
             var tableId = tableIdResult.TableId.Value;
 
-            var resetGameResult = GameLibrary.Instance.ResetGame(gameMode, tableId);
+            var resetGameResult = await GameLibrary.Instance.ResetGameAsync(gameMode, tableId, cliCt);
 
             if (!resetGameResult.Ok || resetGameResult.GameName is null)
             {
@@ -81,10 +81,10 @@ public static class ResetGame
             var notificationResult = resetManual
                 ? await GameMonitorAgentIpcServer.NotifyThatManualGameGotResetAsync(tableId,
                                                                                     gameName,
-                                                                                    cancellationToken)
+                                                                                    cliCt)
                 : await GameMonitorAgentIpcServer.NotifyThatAutoGameGotResetAsync(tableId,
                                                                                   gameName,
-                                                                                  cancellationToken);
+                                                                                  cliCt);
 
             if (notificationResult.Ok) return 0;
 

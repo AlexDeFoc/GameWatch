@@ -2,7 +2,7 @@
 
 public sealed class AutoGameRecord
 {
-    public TableId TableId { get; }
+    public TableId TableId { get; init; }
     public string Name { get; set; } = string.Empty;
     public ElapsedTime PlayTimeSec { get; set; }
     public string? WindowTitle { get; set; }

@@ -1,4 +1,6 @@
-﻿using System.CommandLine;
+﻿using System;
+using System.CommandLine;
+using System.Threading;
 using System.Threading.Tasks;
 using GameWatch.Core.Dbs;
 
@@ -8,31 +10,56 @@ public static class Program
 {
     public static async Task<int> Main(string[] args)
     {
-        InitializeDatabases();
+        using var cts = new CancellationTokenSource();
 
-        var rootCmd = BuildRootCommand();
-        return await rootCmd.Parse(args).InvokeAsync();
+        Console.CancelKeyPress += CancelHandler;
+
+        try
+        {
+            await InitializeDatabasesAsync(cts.Token);
+
+            var rootCmd = BuildRootCommand();
+            return await rootCmd.Parse(args).InvokeAsync(cancellationToken: cts.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            Console.WriteLine("\n[INFO] Operation cancelled by user.");
+            return 130; // Standard exit code for SIGINT/Ctrl+C
+        }
+        finally
+        {
+            Console.CancelKeyPress -= CancelHandler;
+        }
+
+        void CancelHandler(object? _, ConsoleCancelEventArgs e)
+        {
+            e.Cancel = true; // Prevent abrupt process termination
+            // ReSharper disable once AccessToDisposedClosure
+            cts.Cancel();
+        }
     }
 
-    private static void InitializeDatabases()
+    private static async Task InitializeDatabasesAsync(CancellationToken cancellationToken)
     {
-        GameLibrary.Init("../../UserData");
-        GamePresets.Init("../../AppData");
-        Settings.Init("../../AppData");
+        var libraryTask = GameLibrary.CreateAndInitAsync("../../UserData", cancellationToken);
+        var presetsTask = GamePresets.CreateAndInitAsync("../../AppData", cancellationToken);
+        var settingsTask = Settings.CreateAndInitAsync("../../AppData", cancellationToken);
+
+        await Task.WhenAll(libraryTask, presetsTask, settingsTask);
     }
 
     private static RootCommand BuildRootCommand()
     {
         var rootCmd = new RootCommand("GameWatch CLI Client - Control and query active tracking routines.")
         {
-            Cmds.RemoveGame.Build(),
-            Cmds.DeleteAllGames.Build(),
-            Cmds.ResetGame.Build(),
-            Cmds.UpdateApp.Build(),
+            BuildListCommand(),
             Cmds.ToggleGame.Build(),
             BuildEditCommand(),
             BuildAddCommand(),
-            BuildListCommand()
+            Cmds.RemoveGame.Build(),
+            Cmds.ResetGame.Build(),
+            Cmds.DeleteAllGames.Build(),
+            Cmds.UpdateApp.Build()
         };
 
         return rootCmd;
@@ -49,6 +76,7 @@ public static class Program
             Cmds.ListGames.Build(),
             Cmds.ListProcs.Build()
         };
+
         listCmd.Aliases.Add("ls");
 
         return listCmd;
@@ -56,26 +84,32 @@ public static class Program
 
     private static Command BuildAddCommand()
     {
-        var addAutoCmd = new Command("auto", "Command for adding a Game in auto mode")
+        var addAutoGameCmd = new Command("auto", "Command for adding a Game in auto mode")
         {
-            Cmds.AddAutoGameFromProcess.Build(),
-            Cmds.AddAutoGameFromPreset.Build()
+            Cmds.AddAutoGameFromPreset.Build(),
+            Cmds.AddAutoGameFromProcess.Build()
         };
-        addAutoCmd.Aliases.Add("a");
 
-        return new Command("add", "Command for adding games")
-        {
-            Cmds.AddManualGame.Build(),
-            addAutoCmd
-        };
+        addAutoGameCmd.Aliases.Add("a");
+
+        var addCmd = new Command("add", "Command for adding games");
+
+        var addManualGameCmd = Cmds.AddManualGame.Build();
+
+        addCmd.Add(addManualGameCmd);
+        addCmd.Add(addAutoGameCmd);
+
+        return addCmd;
     }
 
     private static Command BuildEditCommand()
     {
-        return new Command("edit", "Command for editing Game recorded properties")
+        var cmd = new Command("edit", "Command for editing Game recorded properties")
         {
             Cmds.EditManualGame.Build(),
             Cmds.EditAutoGame.Build()
         };
+
+        return cmd;
     }
 }

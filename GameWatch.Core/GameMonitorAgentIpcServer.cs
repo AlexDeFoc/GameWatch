@@ -10,364 +10,125 @@ namespace GameWatch.Core;
 
 public static class GameMonitorAgentIpcServer
 {
-    private const int ConnectTimeoutMs = 500;
+    public static Task<StatusAndFailureMsgResult> NotifyThatManualGameGotResetAsync(TableId tableId, string gameName, CancellationToken cancellationToken) =>
+        ExecuteAsync(
+            client => client.ResetActiveManualGameAsync(new TableIdAndNameRequest { TableId = tableId.V, GameName = gameName }, cancellationToken: cancellationToken),
+            res => !res.Ok ? new StatusAndFailureMsgResult(FailureReason: res.Msg) : new StatusAndFailureMsgResult(Ok: true)
+        );
 
-    public static async Task<StatusAndFailureMsgResult> NotifyThatManualGameGotResetAsync(TableId tableId, string gameName, CancellationToken cancellationToken)
-    {
-        try
-        {
-            var client = CreateClient();
-            var response = await client.ResetActiveManualGameAsync(new GameIdAndNameRequest { TableId = tableId.V, GameName = gameName }, cancellationToken: cancellationToken);
-            return !response.Ok
-                ? new StatusAndFailureMsgResult(FailureReason: response.Msg)
-                : new StatusAndFailureMsgResult(Ok: response.Ok);
-        }
-        catch (RpcException ex) when (ex.StatusCode is StatusCode.Unavailable)
-        {
-            // Service/IPC Server is not running
-            return new StatusAndFailureMsgResult(
-                FailureReason: "[WARN] Failed to notify game monitor agent. Is the agent running?");
-        }
-        catch (RpcException ex) when (ex.StatusCode is StatusCode.Cancelled)
-        {
-            // Explicit gRPC cancellation
-            return new StatusAndFailureMsgResult(
-                FailureReason: "[WARN] Request regarding notification sent to game monitor agent, was cancelled by the client or server.");
-        }
-        catch (RpcException ex)
-        {
-            // Other gRPC errors (DeadlineExceeded, Unauthenticated, Internal, etc.)
-            return new StatusAndFailureMsgResult(
-                FailureReason: $"[WARN] gRPC call failed ({ex.StatusCode}): {ex.Status.Detail}");
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException)
-        {
-            // Framework cancellation token triggered
-            return new StatusAndFailureMsgResult(FailureReason: $"[WARN] Operation cancelled. Reason: {ex.Message}");
-        }
-        catch (Exception ex)
-        {
-            return new StatusAndFailureMsgResult(FailureReason: $"""
-                                                                 [FAIL] Unhandled exception occured
-                                                                 [Exception msg] {ex.Message}
-                                                                 [Stack trace - START]
-                                                                 {ex.StackTrace}
-                                                                 [Stack trace - END]
-                                                                 """);
-        }
-    }
+    public static Task<StatusAndFailureMsgResult> NotifyThatAutoGameGotResetAsync(TableId tableId, string gameName, CancellationToken cancellationToken) =>
+        ExecuteAsync(
+            client => client.ResetActiveAutoGameAsync(new TableIdAndNameRequest { TableId = tableId.V, GameName = gameName }, cancellationToken: cancellationToken),
+            res => !res.Ok ? new StatusAndFailureMsgResult(FailureReason: res.Msg) : new StatusAndFailureMsgResult(Ok: true)
+        );
 
-    public static async Task<StatusAndFailureMsgResult> NotifyThatAutoGameGotResetAsync(TableId tableId, string gameName, CancellationToken cancellationToken)
-    {
-        try
-        {
-            var client = CreateClient();
-            var response = await client.ResetActiveAutoGameAsync(new GameIdAndNameRequest { TableId = tableId.V, GameName = gameName }, cancellationToken: cancellationToken);
-            return !response.Ok
-                ? new StatusAndFailureMsgResult(FailureReason: response.Msg)
-                : new StatusAndFailureMsgResult(Ok: response.Ok);
-        }
-        catch (RpcException ex) when (ex.StatusCode is StatusCode.Unavailable)
-        {
-            // Service/IPC Server is not running
-            return new StatusAndFailureMsgResult(
-                FailureReason: "[WARN] Failed to notify game monitor agent. Is the agent running?");
-        }
-        catch (RpcException ex) when (ex.StatusCode is StatusCode.Cancelled)
-        {
-            // Explicit gRPC cancellation
-            return new StatusAndFailureMsgResult(
-                FailureReason: "[WARN] Request regarding notification sent to game monitor agent, was cancelled by the client or server.");
-        }
-        catch (RpcException ex)
-        {
-            // Other gRPC errors (DeadlineExceeded, Unauthenticated, Internal, etc.)
-            return new StatusAndFailureMsgResult(
-                FailureReason: $"[WARN] gRPC call failed ({ex.StatusCode}): {ex.Status.Detail}");
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException)
-        {
-            // Framework cancellation token triggered
-            return new StatusAndFailureMsgResult(FailureReason: $"[WARN] Operation cancelled. Reason: {ex.Message}");
-        }
-        catch (Exception ex)
-        {
-            return new StatusAndFailureMsgResult(FailureReason: $"""
-                                                                 [FAIL] Unhandled exception occured
-                                                                 [Exception msg] {ex.Message}
-                                                                 [Stack trace - START]
-                                                                 {ex.StackTrace}
-                                                                 [Stack trace - END]
-                                                                 """);
-        }
-    }
+    public static Task<StatusAndFailureMsgResult> RequestToTrackNewlyAddedAutoGameAsync(AutoGameDto game, CancellationToken cancellationToken) =>
+        ExecuteAsync(
+            client => client.TrackNewlyAddedAutoGameAsync(new AutoGameDtoRequest
+            {
+                TableId = game.TableId,
+                GameName = game.Name,
+                PlayTimeSec = game.PlayTimeSec,
+                WindowTitle = game.WindowTitle ?? string.Empty,
+                WindowRule = game.WindowRule ?? string.Empty,
+                FilePath = game.FilePath ?? string.Empty,
+                PathRule = game.PathRule ?? string.Empty
+            }, cancellationToken: cancellationToken),
+            res => !res.Ok ? new StatusAndFailureMsgResult(FailureReason: res.Msg) : new StatusAndFailureMsgResult(Ok: true)
+        );
 
-    public static async Task<StatusAndFailureMsgResult> RequestToRefreshAutoGamesCacheAsync(CancellationToken cancellationToken)
-    {
-        try
-        {
-            var client = CreateClient();
-            await client.RefreshAutoGamesListAsync(new EmptyRequest(), cancellationToken: cancellationToken);
-            return new StatusAndFailureMsgResult(Ok: true);
-        }
-        catch (RpcException ex) when (ex.StatusCode is StatusCode.Unavailable)
-        {
-            // Service/IPC Server is not running
-            return new StatusAndFailureMsgResult(
-                FailureReason: "[WARN] Failed to notify game monitor agent. Is the agent running?");
-        }
-        catch (RpcException ex) when (ex.StatusCode is StatusCode.Cancelled)
-        {
-            // Explicit gRPC cancellation
-            return new StatusAndFailureMsgResult(
-                FailureReason: "[WARN] Request regarding notification sent to game monitor agent, was cancelled by the client or server.");
-        }
-        catch (RpcException ex)
-        {
-            // Other gRPC errors (DeadlineExceeded, Unauthenticated, Internal, etc.)
-            return new StatusAndFailureMsgResult(
-                FailureReason: $"[WARN] gRPC call failed ({ex.StatusCode}): {ex.Status.Detail}");
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException)
-        {
-            // Framework cancellation token triggered
-            return new StatusAndFailureMsgResult(FailureReason: $"[WARN] Operation cancelled. Reason: {ex.Message}");
-        }
-        catch (Exception ex)
-        {
-            return new StatusAndFailureMsgResult(FailureReason: $"""
-                                                                 [FAIL] Unhandled exception occured
-                                                                 [Exception msg] {ex.Message}
-                                                                 [Stack trace - START]
-                                                                 {ex.StackTrace}
-                                                                 [Stack trace - END]
-                                                                 """);
-        }
-    }
+    public static Task<StatusAndFailureMsgResult> RequestToStopTrackingAllGamesAsync(bool stopTrackingAutoGames, bool stopTrackingManualGames, CancellationToken cancellationToken) =>
+        ExecuteAsync(
+            client => client.StopTrackingAllGamesAsync(new StopTrackingAllGamesRequest
+            {
+                StopTrackingAutoGames = stopTrackingAutoGames,
+                StopTrackingManualGames = stopTrackingManualGames
+            }, cancellationToken: cancellationToken),
+            _ => new StatusAndFailureMsgResult(Ok: true)
+        );
 
-    public static async Task<ToggleManualGameResult> RequestToToggleManualGameAsync(TableId tableId, string gameName, CancellationToken cancellationToken)
-    {
-        try
-        {
-            var client = CreateClient();
-            var response = await client.ToggleManualGameAsync(new GameIdAndNameRequest { TableId = tableId.V, GameName = gameName }, cancellationToken: cancellationToken);
-            return !response.Ok
-                ? new ToggleManualGameResult(FailureReason: response.FailureReason)
-                : new ToggleManualGameResult(Ok: response.Ok, StartedGame: response.StartedGame);
-        }
-        catch (RpcException ex) when (ex.StatusCode is StatusCode.Unavailable)
-        {
-            // Service/IPC Server is not running
-            return new ToggleManualGameResult(
-                FailureReason: "[WARN] Failed to notify game monitor agent. Is the agent running?");
-        }
-        catch (RpcException ex) when (ex.StatusCode is StatusCode.Cancelled)
-        {
-            // Explicit gRPC cancellation
-            return new ToggleManualGameResult(
-                FailureReason: "[WARN] Request regarding notification sent to game monitor agent, was cancelled by the client or server.");
-        }
-        catch (RpcException ex)
-        {
-            // Other gRPC errors (DeadlineExceeded, Unauthenticated, Internal, etc.)
-            return new ToggleManualGameResult(
-                FailureReason: $"[WARN] gRPC call failed ({ex.StatusCode}): {ex.Status.Detail}");
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException)
-        {
-            // Framework cancellation token triggered
-            return new ToggleManualGameResult(FailureReason: $"[WARN] Operation cancelled. Reason: {ex.Message}");
-        }
-        catch (Exception ex)
-        {
-            return new ToggleManualGameResult(FailureReason: $"""
-                                                              [FAIL] Unhandled exception occured
-                                                              [Exception msg] {ex.Message}
-                                                              [Stack trace - START]
-                                                              {ex.StackTrace}
-                                                              [Stack trace - END]
-                                                              """);
-        }
-    }
+    public static Task<ToggleManualGameResult> RequestToToggleManualGameAsync(TableId tableId, string gameName, CancellationToken cancellationToken) =>
+        ExecuteAsync(
+            client => client.ToggleManualGameAsync(new TableIdAndNameRequest { TableId = tableId.V, GameName = gameName }, cancellationToken: cancellationToken),
+            res => !res.Ok ? new ToggleManualGameResult(FailureReason: res.FailureReason) : new ToggleManualGameResult(Ok: true, StartedGame: res.StartedGame)
+        );
 
-    public static async Task<StatusAndFailureMsgResult> NotifyThatManualGameGotRemovedAsync(TableId tableId, string gameName, CancellationToken cancellationToken)
-    {
-        try
-        {
-            var client = CreateClient();
-            await client.RemoveManualGameAsync(new GameIdAndNameRequest { TableId = tableId.V, GameName = gameName }, cancellationToken: cancellationToken);
-            return new StatusAndFailureMsgResult(Ok: true);
-        }
-        catch (RpcException ex) when (ex.StatusCode is StatusCode.Unavailable)
-        {
-            // Service/IPC Server is not running
-            return new StatusAndFailureMsgResult(
-                FailureReason: "[WARN] Failed to notify game monitor agent. Is the agent running?");
-        }
-        catch (RpcException ex) when (ex.StatusCode is StatusCode.Cancelled)
-        {
-            // Explicit gRPC cancellation
-            return new StatusAndFailureMsgResult(
-                FailureReason: "[WARN] Request regarding notification sent to game monitor agent, was cancelled by the client or server.");
-        }
-        catch (RpcException ex)
-        {
-            // Other gRPC errors (DeadlineExceeded, Unauthenticated, Internal, etc.)
-            return new StatusAndFailureMsgResult(
-                FailureReason: $"[WARN] gRPC call failed ({ex.StatusCode}): {ex.Status.Detail}");
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException)
-        {
-            // Framework cancellation token triggered
-            return new StatusAndFailureMsgResult(FailureReason: $"[WARN] Operation cancelled. Reason: {ex.Message}");
-        }
-        catch (Exception ex)
-        {
-            return new StatusAndFailureMsgResult(FailureReason: $"""
-                                                                 [FAIL] Unhandled exception occured
-                                                                 [Exception msg] {ex.Message}
-                                                                 [Stack trace - START]
-                                                                 {ex.StackTrace}
-                                                                 [Stack trace - END]
-                                                                 """);
-        }
-    }
+    public static Task<StatusAndFailureMsgResult> NotifyThatManualGameGotRemovedAsync(TableId tableId, string gameName, CancellationToken cancellationToken) =>
+        ExecuteAsync(
+            client => client.RemoveManualGameAsync(new TableIdAndNameRequest { TableId = tableId.V, GameName = gameName }, cancellationToken: cancellationToken),
+            _ => new StatusAndFailureMsgResult(Ok: true)
+        );
 
-    public static async Task<StatusAndFailureMsgResult> NotifyThatAutoGameGotRemovedAsync(TableId tableId, string gameName, CancellationToken cancellationToken)
-    {
-        try
-        {
-            var client = CreateClient();
-            await client.RemoveAutoGameAsync(new GameIdAndNameRequest { TableId = tableId.V, GameName = gameName }, cancellationToken: cancellationToken);
-            return new StatusAndFailureMsgResult(Ok: true);
-        }
-        catch (RpcException ex) when (ex.StatusCode is StatusCode.Unavailable)
-        {
-            // Service/IPC Server is not running
-            return new StatusAndFailureMsgResult(
-                FailureReason: "[WARN] Failed to notify game monitor agent. Is the agent running?");
-        }
-        catch (RpcException ex) when (ex.StatusCode is StatusCode.Cancelled)
-        {
-            // Explicit gRPC cancellation
-            return new StatusAndFailureMsgResult(
-                FailureReason: "[WARN] Request regarding notification sent to game monitor agent, was cancelled by the client or server.");
-        }
-        catch (RpcException ex)
-        {
-            // Other gRPC errors (DeadlineExceeded, Unauthenticated, Internal, etc.)
-            return new StatusAndFailureMsgResult(
-                FailureReason: $"[WARN] gRPC call failed ({ex.StatusCode}): {ex.Status.Detail}");
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException)
-        {
-            // Framework cancellation token triggered
-            return new StatusAndFailureMsgResult(FailureReason: $"[WARN] Operation cancelled. Reason: {ex.Message}");
-        }
-        catch (Exception ex)
-        {
-            return new StatusAndFailureMsgResult(FailureReason: $"""
-                                                                 [FAIL] Unhandled exception occured
-                                                                 [Exception msg] {ex.Message}
-                                                                 [Stack trace - START]
-                                                                 {ex.StackTrace}
-                                                                 [Stack trace - END]
-                                                                 """);
-        }
-    }
+    public static Task<StatusAndFailureMsgResult> NotifyThatAutoGameGotRemovedAsync(TableId tableId, string gameName, CancellationToken cancellationToken) =>
+        ExecuteAsync(
+            client => client.RemoveAutoGameAsync(new TableIdAndNameRequest { TableId = tableId.V, GameName = gameName }, cancellationToken: cancellationToken),
+            _ => new StatusAndFailureMsgResult(Ok: true)
+        );
 
-    public static async Task<StatusAndFailureMsgResult> NotifyThatAutoGameGotEditedAsync(TableId tableId, string gameName, bool matchingRulesChanged, CancellationToken cancellationToken)
-    {
-        try
-        {
-            var client = CreateClient();
-            var response = await client.EditAutoGameAsync(new EditGameRequest { TableId = tableId.V, GameName = gameName, MatchingRulesChanged = matchingRulesChanged }, cancellationToken: cancellationToken);
+    public static Task<StatusAndFailureMsgResult> NotifyThatAutoGameGotEditedAsync(TableId tableId, string gameName, bool matchingRulesChanged, CancellationToken cancellationToken) =>
+        ExecuteAsync(
+            client => client.EditAutoGameAsync(new EditGameRequest { TableId = tableId.V, GameName = gameName, MatchingRulesChanged = matchingRulesChanged }, cancellationToken: cancellationToken),
+            res => !res.Ok ? new StatusAndFailureMsgResult(FailureReason: res.Msg) : new StatusAndFailureMsgResult(Ok: true)
+        );
 
-            return !response.Ok
-                ? new StatusAndFailureMsgResult(FailureReason: response.Msg)
-                : new StatusAndFailureMsgResult(Ok: response.Ok);
-        }
-        catch (RpcException ex) when (ex.StatusCode is StatusCode.Unavailable)
-        {
-            // Service/IPC Server is not running
-            return new StatusAndFailureMsgResult(
-                FailureReason: "[WARN] Failed to notify game monitor agent. Is the agent running?");
-        }
-        catch (RpcException ex) when (ex.StatusCode is StatusCode.Cancelled)
-        {
-            // Explicit gRPC cancellation
-            return new StatusAndFailureMsgResult(
-                FailureReason: "[WARN] Request regarding notification sent to game monitor agent, was cancelled by the client or server.");
-        }
-        catch (RpcException ex)
-        {
-            // Other gRPC errors (DeadlineExceeded, Unauthenticated, Internal, etc.)
-            return new StatusAndFailureMsgResult(
-                FailureReason: $"[WARN] gRPC call failed ({ex.StatusCode}): {ex.Status.Detail}");
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException)
-        {
-            // Framework cancellation token triggered
-            return new StatusAndFailureMsgResult(FailureReason: $"[WARN] Operation cancelled. Reason: {ex.Message}");
-        }
-        catch (Exception ex)
-        {
-            return new StatusAndFailureMsgResult(FailureReason: $"""
-                                                                 [FAIL] Unhandled exception occured
-                                                                 [Exception msg] {ex.Message}
-                                                                 [Stack trace - START]
-                                                                 {ex.StackTrace}
-                                                                 [Stack trace - END]
-                                                                 """);
-        }
-    }
+    public static Task<EvictOldInstanceResult> RequestOldInstanceEvictionAsync(CancellationToken cancellationToken) =>
+        ExecuteAsync(
+            client => client.EvictOldInstanceAsync(new EmptyRequest(), cancellationToken: cancellationToken),
+            _ => new EvictOldInstanceResult(Ok: true, InstanceWasPresent: true),
+            // Custom failure handler specifically for eviction checks
+            ex => ex.StatusCode is StatusCode.Cancelled or StatusCode.Unavailable
+                ? new EvictOldInstanceResult(Ok: true, InstanceWasPresent: false)
+                : new EvictOldInstanceResult(FailureReason: $"[WARN] gRPC call failed ({ex.StatusCode}): {ex.Status.Detail}")
+        );
 
-    public static async Task<EvictOldInstanceResult> RequestOldInstanceEvictionAsync(CancellationToken cancellationToken)
-    {
-        try
-        {
-            var client = CreateClient();
-            await client.EvictOldInstanceAsync(new EmptyRequest(), cancellationToken: cancellationToken);
-            return new EvictOldInstanceResult(Ok: true);
-        }
-        catch (RpcException ex) when (ex.StatusCode is StatusCode.Cancelled or StatusCode.Unavailable)
-        {
-            // No server was actively listening on the pipe
-            return new EvictOldInstanceResult(Ok: true, InstanceWasPresent: false);
-        }
-        catch (RpcException ex)
-        {
-            // Other gRPC errors (DeadlineExceeded, Unauthenticated, Internal, etc.)
-            return new EvictOldInstanceResult(
-                FailureReason: $"[WARN] gRPC call failed ({ex.StatusCode}): {ex.Status.Detail}");
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException)
-        {
-            // Framework cancellation token triggered
-            return new EvictOldInstanceResult(FailureReason: $"[WARN] Operation cancelled. Reason: {ex.Message}");
-        }
-        catch (Exception ex)
-        {
-            return new EvictOldInstanceResult(FailureReason: $"""
-                                                              [FAIL] Unhandled exception occured
-                                                              [Exception msg] {ex.Message}
-                                                              [Stack trace - START]
-                                                              {ex.StackTrace}
-                                                              [Stack trace - END]
-                                                              """);
-        }
-    }
-
-    private static IpcProcessor.IpcProcessorClient CreateClient()
+    private static readonly Lazy<IpcProcessor.IpcProcessorClient> SharedClient = new(() =>
     {
         const string pipeName = IpcConstants.GameMonitorAgentPipeName;
+        const int connectTimeoutMs = 500;
 
-        var channel = new NamedPipeChannel(".", pipeName, new NamedPipeChannelOptions
-        {
-            ConnectionTimeout = ConnectTimeoutMs
-        });
-
+        var channel = new NamedPipeChannel(".", pipeName, new NamedPipeChannelOptions { ConnectionTimeout = connectTimeoutMs });
         return new IpcProcessor.IpcProcessorClient(channel);
+    });
+
+    private static async Task<TResult> ExecuteAsync<TResponse, TResult>(
+        Func<IpcProcessor.IpcProcessorClient, AsyncUnaryCall<TResponse>> call,
+        Func<TResponse, TResult> mapResult,
+        Func<RpcException, TResult>? customRpcFailureMapper = null)
+        where TResult : struct
+    {
+        try
+        {
+            var response = await call(SharedClient.Value);
+            return mapResult(response);
+        }
+        catch (RpcException ex)
+        {
+            // Allow caller to intercept specific status codes (e.g. Eviction missing server)
+            if (customRpcFailureMapper is not null)
+                return customRpcFailureMapper(ex);
+
+            return ex.StatusCode switch
+            {
+                StatusCode.Unavailable => CreateFailure<TResult>("[WARN] Failed to notify game monitor agent. Is the agent running?"),
+                StatusCode.Cancelled => CreateFailure<TResult>("[WARN] Request was cancelled by the client or server."),
+                _ => CreateFailure<TResult>($"[WARN] gRPC call failed ({ex.StatusCode}): {ex.Status.Detail}")
+            };
+        }
+        catch (Exception ex)
+        {
+            return CreateFailure<TResult>($"[FAIL] Unhandled exception: {ex.Message}");
+        }
+    }
+
+    private static TResult CreateFailure<TResult>(string msg) where TResult : struct
+    {
+        if (typeof(TResult) == typeof(ToggleManualGameResult))
+            return (TResult)(object)new ToggleManualGameResult(FailureReason: msg);
+
+        if (typeof(TResult) == typeof(EvictOldInstanceResult))
+            return (TResult)(object)new EvictOldInstanceResult(FailureReason: msg);
+
+        return (TResult)(object)new StatusAndFailureMsgResult(FailureReason: msg);
     }
 
     // Results

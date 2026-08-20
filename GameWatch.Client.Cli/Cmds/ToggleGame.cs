@@ -22,7 +22,7 @@ public static class ToggleGame
         };
         cmd.Aliases.Add("tg");
 
-        cmd.SetAction(async (parseResult, cancellationToken) =>
+        cmd.SetAction(async (parseResult, cliCt) =>
         {
             var displayId = new DisplayId(parseResult.GetValue(displayIdOption));
             var tableIdResult = GameLibrary.Instance.GetTableId(GameMode.Manual, displayId);
@@ -35,7 +35,7 @@ public static class ToggleGame
 
             var tableId = tableIdResult.TableId.Value;
 
-            var manualGameResult = GameLibrary.Instance.GetManualGame(tableId);
+            var manualGameResult = await GameLibrary.Instance.GetManualGameAsync(tableId, cliCt);
 
             if (!manualGameResult.Ok || manualGameResult.Game is null)
             {
@@ -48,7 +48,7 @@ public static class ToggleGame
 
             var notificationResult = await GameMonitorAgentIpcServer.RequestToToggleManualGameAsync(tableId,
                                                                                                     gameName,
-                                                                                                    cancellationToken);
+                                                                                                    cliCt);
 
             if (notificationResult.Ok)
             {

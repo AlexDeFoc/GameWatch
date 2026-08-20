@@ -1,4 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using GameWatch.Core.Dbs;
 using GameWatch.Core.Helpers;
 using GameWatch.Core.Types;
@@ -8,55 +11,73 @@ namespace GameWatch.Agent.GameMonitor;
 
 public sealed class ProcessScanner(AgentState state, ILogger<ProcessScanner> logger)
 {
-    public void Scan()
+    public async Task ScanAsync(CancellationToken cancellationToken)
     {
-        var availableProcs = ProcGatherer.GetDictOfAvailableProcesses();
         var now = DateTime.UtcNow;
+        var seenPids = new HashSet<int>();
+        var loadedGames = state.GetLoadedAutoGames();
 
-        // Remove inactives & flush playtime
-        foreach (var (tableId, session) in state.ActiveAutoGames)
+        // Stream pass: Inspect procs one by one as they are enumerated from the OS
+        await foreach (var proc in ProcGatherer.StreamAvailableProcessesAsync(cancellationToken))
         {
-            if (availableProcs.ContainsKey(session.Pid.V))
-                continue;
+            seenPids.Add(proc.Pid);
 
-            // Process termination: remove session
-            if (!state.ActiveAutoGames.TryRemove(tableId, out var removedSession))
-                continue;
-
-            var elapsed = (long)(now - removedSession.LastTimeFlushedPlayTime).TotalSeconds;
-            if (elapsed <= 0)
+            // Match against loaded games that aren't currently active
+            foreach (var game in loadedGames)
             {
-                GameLibrary.Instance.IncrementPlayTime(GameMode.Auto, removedSession.TableId, new ElapsedTime(elapsed));
-            }
+                if (state.TryGetActiveAutoGame(game.TableId, out _))
+                    continue;
 
-            if (logger.IsEnabled(LogLevel.Information))
-                logger.LogInformation("[INFO] Auto game TableId='{id}' Name='{name}' has stopped. Elapsed={elapsed}s", removedSession.TableId.V, removedSession.GameName, elapsed);
-        }
-
-        // Search & match new games (Allows multiple TableIds to bind to the same PID)
-        var loadedGames = state.LoadedAutoGames;
-        for (var i = 0; i < loadedGames.Count; ++i)
-        {
-            var game = loadedGames[i];
-
-            if (state.ActiveAutoGames.ContainsKey(game.TableId))
-                continue;
-
-            foreach (var (pid, proc) in availableProcs)
-            {
                 if (!RuleMatcher.IsMatch(proc, game))
                     continue;
 
-                var newSession = new TrackingSessions.Auto { TableId = game.TableId, GameName = game.Name, Pid = new ProcPid(pid) };
-
-                if (state.ActiveAutoGames.TryAdd(game.TableId, newSession))
+                var newSession = new TrackingSessions.Auto
                 {
-                    if (logger.IsEnabled(LogLevel.Information))
-                        logger.LogInformation("[INFO] Auto GameRecord TableId='{id}' Name='{name}' bound to PID='{pid}' (Game has started).", game.TableId.V, game.Name, pid);
-                }
+                    TableId = game.TableId,
+                    GameName = game.Name,
+                    Pid = new ProcPid(proc.Pid),
+                    LastTimeFlushedPlayTime = now
+                };
 
-                break; // Match found for this game record, move to the next record
+                if (!state.AddActiveAutoGame(newSession)) continue;
+                if (logger.IsEnabled(LogLevel.Information))
+                {
+                    logger.LogInformation("[INFO] Auto GameRecord TableId='{id}' Name='{name}' bound to PID='{pid}' " +
+                                          "(Game has started).", game.TableId.V, game.Name, proc.Pid);
+                }
             }
+        }
+
+        // Cleanup pass: Check active sessions against the seen PIDs
+        foreach (var session in state.ActiveAutoGames)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (seenPids.Contains(session.Pid.V))
+                continue;
+
+            // Process no longer exists in seenPids -> Terminated
+            if (!state.RemoveActiveAutoGame(session.TableId, out var removedSession))
+                continue;
+
+            var elapsed = (long)(now - removedSession.LastTimeFlushedPlayTime).TotalSeconds;
+            if (elapsed > 0)
+            {
+                try
+                {
+                    await GameLibrary.Instance.IncrementPlayTimeAsync(GameMode.Auto, removedSession.TableId, new ElapsedTime(elapsed), cancellationToken);
+                }
+                catch (OperationCanceledException)
+                {
+                    // Restore session so unsaved elapsed time isn't lost
+                    state.AddActiveAutoGame(removedSession);
+                    throw;
+                }
+            }
+
+            if (logger.IsEnabled(LogLevel.Information))
+                logger.LogInformation("[INFO] Auto game TableId='{id}' Name='{name}' has stopped. Elapsed={elapsed}s",
+                                      removedSession.TableId.V, removedSession.GameName, elapsed);
         }
     }
 }

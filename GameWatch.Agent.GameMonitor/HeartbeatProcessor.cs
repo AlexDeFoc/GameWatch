@@ -1,5 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Threading;
+using System.Threading.Tasks;
 using GameWatch.Agent.GameMonitor.TrackingSessions;
 using GameWatch.Core.Dbs;
 using GameWatch.Core.Types;
@@ -9,26 +12,32 @@ namespace GameWatch.Agent.GameMonitor;
 
 public sealed class HeartbeatProcessor(AgentState state, ILogger<HeartbeatProcessor> logger)
 {
-    public void FlushHeartbeats(bool forceFlushAll = false)
+    public async Task FlushHeartbeats(CancellationToken cancellationToken, bool forceFlushAll = false)
     {
         var now = DateTime.UtcNow;
-        FlushSessions(state.ActiveAutoGames, GameMode.Auto, "Auto", now, forceFlushAll);
-        FlushSessions(state.ActiveManualGames, GameMode.Manual, "Manual", now, forceFlushAll);
+
+        await FlushSessionsAsync(state.ActiveAutoGames, GameMode.Auto, "Auto", now, forceFlushAll, cancellationToken);
+        await FlushSessionsAsync(state.ActiveManualGames, GameMode.Manual, "Manual", now, forceFlushAll, cancellationToken);
     }
 
-    private void FlushSessions<T>(ICollection<KeyValuePair<TableId, T>> gameSessions, GameMode gameMode, string modeLabel, DateTime utcNow, bool forceFlushAll)
+    private async Task FlushSessionsAsync<T>(
+        ImmutableArray<T> gameSessions,
+        GameMode gameMode,
+        string modeLabel,
+        DateTime utcNow,
+        bool forceFlushAll,
+        CancellationToken cancellationToken)
         where T : class, ITrackingSession
     {
-        Dictionary<TableId, ElapsedTime>? gamesElapsedToFlush = null;
+        if (gameSessions.IsEmpty) return;
 
-        // Parallel tracking array/list for logging ONLY if logging is enabled (Lazy)
+        Dictionary<TableId, ElapsedTime>? gamesElapsedToFlush = null;
         List<(TableId Id, string Name, ElapsedTime Elapsed)>? logBuffer = null;
 
         var threshold = Settings.Instance.GameMonitorAgentGamePlayTimeSaveThreshold;
         var isLogging = logger.IsEnabled(LogLevel.Information);
 
-        // Enumerating KeyValuePair directly over ConcurrentDictionary avoids .Values allocation
-        foreach (var (tableId, session) in gameSessions)
+        foreach (var session in gameSessions)
         {
             long secondsToFlush;
             lock (session)
@@ -52,22 +61,20 @@ public sealed class HeartbeatProcessor(AgentState state, ILogger<HeartbeatProces
 
             var elapsedTime = new ElapsedTime(secondsToFlush);
 
-            // Lazy init primary payload
             gamesElapsedToFlush ??= [];
-            gamesElapsedToFlush[tableId] = elapsedTime;
+            gamesElapsedToFlush[session.TableId] = elapsedTime;
 
-            // Only track names if LogLevel.Information is enabled
             if (!isLogging) continue;
 
             logBuffer ??= [];
-            logBuffer.Add((tableId, session.GameName, elapsedTime));
+            logBuffer.Add((session.TableId, session.GameName, elapsedTime));
         }
 
         if (gamesElapsedToFlush is null) return;
 
         try
         {
-            GameLibrary.Instance.IncrementPlayTime(gameMode, gamesElapsedToFlush);
+            await GameLibrary.Instance.IncrementPlayTimeAsync(gameMode, gamesElapsedToFlush, cancellationToken);
 
             if (logBuffer is null || !logger.IsEnabled(LogLevel.Information)) return;
 

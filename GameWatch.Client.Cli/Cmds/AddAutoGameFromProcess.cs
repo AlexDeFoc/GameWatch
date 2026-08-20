@@ -96,7 +96,7 @@ public static class AddAutoGameFromProcess
             }
         });
 
-        cmd.SetAction(async (result, cancellationToken) =>
+        cmd.SetAction(async (result, cliCt) =>
         {
             var pid = result.GetValue(pidOption);
 
@@ -148,11 +148,12 @@ public static class AddAutoGameFromProcess
                 }
             }
 
-            GameLibrary.Instance.AddGame(game);
+            await GameLibrary.Instance.AddGameAsync(game, cliCt);
 
             Console.WriteLine($"[OK] Game with Name='{game.Name}' added successfully");
 
-            var notificationResult = await GameMonitorAgentIpcServer.RequestToRefreshAutoGamesCacheAsync(cancellationToken);
+            var notificationResult = await GameMonitorAgentIpcServer.RequestToTrackNewlyAddedAutoGameAsync(
+                new AutoGameDto(game), cliCt);
 
             if (notificationResult.Ok) return 0;
 

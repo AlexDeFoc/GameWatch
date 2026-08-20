@@ -38,7 +38,7 @@ public static class ListGames
 
         cmd.Aliases.Add("g");
 
-        cmd.SetAction(parseResult =>
+        cmd.SetAction(async (parseResult, cliCt) =>
         {
             var verbose = parseResult.GetValue(verboseOption);
             var showManualGames = parseResult.GetValue(showManualGamesOption);
@@ -54,9 +54,18 @@ public static class ListGames
 
             var anyGamesDisplayed = false;
 
-            if (showManualGames)
+            // Kick off only needed tasks in parallel
+            var manualGamesTask = showManualGames
+                ? GameLibrary.Instance.GetManualGamesAsync(cliCt)
+                : null;
+
+            var autoGamesTask = showAutoGames
+                ? GameLibrary.Instance.GetAutoGamesAsync(cliCt)
+                : null;
+
+            if (manualGamesTask is not null)
             {
-                var manualGames = GameLibrary.Instance.GetManualGames();
+                var manualGames = await manualGamesTask;
 
                 if (manualGames.Count > 0)
                 {
@@ -73,17 +82,17 @@ public static class ListGames
                 }
             }
 
-            if (showAutoGames)
+            if (autoGamesTask is not null)
             {
-                var autoGames = GameLibrary.Instance.GetAutoGames();
-                if (autoGames.Count > 0)
+                var autoGames = await autoGamesTask;
+                if (autoGames.Length > 0)
                 {
                     anyGamesDisplayed = true;
                     Console.WriteLine("--- Auto games ---");
 
                     if (!verbose)
                     {
-                        for (var i = 0; i < autoGames.Count; ++i)
+                        for (var i = 0; i < autoGames.Length; ++i)
                         {
                             var game = autoGames[i];
                             Console.WriteLine($"{i + 1}. {TimeSpan.FromSeconds(game.PlayTimeSec.V)} - {game.Name}");
@@ -91,7 +100,7 @@ public static class ListGames
                     }
                     else
                     {
-                        for (var i = 0; i < autoGames.Count; ++i)
+                        for (var i = 0; i < autoGames.Length; ++i)
                         {
                             var game = autoGames[i];
                             Console.WriteLine($"{i + 1}. {TimeSpan.FromSeconds(game.PlayTimeSec.V)} - {game.Name}");
@@ -106,7 +115,7 @@ public static class ListGames
                             if (game.PathRule is not null)
                                 Console.WriteLine($"* File path rule={game.PathRule}");
 
-                            if (i < autoGames.Count - 1)
+                            if (i < autoGames.Length - 1)
                                 Console.WriteLine();
                         }
                     }

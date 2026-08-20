@@ -12,11 +12,9 @@ public static class ListProcs
                                        "that can be used to match against when monitoring auto games.");
         cmd.Aliases.Add("p");
 
-        cmd.SetAction(_ =>
+        cmd.SetAction(async (_, cliCt) =>
         {
-            var procs = ProcGatherer.GetListOfAvailableProcesses();
-
-            foreach (var proc in procs)
+            await foreach (var proc in ProcGatherer.StreamAvailableProcessesAsync(cliCt))
             {
                 Console.WriteLine($"Pid: {proc.Pid}");
                 Console.WriteLine($"Window Title: {proc.WindowTitle}");

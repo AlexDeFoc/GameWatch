@@ -27,14 +27,14 @@ public static class AddManualGame
         };
         cmd.Aliases.Add("m");
 
-        cmd.SetAction(result =>
+        cmd.SetAction(async (result, cliCt) =>
         {
             var name = result.GetRequiredValue(nameOption);
             var initialPlayTime = result.GetValue(playTimeOption);
 
             var gameRecord = new ManualGameRecord { Name = name, PlayTimeSec = new ElapsedTime(initialPlayTime) };
 
-            GameLibrary.Instance.AddGame(gameRecord);
+            await GameLibrary.Instance.AddGameAsync(gameRecord, cliCt);
 
             Console.WriteLine("[OK] Manual game added to database");
 

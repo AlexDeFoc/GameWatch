@@ -50,13 +50,13 @@ public static class RemoveGame
             }
         });
 
-        cmd.SetAction(async (result, cancellationToken) =>
+        cmd.SetAction(async (result, cliCt) =>
         {
             var removeManual = result.GetValue(manualOption);
             var gameMode = removeManual ? GameMode.Manual : GameMode.Auto;
 
             var displayId = new DisplayId(result.GetRequiredValue(displayIdOption));
-            var tableIdResult = GameLibrary.Instance.GetTableId(GameMode.Manual, displayId);
+            var tableIdResult = GameLibrary.Instance.GetTableId(gameMode, displayId);
 
             if (!tableIdResult.Ok || tableIdResult.TableId is null)
             {
@@ -66,7 +66,7 @@ public static class RemoveGame
 
             var tableId = tableIdResult.TableId.Value;
 
-            var deletedGameResult = GameLibrary.Instance.RemoveGame(gameMode, tableId);
+            var deletedGameResult = await GameLibrary.Instance.RemoveGameAsync(gameMode, tableId, cliCt);
 
             if (!deletedGameResult.Ok || deletedGameResult.GameName is null)
             {
@@ -81,10 +81,10 @@ public static class RemoveGame
             var notificationResult = removeManual
                 ? await GameMonitorAgentIpcServer.NotifyThatManualGameGotRemovedAsync(tableId,
                                                                                       gameName,
-                                                                                      cancellationToken)
+                                                                                      cliCt)
                 : await GameMonitorAgentIpcServer.NotifyThatAutoGameGotRemovedAsync(tableId,
                                                                                     gameName,
-                                                                                    cancellationToken);
+                                                                                    cliCt);
 
             if (notificationResult.Ok) return 0;
 

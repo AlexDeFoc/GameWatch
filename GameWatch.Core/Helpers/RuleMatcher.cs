@@ -27,7 +27,7 @@ public static class RuleMatcher
         }
         else if (hasTitleRule)
         {
-            titleMatches = RegexProcessor.IsMatch(gameRecord.WindowTitle!, procDto.WindowTitle);
+            titleMatches = RegexProcessor.IsMatch(gameRecord.WindowRule!, procDto.WindowTitle);
         }
         else
         {

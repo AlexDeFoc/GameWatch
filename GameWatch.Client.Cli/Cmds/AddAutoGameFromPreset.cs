@@ -22,7 +22,7 @@ public static class AddAutoGameFromPreset
         };
         cmd.Aliases.Add("p");
 
-        cmd.SetAction(async (result, cancellationToken) =>
+        cmd.SetAction(async (result, cliCt) =>
         {
             var displayId = new DisplayId(result.GetValue(displayIdOption));
 
@@ -36,7 +36,7 @@ public static class AddAutoGameFromPreset
 
             var tableId = tableIdResult.TableId.Value;
 
-            var gamePresetResult = GamePresets.Instance.GetPreset(tableId);
+            var gamePresetResult = await GamePresets.Instance.GetPresetAsync(tableId, cliCt);
 
             if (!gamePresetResult.Ok || gamePresetResult.GamePreset is null)
             {
@@ -46,11 +46,12 @@ public static class AddAutoGameFromPreset
 
             var gamePreset = gamePresetResult.GamePreset;
 
-            GameLibrary.Instance.AddGame(gamePreset);
+            await GameLibrary.Instance.AddGameAsync(gamePreset, cliCt);
 
             Console.WriteLine($"[OK] Game with Name='{gamePreset.Name}' added successfully");
 
-            var notificationResult = await GameMonitorAgentIpcServer.RequestToRefreshAutoGamesCacheAsync(cancellationToken);
+            var notificationResult = await GameMonitorAgentIpcServer.RequestToTrackNewlyAddedAutoGameAsync(
+                new AutoGameDto(gamePreset), cliCt);
 
             if (notificationResult.Ok) return 0;
 

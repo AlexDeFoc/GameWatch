@@ -18,10 +18,12 @@ public sealed class Worker(
         if (logger.IsEnabled(LogLevel.Information))
             logger.LogInformation("[INFO] Agent started. Loading important stuff...");
 
-        state.LoadedAutoGames = [.. GameLibrary.Instance.GetAutoGames()];
+        state.ReplaceAllAutoGames(await GameLibrary.Instance.GetAutoGamesAsync(stoppingToken));
 
         if (logger.IsEnabled(LogLevel.Information))
-            logger.LogInformation("[OK]️ Loaded auto games from db. Found={count} games", state.LoadedAutoGames.Count);
+            logger.LogInformation("[OK]️ Loaded auto games from db. Found={count} games", state.LoadedAutoGamesCount());
+
+        await scanner.ScanAsync(stoppingToken);
 
         using var timer = new PeriodicTimer(TimeSpan.FromSeconds(1));
         var secondsElapsed = 0;
@@ -30,27 +32,14 @@ public sealed class Worker(
         {
             while (!stoppingToken.IsCancellationRequested && await timer.WaitForNextTickAsync(stoppingToken))
             {
-                // Check if refresh auto games signal was triggered
-                if (state.ConsumeRefreshRequest())
-                {
-                    if (logger.IsEnabled(LogLevel.Information))
-                        logger.LogInformation("[INFO] Reloading auto games from db...");
-
-                    // Any ongoing foreach loops keep looking at the old snapshot until their next execution
-                    state.LoadedAutoGames = [.. GameLibrary.Instance.GetAutoGames()];
-
-                    if (logger.IsEnabled(LogLevel.Information))
-                        logger.LogInformation("[OK] Finished reloading auto games.");
-                }
-
                 secondsElapsed++;
-                if (secondsElapsed >= 5)
+                if (secondsElapsed >= 10)
                 {
-                    scanner.Scan();
+                    await scanner.ScanAsync(stoppingToken);
                     secondsElapsed = 0;
                 }
 
-                heartbeatProcessor.FlushHeartbeats(forceFlushAll: false);
+                await heartbeatProcessor.FlushHeartbeats(stoppingToken, forceFlushAll: false);
             }
         }
         finally
@@ -61,7 +50,9 @@ public sealed class Worker(
                 if (logger.IsEnabled(LogLevel.Information))
                     logger.LogInformation("[INFO] Agent shutdown requested. Performing final partial flush...");
 
-                heartbeatProcessor.FlushHeartbeats(forceFlushAll: true);
+                using var shutdownCtSrc = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+
+                await heartbeatProcessor.FlushHeartbeats(shutdownCtSrc.Token, forceFlushAll: true);
 
                 if (logger.IsEnabled(LogLevel.Information))
                     logger.LogInformation("[OK] All games saved.");

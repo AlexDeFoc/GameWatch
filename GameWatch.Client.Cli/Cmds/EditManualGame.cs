@@ -33,7 +33,7 @@ public static class EditManualGame
         };
         cmd.Aliases.Add("m");
 
-        cmd.SetAction(result =>
+        cmd.SetAction(async (result, cliCt) =>
         {
             var displayId = new DisplayId(result.GetRequiredValue(displayIdOption));
 
@@ -47,7 +47,7 @@ public static class EditManualGame
 
             var tableId = tableIdResult.TableId.Value;
 
-            var manualGameResult = GameLibrary.Instance.GetManualGame(tableId);
+            var manualGameResult = await GameLibrary.Instance.GetManualGameAsync(tableId, cliCt);
 
             if (!manualGameResult.Ok || manualGameResult.Game is null)
             {
@@ -66,10 +66,11 @@ public static class EditManualGame
             if (playTimeValue is not null)
                 game.PlayTimeSec = new ElapsedTime(playTimeValue.Value);
 
-            var editedGameResult = GameLibrary.Instance.EditGame(game,
-                                                                 tableId,
-                                                                 nameChanged: newGameName is not null,
-                                                                 playTimeChanged: playTimeValue is not null);
+            var editedGameResult = await GameLibrary.Instance.EditGameAsync(game,
+                                                                            tableId,
+                                                                            cliCt,
+                                                                            nameChanged: newGameName is not null,
+                                                                            playTimeChanged: playTimeValue is not null);
 
             if (!editedGameResult.Ok)
             {
