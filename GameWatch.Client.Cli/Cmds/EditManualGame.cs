@@ -64,7 +64,7 @@ public static class EditManualGame
                 game.Name = newGameName;
 
             if (playTimeValue is not null)
-                game.PlayTimeSec = new ElapsedTime(playTimeValue.Value);
+                game.PlayTime = new ElapsedTime(playTimeValue.Value);
 
             var editedGameResult = await GameLibrary.Instance.EditGameAsync(game,
                                                                             tableId,

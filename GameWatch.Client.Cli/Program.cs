@@ -43,7 +43,7 @@ public static class Program
     {
         var libraryTask = GameLibrary.CreateAndInitAsync("../../UserData", cancellationToken);
         var presetsTask = GamePresets.CreateAndInitAsync("../../AppData", cancellationToken);
-        var settingsTask = Settings.CreateAndInitAsync("../../AppData", cancellationToken);
+        var settingsTask = Settings.GameMonitorAgent.CreateAndInitAsync("../../AppData", cancellationToken);
 
         await Task.WhenAll(libraryTask, presetsTask, settingsTask);
     }
@@ -59,7 +59,8 @@ public static class Program
             Cmds.RemoveGame.Build(),
             Cmds.ResetGame.Build(),
             Cmds.DeleteAllGames.Build(),
-            Cmds.UpdateApp.Build()
+            Cmds.UpdateApp.Build(),
+            BuildConfigCommand()
         };
 
         return rootCmd;
@@ -84,7 +85,7 @@ public static class Program
 
     private static Command BuildAddCommand()
     {
-        var addAutoGameCmd = new Command("auto", "Command for adding a Game in auto mode")
+        var addAutoGameCmd = new Command("auto", "Auto game")
         {
             Cmds.AddAutoGameFromPreset.Build(),
             Cmds.AddAutoGameFromProcess.Build()
@@ -92,7 +93,7 @@ public static class Program
 
         addAutoGameCmd.Aliases.Add("a");
 
-        var addCmd = new Command("add", "Command for adding games");
+        var addCmd = new Command("add", "Add game");
 
         var addManualGameCmd = Cmds.AddManualGame.Build();
 
@@ -104,12 +105,39 @@ public static class Program
 
     private static Command BuildEditCommand()
     {
-        var cmd = new Command("edit", "Command for editing Game recorded properties")
+        return new Command("edit", "Edit game")
         {
             Cmds.EditManualGame.Build(),
             Cmds.EditAutoGame.Build()
         };
+    }
 
-        return cmd;
+    private static Command BuildConfigCommand()
+    {
+        var setCmd = new Command("set", "Configure setting")
+        {
+            Cmds.Config.GameMonitorAgent.Set.ShouldLoggingBeEnabled.Build(),
+            Cmds.Config.GameMonitorAgent.Set.ProcessScanInterval.Build(),
+            Cmds.Config.GameMonitorAgent.Set.PlayTimeFlushInterval.Build()
+        };
+
+        var resetCmd = new Command("reset", "Reset setting to default value")
+        {
+            Cmds.Config.GameMonitorAgent.Reset.ShouldLoggingBeEnabled.Build(),
+            Cmds.Config.GameMonitorAgent.Reset.ProcessScanInterval.Build(),
+            Cmds.Config.GameMonitorAgent.Reset.PlayTimeFlushInterval.Build(),
+        };
+
+        var gameMonitorAgentCmd = new Command("GameMonitorAgent", "Modify game monitor agent settings")
+        {
+            Cmds.Config.GameMonitorAgent.List.Build(),
+            setCmd,
+            resetCmd
+        };
+
+        return new Command("config", "Modify settings")
+        {
+            gameMonitorAgentCmd
+        };
     }
 }

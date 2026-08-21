@@ -52,7 +52,6 @@ public sealed class GamePresets
                                                    CREATE TABLE IF NOT EXISTS AutoGamePresets (
                                                        Id INTEGER PRIMARY KEY,
                                                        Name TEXT NOT NULL,
-                                                       PlayTimeSec INTEGER NOT NULL DEFAULT 0,
                                                        WindowTitle TEXT DEFAULT NULL,
                                                        FilePath TEXT DEFAULT NULL,
                                                        WindowRule TEXT DEFAULT NULL,
@@ -66,7 +65,6 @@ public sealed class GamePresets
                                                   INSERT INTO AutoGamePresets (
                                                       Id,
                                                       Name,
-                                                      PlayTimeSec,
                                                       WindowTitle,
                                                       FilePath,
                                                       WindowRule,
@@ -75,7 +73,6 @@ public sealed class GamePresets
                                                   VALUES (
                                                       @Id,
                                                       @Name,
-                                                      @PlayTimeSec,
                                                       @WindowTitle,
                                                       @FilePath,
                                                       @WindowRule,
@@ -87,7 +84,6 @@ public sealed class GamePresets
 
             var pTableId = insertPreMadePresetsCmd.Parameters.Add("@Id", SqliteType.Integer);
             var pName = insertPreMadePresetsCmd.Parameters.Add("@Name", SqliteType.Text);
-            var pPlayTimeSec = insertPreMadePresetsCmd.Parameters.Add("@PlayTimeSec", SqliteType.Integer);
             var pWindowTitle = insertPreMadePresetsCmd.Parameters.Add("@WindowTitle", SqliteType.Text);
             var pFilePath = insertPreMadePresetsCmd.Parameters.Add("@FilePath", SqliteType.Text);
             var pWindowRule = insertPreMadePresetsCmd.Parameters.Add("@WindowRule", SqliteType.Text);
@@ -97,7 +93,6 @@ public sealed class GamePresets
             {
                 pTableId.Value = p.TableId;
                 pName.Value = p.Name;
-                pPlayTimeSec.Value = p.PlayTimeSec;
                 pWindowTitle.Value = (object?)p.WindowTitle ?? DBNull.Value;
                 pWindowRule.Value = (object?)p.WindowRule ?? DBNull.Value;
                 pFilePath.Value = (object?)p.FilePath ?? DBNull.Value;
@@ -138,7 +133,6 @@ public sealed class GamePresets
                           SELECT
                               Id,
                               Name,
-                              PlayTimeSec,
                               WindowTitle,
                               FilePath,
                               WindowRule,
@@ -156,7 +150,7 @@ public sealed class GamePresets
                 return new QueryPresetResult(FailureReason: "[FAIL] Preset not found in database. Ignoring command...");
 
             return new QueryPresetResult(Ok: true,
-                                         GamePreset: new AutoGameRecord(Utils.ReadAutoGame(reader)));
+                                         GamePreset: new AutoGameRecord(Utils.ReadAutoGamePreset(reader)));
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {

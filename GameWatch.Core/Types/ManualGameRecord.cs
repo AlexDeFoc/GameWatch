@@ -4,7 +4,7 @@ public sealed class ManualGameRecord
 {
     public TableId TableId { get; }
     public string Name { get; set; } = string.Empty;
-    public ElapsedTime PlayTimeSec { get; set; }
+    public ElapsedTime PlayTime { get; set; }
 
     public ManualGameRecord()
     {
@@ -14,6 +14,6 @@ public sealed class ManualGameRecord
     {
         TableId = new TableId(dto.TableId);
         Name = dto.Name;
-        PlayTimeSec = new ElapsedTime(dto.PlayTimeSec);
+        PlayTime = new ElapsedTime(dto.PlayTime);
     }
 }

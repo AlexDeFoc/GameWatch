@@ -28,7 +28,7 @@ public static class GameMonitorAgentIpcServer
             {
                 TableId = game.TableId,
                 GameName = game.Name,
-                PlayTimeSec = game.PlayTimeSec,
+                PlayTime = game.PlayTime,
                 WindowTitle = game.WindowTitle ?? string.Empty,
                 WindowRule = game.WindowRule ?? string.Empty,
                 FilePath = game.FilePath ?? string.Empty,
@@ -68,6 +68,24 @@ public static class GameMonitorAgentIpcServer
     public static Task<StatusAndFailureMsgResult> NotifyThatAutoGameGotEditedAsync(TableId tableId, string gameName, bool matchingRulesChanged, CancellationToken cancellationToken) =>
         ExecuteAsync(
             client => client.EditAutoGameAsync(new EditGameRequest { TableId = tableId.V, GameName = gameName, MatchingRulesChanged = matchingRulesChanged }, cancellationToken: cancellationToken),
+            res => !res.Ok ? new StatusAndFailureMsgResult(FailureReason: res.Msg) : new StatusAndFailureMsgResult(Ok: true)
+        );
+
+    public static Task<StatusAndFailureMsgResult> RequestToModifySettingIsLoggingEnabledAsync(bool newStatus, CancellationToken cancellationToken) =>
+        ExecuteAsync(
+            client => client.ModifySettingIsLoggingEnabledAsync(new ModifySettingIsLoggingEnabledRequest { NewStatus = newStatus }, cancellationToken: cancellationToken),
+            res => !res.Ok ? new StatusAndFailureMsgResult(FailureReason: res.Msg) : new StatusAndFailureMsgResult(Ok: true)
+        );
+
+    public static Task<StatusAndFailureMsgResult> RequestToModifySettingProcessScanIntervalAsync(long newValue, CancellationToken cancellationToken) =>
+        ExecuteAsync(
+            client => client.ModifySettingProcessScanIntervalAsync(new ModifySettingProcessScanIntervalRequest { NewValue = newValue }, cancellationToken: cancellationToken),
+            res => !res.Ok ? new StatusAndFailureMsgResult(FailureReason: res.Msg) : new StatusAndFailureMsgResult(Ok: true)
+        );
+
+    public static Task<StatusAndFailureMsgResult> RequestToModifySettingPlayTimeFlushIntervalAsync(long newValue, CancellationToken cancellationToken) =>
+        ExecuteAsync(
+            client => client.ModifySettingPlayTimeFlushIntervalAsync(new ModifySettingPlayTimeFlushIntervalRequest { NewValue = newValue }, cancellationToken: cancellationToken),
             res => !res.Ok ? new StatusAndFailureMsgResult(FailureReason: res.Msg) : new StatusAndFailureMsgResult(Ok: true)
         );
 

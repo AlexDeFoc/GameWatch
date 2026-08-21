@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using GameWatch.Core;
 using GameWatch.Core.Dbs;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -22,7 +23,7 @@ public static class Program
                        cts.Token,
                        new CancellationTokenSource(TimeSpan.FromMilliseconds(500)).Token))
             {
-                var evictResult = await Core.GameMonitorAgentIpcServer.RequestOldInstanceEvictionAsync(evictionCts.Token);
+                var evictResult = await GameMonitorAgentIpcServer.RequestOldInstanceEvictionAsync(evictionCts.Token);
 
                 if (!evictResult.Ok)
                 {
@@ -43,7 +44,7 @@ public static class Program
             // Step 2: Initialize DB
             await GameLibrary.CreateAndInitAsync("../../UserData", cts.Token);
             await GamePresets.CreateAndInitAsync("../../AppData", cts.Token);
-            await Settings.CreateAndInitAsync("../../AppData", cts.Token);
+            await Settings.GameMonitorAgent.CreateAndInitAsync("../../AppData", cts.Token);
 
             var builder = Host.CreateApplicationBuilder(args);
 

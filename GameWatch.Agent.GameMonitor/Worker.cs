@@ -33,7 +33,7 @@ public sealed class Worker(
             while (!stoppingToken.IsCancellationRequested && await timer.WaitForNextTickAsync(stoppingToken))
             {
                 secondsElapsed++;
-                if (secondsElapsed >= 10)
+                if (secondsElapsed >= Settings.GameMonitorAgent.Instance.CachedSettingProcessScanInterval)
                 {
                     await scanner.ScanAsync(stoppingToken);
                     secondsElapsed = 0;

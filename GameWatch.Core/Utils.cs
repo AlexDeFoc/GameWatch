@@ -30,18 +30,28 @@ public static class Utils
     {
         TableId = r.GetInt32(0),
         Name = r.GetString(1),
-        PlayTimeSec = r.GetInt64(2),
+        PlayTime = r.GetInt64(2),
         WindowTitle = r.IsDBNull(3) ? null : r.GetString(3),
         FilePath = r.IsDBNull(4) ? null : r.GetString(4),
         WindowRule = r.IsDBNull(5) ? null : r.GetString(5),
         PathRule = r.IsDBNull(6) ? null : r.GetString(6),
     };
 
+    public static AutoGameDto ReadAutoGamePreset(SqliteDataReader r) => new()
+    {
+        TableId = r.GetInt32(0),
+        Name = r.GetString(1),
+        WindowTitle = r.IsDBNull(2) ? null : r.GetString(2),
+        FilePath = r.IsDBNull(3) ? null : r.GetString(3),
+        WindowRule = r.IsDBNull(4) ? null : r.GetString(4),
+        PathRule = r.IsDBNull(5) ? null : r.GetString(5),
+    };
+
     public static ManualGameDto ReadManualGame(SqliteDataReader r) => new()
     {
         TableId = r.GetInt32(0),
         Name = r.GetString(1),
-        PlayTimeSec = r.GetInt64(2)
+        PlayTime = r.GetInt64(2)
     };
 
     public static async Task<int> ExecuteNonQueryAsync(SqliteConnection conn, string sql, CancellationToken cancellationToken, SqliteTransaction? tran = null)
@@ -92,7 +102,7 @@ public static class Utils
                           SELECT
                               Id,
                               Name,
-                              PlayTimeSec,
+                              PlayTime,
                               WindowTitle,
                               FilePath,
                               WindowRule,
@@ -119,7 +129,7 @@ public static class Utils
                           SELECT
                               Id,
                               Name,
-                              PlayTimeSec
+                              PlayTime
                           FROM ManualGames
                           ORDER BY Id ASC;
                           """;

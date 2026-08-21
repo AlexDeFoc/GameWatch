@@ -4,7 +4,7 @@ public sealed class AutoGameDto
 {
     public int TableId { get; init; }
     public string Name { get; init; } = string.Empty;
-    public long PlayTimeSec { get; init; }
+    public long PlayTime { get; init; }
     public string? WindowTitle { get; init; }
     public string? FilePath { get; init; }
     public string? WindowRule { get; init; }
@@ -18,7 +18,7 @@ public sealed class AutoGameDto
     {
         TableId = g.TableId.V;
         Name = g.Name;
-        PlayTimeSec = g.PlayTimeSec.V;
+        PlayTime = g.PlayTime.V;
         WindowTitle = g.WindowTitle;
         WindowRule = g.WindowRule;
         FilePath = g.FilePath;
