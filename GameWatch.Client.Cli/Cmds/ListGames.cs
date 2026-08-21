@@ -74,7 +74,7 @@ public static class ListGames
                     for (var i = 0; i < manualGames.Count; ++i)
                     {
                         var game = manualGames[i];
-                        Console.WriteLine($"{i + 1}. {TimeSpan.FromSeconds(game.PlayTimeSec.V)} - {game.Name}");
+                        Console.WriteLine($"{i + 1}. {TimeSpan.FromSeconds(game.PlayTime.V)} - {game.Name}");
                     }
 
                     if (showAutoGames || showPresets)
@@ -95,7 +95,7 @@ public static class ListGames
                         for (var i = 0; i < autoGames.Length; ++i)
                         {
                             var game = autoGames[i];
-                            Console.WriteLine($"{i + 1}. {TimeSpan.FromSeconds(game.PlayTimeSec.V)} - {game.Name}");
+                            Console.WriteLine($"{i + 1}. {TimeSpan.FromSeconds(game.PlayTime.V)} - {game.Name}");
                         }
                     }
                     else
@@ -103,7 +103,7 @@ public static class ListGames
                         for (var i = 0; i < autoGames.Length; ++i)
                         {
                             var game = autoGames[i];
-                            Console.WriteLine($"{i + 1}. {TimeSpan.FromSeconds(game.PlayTimeSec.V)} - {game.Name}");
+                            Console.WriteLine($"{i + 1}. {TimeSpan.FromSeconds(game.PlayTime.V)} - {game.Name}");
 
                             Console.WriteLine("  Matching rules:");
                             if (game.WindowTitle is not null)
@@ -138,7 +138,7 @@ public static class ListGames
                         for (var i = 0; i < presets.Count; ++i)
                         {
                             var game = presets[i];
-                            Console.WriteLine($"{i + 1}. {TimeSpan.FromSeconds(game.PlayTimeSec)} - {game.Name}");
+                            Console.WriteLine($"{i + 1}. {TimeSpan.FromSeconds(game.PlayTime)} - {game.Name}");
                         }
                     }
                     else
@@ -146,7 +146,7 @@ public static class ListGames
                         for (var i = 0; i < presets.Count; ++i)
                         {
                             var game = presets[i];
-                            Console.WriteLine($"{i + 1}. {TimeSpan.FromSeconds(game.PlayTimeSec)} - {game.Name}");
+                            Console.WriteLine($"{i + 1}. {TimeSpan.FromSeconds(game.PlayTime)} - {game.Name}");
 
                             Console.WriteLine("  Matching rules:");
                             if (game.WindowTitle is not null)

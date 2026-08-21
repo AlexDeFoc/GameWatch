@@ -13,6 +13,7 @@ namespace GameWatch.Agent.GameMonitor;
 public sealed class IpcProcessorImpl(
     IHostApplicationLifetime lifetime,
     AgentState state,
+    ProcessScanner scanner,
     ILogger<IpcProcessorImpl> logger) : IpcProcessor.IpcProcessorBase
 {
     private static readonly StatusAndMessageResponse OkStatusAndMessageResponse = new() { Ok = true };
@@ -78,20 +79,22 @@ public sealed class IpcProcessorImpl(
         return OkStatusAndMessageTask;
     }
 
-    public override Task<StatusAndMessageResponse> TrackNewlyAddedAutoGame(AutoGameDtoRequest game, ServerCallContext context)
+    public override async Task<StatusAndMessageResponse> TrackNewlyAddedAutoGame(AutoGameDtoRequest game, ServerCallContext context)
     {
         state.AddAutoGame(new AutoGameRecord
         {
             TableId = new TableId(game.TableId),
             Name = game.GameName,
-            PlayTimeSec = new ElapsedTime(game.PlayTimeSec),
+            PlayTime = new ElapsedTime(game.PlayTime),
             WindowTitle = string.IsNullOrEmpty(game.WindowTitle) ? null : game.WindowTitle,
             WindowRule = string.IsNullOrEmpty(game.WindowRule) ? null : game.WindowRule,
             FilePath = string.IsNullOrEmpty(game.FilePath) ? null : game.FilePath,
             PathRule = string.IsNullOrEmpty(game.PathRule) ? null : game.PathRule
         });
 
-        return OkStatusAndMessageTask;
+        await scanner.ScanAsync(context.CancellationToken);
+
+        return OkStatusAndMessageResponse;
     }
 
     public override async Task<ToggleManualGameResponse> ToggleManualGame(TableIdAndNameRequest request, ServerCallContext context)
@@ -282,6 +285,42 @@ public sealed class IpcProcessorImpl(
             logger.LogInformation("[INFO] Refreshed matching rules for auto game with TableId='{id}' Name='{name}' (Detected as active).", tableId.V, targetGame.Name);
 
         return OkStatusAndMessageResponse;
+    }
+
+    public override async Task<StatusAndMessageResponse> ModifySettingIsLoggingEnabled(ModifySettingIsLoggingEnabledRequest request, ServerCallContext context)
+    {
+        var modificationResult = await Settings.GameMonitorAgent.Instance.ModifySettingShouldLoggingBeEnabled(
+            request.NewStatus, context.CancellationToken);
+
+        return new StatusAndMessageResponse
+        {
+            Ok = modificationResult.Ok,
+            Msg = modificationResult.FailureReason ?? string.Empty
+        };
+    }
+
+    public override async Task<StatusAndMessageResponse> ModifySettingProcessScanInterval(ModifySettingProcessScanIntervalRequest request, ServerCallContext context)
+    {
+        var modificationResult = await Settings.GameMonitorAgent.Instance.ModifySettingProcessScanInterval(
+            request.NewValue, context.CancellationToken);
+
+        return new StatusAndMessageResponse
+        {
+            Ok = modificationResult.Ok,
+            Msg = modificationResult.FailureReason ?? string.Empty
+        };
+    }
+
+    public override async Task<StatusAndMessageResponse> ModifySettingPlayTimeFlushInterval(ModifySettingPlayTimeFlushIntervalRequest request, ServerCallContext context)
+    {
+        var modificationResult = await Settings.GameMonitorAgent.Instance.ModifySettingPlayTimeFlushInterval(
+            request.NewValue, context.CancellationToken);
+
+        return new StatusAndMessageResponse
+        {
+            Ok = modificationResult.Ok,
+            Msg = modificationResult.FailureReason ?? string.Empty
+        };
     }
 
     public override async Task<StatusResponse> EvictOldInstance(EmptyRequest request, ServerCallContext context)

@@ -114,7 +114,7 @@ public static class AddAutoGameFromProcess
             var game = new AutoGameRecord
             {
                 Name = result.GetRequiredValue(nameOption),
-                PlayTimeSec = new ElapsedTime(result.GetValue(playTimeOption))
+                PlayTime = new ElapsedTime(result.GetValue(playTimeOption))
             };
 
             var ruleWindowExact = result.GetValue(ruleWindowExactOption);

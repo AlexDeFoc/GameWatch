@@ -55,13 +55,13 @@ public sealed class GameLibrary
                                                    CREATE TABLE IF NOT EXISTS ManualGames (
                                                        Id INTEGER PRIMARY KEY,
                                                        Name TEXT NOT NULL,
-                                                       PlayTimeSec INTEGER NOT NULL DEFAULT 0
+                                                       PlayTime INTEGER NOT NULL DEFAULT 0
                                                    ) STRICT;
 
                                                    CREATE TABLE IF NOT EXISTS AutoGames (
                                                        Id INTEGER PRIMARY KEY,
                                                        Name TEXT NOT NULL,
-                                                       PlayTimeSec INTEGER NOT NULL DEFAULT 0,
+                                                       PlayTime INTEGER NOT NULL DEFAULT 0,
                                                        WindowTitle TEXT DEFAULT NULL,
                                                        FilePath TEXT DEFAULT NULL,
                                                        WindowRule TEXT DEFAULT NULL,
@@ -85,31 +85,31 @@ public sealed class GameLibrary
         await using var cmd = conn.CreateCommand();
         cmd.Transaction = tran;
         cmd.CommandText = """
-                          INSERT INTO ManualGames(Name, PlayTimeSec)
-                          VALUES (@Name, @PlayTimeSec);
+                          INSERT INTO ManualGames(Name, PlayTime)
+                          VALUES (@Name, @PlayTime);
                           SELECT last_insert_rowid();
                           """;
         cmd.Parameters.AddWithValue("@Name", game.Name);
-        cmd.Parameters.AddWithValue("@PlayTimeSec", game.PlayTimeSec.V);
+        cmd.Parameters.AddWithValue("@PlayTime", game.PlayTime.V);
         var gameIdValue = Convert.ToInt32(await cmd.ExecuteScalarAsync(cancellationToken));
         await tran.CommitAsync(cancellationToken);
 
         _manualGameTableIds.Add(new TableId(gameIdValue));
     }
 
-    public async Task AddGameAsync(AutoGameRecord game, CancellationToken cancellationToken)
+    public async Task<AddAutoGameResult> AddGameAsync(AutoGameRecord game, CancellationToken cancellationToken)
     {
         await using var conn = await Utils.CreateSqlConnAsync(_connStr, cancellationToken: cancellationToken);
 
-        int gameIdValue;
-        await using (var tran = conn.BeginTransaction())
+        try
         {
+            await using var tran = conn.BeginTransaction();
             await using var cmd = conn.CreateCommand();
             cmd.Transaction = tran;
             cmd.CommandText = """
                               INSERT INTO AutoGames(
                                   Name,
-                                  PlayTimeSec,
+                                  PlayTime,
                                   WindowTitle,
                                   FilePath,
                                   WindowRule,
@@ -117,7 +117,7 @@ public sealed class GameLibrary
                               )
                               VALUES (
                                   @Name,
-                                  @PlayTimeSec,
+                                  @PlayTime,
                                   @WindowTitle,
                                   @FilePath,
                                   @WindowRule,
@@ -126,17 +126,27 @@ public sealed class GameLibrary
                               """;
 
             cmd.Parameters.AddWithValue("@Name", game.Name);
-            cmd.Parameters.AddWithValue("@PlayTimeSec", game.PlayTimeSec.V);
+            cmd.Parameters.AddWithValue("@PlayTime", game.PlayTime.V);
             cmd.Parameters.AddWithValue("@WindowTitle", (object?)game.WindowTitle ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@FilePath", (object?)game.FilePath ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@WindowRule", (object?)game.WindowRule ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@PathRule", (object?)game.PathRule ?? DBNull.Value);
 
-            gameIdValue = Convert.ToInt32(await cmd.ExecuteScalarAsync(cancellationToken));
+            var insertionTableId = Convert.ToInt32(await cmd.ExecuteScalarAsync(cancellationToken));
             await tran.CommitAsync(cancellationToken);
-        }
 
-        _autoGameTableIds.Add(new TableId(gameIdValue));
+            _autoGameTableIds.Add(new TableId(insertionTableId));
+
+            return new AddAutoGameResult
+            {
+                Ok = true,
+                TableId = new TableId(insertionTableId)
+            };
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            return new AddAutoGameResult(FailureReason: $"[FAIL] Database error msg: {ex.Message}. Ignoring command...");
+        }
     }
 
     public async Task<List<ManualGameRecord>> GetManualGamesAsync(CancellationToken cancellationToken)
@@ -148,10 +158,10 @@ public sealed class GameLibrary
             var games = await Utils.QueryManualGamesAsync(conn, cancellationToken);
             List<int> gameTableIdsToReset = [];
 
-            foreach (var game in games.Where(game => game.PlayTimeSec.V < 0L))
+            foreach (var game in games.Where(game => game.PlayTime.V < 0L))
             {
                 gameTableIdsToReset.Add(game.TableId.V);
-                game.PlayTimeSec = ElapsedTime.Zero;
+                game.PlayTime = ElapsedTime.Zero;
             }
 
             if (gameTableIdsToReset.Count is 0)
@@ -160,7 +170,7 @@ public sealed class GameLibrary
             await using var tran = conn.BeginTransaction();
             await using var fixCmd = conn.CreateCommand();
             fixCmd.Transaction = tran;
-            fixCmd.CommandText = "UPDATE ManualGames SET PlayTimeSec = 0 WHERE Id = @Id;";
+            fixCmd.CommandText = "UPDATE ManualGames SET PlayTime = 0 WHERE Id = @Id;";
             var pTableId = fixCmd.Parameters.Add("@Id", SqliteType.Integer);
 
             foreach (var i in gameTableIdsToReset)
@@ -177,7 +187,7 @@ public sealed class GameLibrary
         catch (Exception ex) when (ex is OverflowException || ex.InnerException is OverflowException)
         {
             await using var tran = conn.BeginTransaction();
-            await Utils.ExecuteNonQueryAsync(conn, "UPDATE ManualGames SET PlayTimeSec = 0 WHERE PlayTimeSec < 0;", cancellationToken, tran);
+            await Utils.ExecuteNonQueryAsync(conn, "UPDATE ManualGames SET PlayTime = 0 WHERE PlayTime < 0;", cancellationToken, tran);
             await tran.CommitAsync(cancellationToken);
 
             return await Utils.QueryManualGamesAsync(conn, cancellationToken);
@@ -193,10 +203,10 @@ public sealed class GameLibrary
             var games = await Utils.QueryAutoGamesAsync(conn, cancellationToken);
             List<int> gameTableIdsToReset = [];
 
-            foreach (var game in games.Where(game => game.PlayTimeSec.V < 0L))
+            foreach (var game in games.Where(game => game.PlayTime.V < 0L))
             {
                 gameTableIdsToReset.Add(game.TableId.V);
-                game.PlayTimeSec = ElapsedTime.Zero;
+                game.PlayTime = ElapsedTime.Zero;
             }
 
             if (gameTableIdsToReset.Count is 0)
@@ -206,7 +216,7 @@ public sealed class GameLibrary
             await using var fixCmd = conn.CreateCommand();
 
             fixCmd.Transaction = tran;
-            fixCmd.CommandText = "UPDATE AutoGames SET PlayTimeSec = 0 WHERE Id = @Id;";
+            fixCmd.CommandText = "UPDATE AutoGames SET PlayTime = 0 WHERE Id = @Id;";
             var pTableId = fixCmd.Parameters.Add("@Id", SqliteType.Integer);
 
             foreach (var i in gameTableIdsToReset)
@@ -223,7 +233,7 @@ public sealed class GameLibrary
         catch (Exception ex) when (ex is OverflowException || ex.InnerException is OverflowException)
         {
             await using var tran = conn.BeginTransaction();
-            await Utils.ExecuteNonQueryAsync(conn, "UPDATE AutoGames SET PlayTimeSec = 0 WHERE PlayTimeSec < 0;", cancellationToken, tran);
+            await Utils.ExecuteNonQueryAsync(conn, "UPDATE AutoGames SET PlayTime = 0 WHERE PlayTime < 0;", cancellationToken, tran);
             await tran.CommitAsync(cancellationToken);
 
             return await Utils.QueryAutoGamesAsync(conn, cancellationToken);
@@ -309,7 +319,7 @@ public sealed class GameLibrary
         cmd.Transaction = tran;
         cmd.CommandText = $"""
                            UPDATE {tableName}
-                           SET PlayTimeSec = PlayTimeSec + @SecondsToAdd
+                           SET PlayTime = PlayTime + @SecondsToAdd
                            WHERE Id = @Id
                            """;
 
@@ -337,7 +347,7 @@ public sealed class GameLibrary
         cmd.Transaction = tran;
         cmd.CommandText = $"""
                            UPDATE {tableName}
-                           SET PlayTimeSec = PlayTimeSec + @SecondsToAdd
+                           SET PlayTime = PlayTime + @SecondsToAdd
                            WHERE Id = @Id
                            """;
 
@@ -352,6 +362,11 @@ public sealed class GameLibrary
     {
         await using var conn = await Utils.CreateSqlConnAsync(_connStr, cancellationToken: cancellationToken);
         await using var tran = conn.BeginTransaction();
+        await using var resetCmd = conn.CreateCommand();
+        resetCmd.Transaction = tran;
+        var tableName = Utils.GetTableName(gameMode);
+        resetCmd.CommandText = $"UPDATE {tableName} SET PlayTime = 0 WHERE Id = @Id;";
+        resetCmd.Parameters.AddWithValue("@Id", tableId.V);
 
         try
         {
@@ -361,11 +376,6 @@ public sealed class GameLibrary
                 return new ResetGameResult(Ok: false, FailureReason: queryGameNameResult.FailureReason);
             var gameName = queryGameNameResult.GameName;
 
-            var tableName = Utils.GetTableName(gameMode);
-            await using var resetCmd = conn.CreateCommand();
-            resetCmd.Transaction = tran;
-            resetCmd.CommandText = $"UPDATE {tableName} SET PlayTimeSec = 0 WHERE Id = @Id;";
-            resetCmd.Parameters.AddWithValue("@Id", tableId.V);
             await resetCmd.ExecuteNonQueryAsync(cancellationToken);
 
             await tran.CommitAsync(cancellationToken);
@@ -402,8 +412,8 @@ public sealed class GameLibrary
 
         if (playTimeChanged)
         {
-            setClauses.Add("PlayTimeSec = @PlayTimeSec");
-            cmd.Parameters.AddWithValue("@PlayTimeSec", gameRecord.PlayTimeSec.V);
+            setClauses.Add("PlayTime = @PlayTime");
+            cmd.Parameters.AddWithValue("@PlayTime", gameRecord.PlayTime.V);
         }
 
         if (windowTitleChanged)
@@ -470,8 +480,8 @@ public sealed class GameLibrary
 
         if (playTimeChanged)
         {
-            setClauses.Add("PlayTimeSec = @PlayTimeSec");
-            cmd.Parameters.AddWithValue("@PlayTimeSec", gameRecord.PlayTimeSec.V);
+            setClauses.Add("PlayTime = @PlayTime");
+            cmd.Parameters.AddWithValue("@PlayTime", gameRecord.PlayTime.V);
         }
 
         if (setClauses.Count is 0)
@@ -516,7 +526,7 @@ public sealed class GameLibrary
                           SELECT
                               Id,
                               Name,
-                              PlayTimeSec
+                              PlayTime
                           FROM ManualGames
                           WHERE Id = @Id;
                           """;
@@ -535,7 +545,7 @@ public sealed class GameLibrary
         catch (Exception ex) when (ex is OverflowException || ex.InnerException is OverflowException)
         {
             await using var tran = conn.BeginTransaction();
-            await Utils.ExecuteNonQueryAsync(conn, "UPDATE ManualGames SET PlayTimeSec = 0 WHERE PlayTimeSec < 0;", cancellationToken, tran);
+            await Utils.ExecuteNonQueryAsync(conn, "UPDATE ManualGames SET PlayTime = 0 WHERE PlayTime < 0;", cancellationToken, tran);
             await tran.CommitAsync(cancellationToken);
 
             return new GetManualGameResult(Ok: true,
@@ -555,7 +565,7 @@ public sealed class GameLibrary
                           SELECT
                               Id,
                               Name,
-                              PlayTimeSec,
+                              PlayTime,
                               WindowTitle,
                               FilePath,
                               WindowRule,
@@ -578,7 +588,7 @@ public sealed class GameLibrary
         catch (Exception ex) when (ex is OverflowException || ex.InnerException is OverflowException)
         {
             await using var tran = conn.BeginTransaction();
-            await Utils.ExecuteNonQueryAsync(conn, "UPDATE AutoGames SET PlayTimeSec = 0 WHERE PlayTimeSec < 0;", cancellationToken, tran);
+            await Utils.ExecuteNonQueryAsync(conn, "UPDATE AutoGames SET PlayTime = 0 WHERE PlayTime < 0;", cancellationToken, tran);
             await tran.CommitAsync(cancellationToken);
 
             return new GetAutoGameResult(Ok: true,
@@ -615,6 +625,8 @@ public sealed class GameLibrary
     public record struct EditAutoGameResult(bool Ok = false, string? FailureReason = null);
 
     public record struct DeleteGameResult(bool Ok = false, string? GameName = null, string? FailureReason = null);
+
+    public record struct AddAutoGameResult(bool Ok = false, TableId? TableId = null, string? FailureReason = null);
 
     public record struct ResetGameResult(bool Ok = false, string? GameName = null, string? FailureReason = null);
 

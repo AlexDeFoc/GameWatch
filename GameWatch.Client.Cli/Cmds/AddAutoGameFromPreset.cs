@@ -46,10 +46,18 @@ public static class AddAutoGameFromPreset
 
             var gamePreset = gamePresetResult.GamePreset;
 
-            await GameLibrary.Instance.AddGameAsync(gamePreset, cliCt);
+            var addedGameResult = await GameLibrary.Instance.AddGameAsync(gamePreset, cliCt);
+
+            if (!addedGameResult.Ok || addedGameResult.TableId is null)
+            {
+                Console.WriteLine(addedGameResult.FailureReason);
+                return 1;
+            }
+
 
             Console.WriteLine($"[OK] Game with Name='{gamePreset.Name}' added successfully");
 
+            gamePreset.TableId = addedGameResult.TableId.Value;
             var notificationResult = await GameMonitorAgentIpcServer.RequestToTrackNewlyAddedAutoGameAsync(
                 new AutoGameDto(gamePreset), cliCt);
 

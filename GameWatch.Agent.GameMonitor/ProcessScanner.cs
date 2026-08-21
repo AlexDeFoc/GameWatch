@@ -25,7 +25,7 @@ public sealed class ProcessScanner(AgentState state, ILogger<ProcessScanner> log
             // Match against loaded games that aren't currently active
             foreach (var game in loadedGames)
             {
-                if (state.TryGetActiveAutoGame(game.TableId, out _))
+                if (state.TryGetActiveAutoGame(game.TableId))
                     continue;
 
                 if (!RuleMatcher.IsMatch(proc, game))

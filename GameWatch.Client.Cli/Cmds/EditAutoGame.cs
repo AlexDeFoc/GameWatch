@@ -132,7 +132,7 @@ public static class EditAutoGame
                 game.Name = newGameName;
 
             if (playTimeValue is not null)
-                game.PlayTimeSec = new ElapsedTime(playTimeValue.Value);
+                game.PlayTime = new ElapsedTime(playTimeValue.Value);
 
             // 2. Track option requests
             var titleExactRequested = matchTitleExact is not null;

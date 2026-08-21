@@ -32,7 +32,7 @@ public static class AddManualGame
             var name = result.GetRequiredValue(nameOption);
             var initialPlayTime = result.GetValue(playTimeOption);
 
-            var gameRecord = new ManualGameRecord { Name = name, PlayTimeSec = new ElapsedTime(initialPlayTime) };
+            var gameRecord = new ManualGameRecord { Name = name, PlayTime = new ElapsedTime(initialPlayTime) };
 
             await GameLibrary.Instance.AddGameAsync(gameRecord, cliCt);
 

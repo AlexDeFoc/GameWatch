@@ -2,9 +2,9 @@
 
 public sealed class AutoGameRecord
 {
-    public TableId TableId { get; init; }
+    public TableId TableId { get; set; }
     public string Name { get; set; } = string.Empty;
-    public ElapsedTime PlayTimeSec { get; set; }
+    public ElapsedTime PlayTime { get; set; }
     public string? WindowTitle { get; set; }
     public string? FilePath { get; set; }
     public string? WindowRule { get; set; }
@@ -18,7 +18,7 @@ public sealed class AutoGameRecord
     {
         TableId = new TableId(dto.TableId);
         Name = dto.Name;
-        PlayTimeSec = new ElapsedTime(dto.PlayTimeSec);
+        PlayTime = new ElapsedTime(dto.PlayTime);
         WindowTitle = dto.WindowTitle;
         WindowRule = dto.WindowRule;
         FilePath = dto.FilePath;

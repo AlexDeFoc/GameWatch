@@ -10,36 +10,26 @@ public sealed class AgentState
     private ImmutableArray<TrackingSessions.Manual> _activeManualGames = [];
     private ImmutableArray<AutoGameRecord> _loadedAutoGames = [];
 
-// Lock-free, zero-allocation array reads for heartbeat ticks
+    // Lock-free, zero-allocation array reads for heartbeat ticks
     public ImmutableArray<TrackingSessions.Auto> ActiveAutoGames => _activeAutoGames;
     public ImmutableArray<TrackingSessions.Manual> ActiveManualGames => _activeManualGames;
 
     // --- Active Auto Session Helpers ---
-    public bool TryGetActiveAutoGame(TableId tableId, out TrackingSessions.Auto? session)
+    public bool TryGetActiveAutoGame(TableId tableId)
     {
         var current = _activeAutoGames;
         foreach (var s in current)
         {
             if (s.TableId != tableId) continue;
-            session = s;
             return true;
         }
 
-        session = null;
         return false;
     }
 
     public bool AddActiveAutoGame(TrackingSessions.Auto session)
     {
-        return ImmutableInterlocked.Update(ref _activeAutoGames, static (list, item) =>
-        {
-            for (var i = 0; i < list.Length; i++)
-            {
-                if (list[i].TableId == item.TableId) return list; // Prevent duplicates
-            }
-
-            return list.Add(item);
-        }, session);
+        return ImmutableInterlocked.Update(ref _activeAutoGames, static (list, item) => list.Add(item), session);
     }
 
     public bool RemoveActiveAutoGame(TableId tableId, [NotNullWhen(true)] out TrackingSessions.Auto? removedSession)
@@ -70,6 +60,7 @@ public sealed class AgentState
                 {
                     if (list[i].TableId == id) return list.RemoveAt(i);
                 }
+
                 return list;
             },
             tableId);
@@ -82,31 +73,9 @@ public sealed class AgentState
 
     // --- Active Manual Session Helpers ---
 
-    public bool TryGetActiveManualGame(TableId id, out TrackingSessions.Manual? session)
+    public void AddActiveManualGame(TrackingSessions.Manual session)
     {
-        var list = _activeManualGames;
-        foreach (var item in list)
-        {
-            if (item.TableId != id) continue;
-            session = item;
-            return true;
-        }
-
-        session = null;
-        return false;
-    }
-
-    public bool AddActiveManualGame(TrackingSessions.Manual session)
-    {
-        return ImmutableInterlocked.Update(ref _activeManualGames, static (list, item) =>
-        {
-            for (var i = 0; i < list.Length; i++)
-            {
-                if (list[i].TableId == item.TableId) return list; // Prevent duplicates
-            }
-
-            return list.Add(item);
-        }, session);
+        ImmutableInterlocked.Update(ref _activeManualGames, static (list, item) => list.Add(item), session);
     }
 
     public bool RemoveActiveManualGame(TableId tableId, [NotNullWhen(true)] out TrackingSessions.Manual? removedSession)
@@ -135,6 +104,7 @@ public sealed class AgentState
                 {
                     if (list[i].TableId == id) return list.RemoveAt(i);
                 }
+
                 return list;
             },
             tableId);

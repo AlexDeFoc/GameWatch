@@ -14,6 +14,9 @@ service IpcProcessor {
   rpc EvictOldInstance (EmptyRequest) returns (StatusResponse);
   rpc TrackNewlyAddedAutoGame (AutoGameDtoRequest) returns (StatusAndMessageResponse);
   rpc StopTrackingAllGames (StopTrackingAllGamesRequest) returns (StatusAndMessageResponse);
+  rpc ModifySettingIsLoggingEnabled (ModifySettingIsLoggingEnabledRequest) returns (StatusAndMessageResponse);
+  rpc ModifySettingProcessScanInterval (ModifySettingProcessScanIntervalRequest) returns (StatusAndMessageResponse);
+  rpc ModifySettingPlayTimeFlushInterval (ModifySettingPlayTimeFlushIntervalRequest) returns (StatusAndMessageResponse);
 }
 
 // Requests
@@ -39,10 +42,22 @@ message StopTrackingAllGamesRequest {
   bool stop_tracking_manual_games = 2;
 }
 
+message ModifySettingIsLoggingEnabledRequest {
+  bool new_status = 1;
+}
+
+message ModifySettingProcessScanIntervalRequest {
+  int64 new_value = 1;
+}
+
+message ModifySettingPlayTimeFlushIntervalRequest {
+  int64 new_value = 1;
+}
+
 message AutoGameDtoRequest {
   int32 table_id = 1;
   string game_name = 2;
-  int64 play_time_sec = 3;
+  int64 play_time = 3;
   string window_title = 4;
   string window_rule = 5;
   string file_path = 6;

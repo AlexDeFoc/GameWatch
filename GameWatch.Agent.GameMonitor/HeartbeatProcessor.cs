@@ -34,7 +34,7 @@ public sealed class HeartbeatProcessor(AgentState state, ILogger<HeartbeatProces
         Dictionary<TableId, ElapsedTime>? gamesElapsedToFlush = null;
         List<(TableId Id, string Name, ElapsedTime Elapsed)>? logBuffer = null;
 
-        var threshold = Settings.Instance.GameMonitorAgentGamePlayTimeSaveThreshold;
+        var threshold = Settings.GameMonitorAgent.Instance.CachedSettingPlayTimeFlushInterval;
         var isLogging = logger.IsEnabled(LogLevel.Information);
 
         foreach (var session in gameSessions)

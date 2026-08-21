@@ -32,17 +32,33 @@ public static class DeleteAllGames
             var clearManualGames = result.GetValue(manualOption);
             var clearAutoGames = result.GetValue(autoOption);
 
+            if (!clearAutoGames && !clearManualGames)
+            {
+                clearAutoGames = true;
+                clearManualGames = true;
+            }
+
             if (clearManualGames)
             {
                 var res = await GameLibrary.Instance.DeleteAllGamesAsync(GameMode.Manual, cliCt);
-                if (!res.Ok) { Console.WriteLine(res.FailureReason); return 1; }
+                if (!res.Ok)
+                {
+                    Console.WriteLine(res.FailureReason);
+                    return 1;
+                }
+
                 Console.WriteLine("[OK] Deleted all manual games");
             }
 
             if (clearAutoGames)
             {
                 var res = await GameLibrary.Instance.DeleteAllGamesAsync(GameMode.Auto, cliCt);
-                if (!res.Ok) { Console.WriteLine(res.FailureReason); return 1; }
+                if (!res.Ok)
+                {
+                    Console.WriteLine(res.FailureReason);
+                    return 1;
+                }
+
                 Console.WriteLine("[OK] Deleted all auto games");
             }
 
